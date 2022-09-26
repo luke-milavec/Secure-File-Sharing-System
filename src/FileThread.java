@@ -31,6 +31,8 @@ public class FileThread extends Thread {
                 // Handler to list files that this user is allowed to see
                 if(e.getMessage().equals("LFILES")) {
                     /* TODO: Write this handler */
+                    if(e.getObjContents().size() < 1) {  // no token sent
+                    }
                 }
                 if(e.getMessage().equals("UPLOADF")) {
 
