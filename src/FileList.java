@@ -24,7 +24,7 @@ public class FileList implements java.io.Serializable {
             }
         }
     }
-
+    // Note: Checks to see if file exists given location (path)
     public synchronized boolean checkFile(String path) {
         for (int i = 0; i < list.size(); i++) {
             if (list.get(i).getPath().compareTo(path)==0) {
