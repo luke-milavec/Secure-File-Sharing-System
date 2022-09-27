@@ -67,7 +67,7 @@ public class GroupServer extends Server {
             System.exit(-1);
         }
 
-        // Open user file to get group list
+        // Open group file to get group list
         try {
             FileInputStream gfis = new FileInputStream(groupFile);
             groupStream = new ObjectInputStream(gfis);
@@ -76,16 +76,8 @@ public class GroupServer extends Server {
             System.out.println("Group File Does Not Exist. Creating GroupList...");
             groupList = new GroupList();
             System.out.println("No Group currently exists.");
-            // I don't think you inititalize it here unlike UserList which has the ADMIN case
-            System.out.print("Enter your username: ");
-            String username = console.next();
-
-            //Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
-            userList = new UserList();
-            userList.addUser(username);
-            userList.addGroup(username, "ADMIN");
-            userList.addOwnership(username, "ADMIN");
-        
+            // I don't think you inititalize it here by creating a group unlike UserList which has the ADMIN case
+                    
         } catch(IOException e) {
             System.out.println("Error reading from UserList file in order to retrieve group list");
             System.exit(-1);
