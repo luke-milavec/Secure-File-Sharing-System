@@ -43,6 +43,8 @@ public abstract class Client {
             try {
                 Envelope message = new Envelope("DISCONNECT");
                 output.writeObject(message);
+                sock.close();
+                sock = null;
             } catch(Exception e) {
                 System.err.println("Error: " + e.getMessage());
                 e.printStackTrace(System.err);
