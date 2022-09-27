@@ -6,7 +6,9 @@
 /*
  * TODO: This file will need to be modified to save state related to
  *       groups that are created in the system
- *
+ *  ?? Question: Do I need a filenotfound exception for the groupstream. I assume no since it is
+ *  already being handled before that with userstream ??
+ *  ?? anything else needed ??
  */
 
 import java.io.FileInputStream;
@@ -60,6 +62,19 @@ public class GroupServer extends Server {
             System.exit(-1);
         } catch(ClassNotFoundException e) {
             System.out.println("Error reading from UserList file");
+            System.exit(-1);
+        }
+
+        // Open user file to get group list
+        try {
+            FileInputStream gfis = new FileInputStream(userFile);
+            groupStream = new ObjectInputStream(gfis);
+            userList = (UserList)groupStream.readObject();
+        } catch(IOException e) {
+            System.out.println("Error reading from UserList file in order to retrieve group list");
+            System.exit(-1);
+        } catch(ClassNotFoundException e) {
+            System.out.println("Error reading from UserList file in order to retrieve group list");
             System.exit(-1);
         }
 

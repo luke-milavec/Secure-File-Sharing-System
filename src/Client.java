@@ -17,12 +17,10 @@ public abstract class Client {
         /* TODO: Write this method */
         try {
           sock = new Socket(server, port);  
-          System.out.println("Connected to " + server + " on port " + port);
-
           output = new ObjectOutputStream(sock.getOutputStream());
           input = new ObjectInputStream(sock.getInputStream());
-
-          // .... 
+          Envelope msg = new Envelope("CONNECTED TO " + server + " ON PORT " + port);
+          output.writeObject(msg);
           return true;
         }
         catch(Exception e){
