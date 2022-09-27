@@ -1,6 +1,10 @@
 import java.util.List;
 
-public class Token implements UserToken{
+public class Token implements java.io.Serializable, UserToken{
+
+    // Copy of another version id for now, maybe change later?
+    private static final long serialVersionUID = -6699986336399821598L;
+
     private String issuer;
     private String subject;
     private List<String> groups;
