@@ -8,8 +8,8 @@ public class GroupList implements java.io.Serializable {
     private static final long serialVersionUID = 0L;
     private Hashtable<String, Group> list = new Hashtable<String, Group>(); //<groupName, Group>
 
-    public synchronized void addGroup(String username, String groupName) {
-        Group newGroup = new Group(username);
+    public synchronized void addGroup(String ownerUsername, String groupName) {
+        Group newGroup = new Group(ownerUsername);
         list.put(groupName, newGroup);
     }
     public synchronized void deleteGroup(String groupName) {
@@ -60,9 +60,9 @@ public class GroupList implements java.io.Serializable {
         private String owner; // Each group has an owner who is the user who created it
         
         // boolean createGroup(String groupname, UserToken token)
-        Group(String username) {
+        Group(String ownerUsername) {
             members = new ArrayList<String>();
-            owner = username;
+            owner = ownerUsername;
         }
 
         public ArrayList<String> getMembers() {

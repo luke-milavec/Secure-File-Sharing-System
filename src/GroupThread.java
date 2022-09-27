@@ -103,6 +103,7 @@ public class GroupThread extends Thread {
                     output.writeObject(response);
                 } else if(message.getMessage().equals("DGROUP")) { //Client wants to delete a group
                     /* TODO:  Write this handler */
+                    
                 } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
                     /* TODO:  Write this handler */
                 } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
@@ -222,7 +223,7 @@ public class GroupThread extends Thread {
         //Does requester exist?
         if(my_gs.userList.checkUser(requester)) {
             if(!my_gs.groupList.checkGroup(groupname)) { // if group doesn't already exist
-                    my_gs.groupList.addGroup(requester, groupname); // add group to grouplist
+                    my_gs.groupList.addGroup(requester, groupname); // add group to grouplist with requester as owner
                     my_gs.userList.addGroup(requester, groupname); // Add group to user's list of groups they belong to
                     my_gs.userList.addOwnership(requester, groupname); // Add group to user's list of groups they own
                     return true;
@@ -234,4 +235,6 @@ public class GroupThread extends Thread {
         }
     }
 
+
+    
 }
