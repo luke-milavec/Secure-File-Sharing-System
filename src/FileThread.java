@@ -2,6 +2,7 @@
 
 import java.lang.Thread;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +33,21 @@ public class FileThread extends Thread {
                 if(e.getMessage().equals("LFILES")) {
                     /* TODO: Write this handler */
                     if(e.getObjContents().size() < 1) {  // no token sent
+                        response = new Envelope("FAIL-BADCONTENTS");
+                    } else if (e.getObjContents().get(0) == null){ // if the token is null
+                        response = new Envelope("FAIL-BADTOKEN");
+                    } else {
+                        UserToken token = (UserToken) e.getObjContents().get(0); // extract token
+                        List<String> allowedGroups = token.getGroups();
+                        List<ShareFile> serverFileList = FileServer.fileList.getFiles();
+
+                        List<String> fileRetList = new ArrayList<>(); // list to return
+
+                        for (ShareFile sf : serverFileList) {
+                           if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
+                              fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name?
+                           }
+                        }
                     }
                 }
                 if(e.getMessage().equals("UPLOADF")) {
