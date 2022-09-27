@@ -28,7 +28,6 @@ public class FileThread extends Thread {
             do {
                 Envelope e = (Envelope)input.readObject();
                 System.out.println("Request received: " + e.getMessage());
-
                 // Handler to list files that this user is allowed to see
                 if(e.getMessage().equals("LFILES")) {
                     /* TODO: Write this handler */
@@ -45,10 +44,14 @@ public class FileThread extends Thread {
 
                         for (ShareFile sf : serverFileList) {
                            if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
-                              fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name?
+                              fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
                            }
                         }
+                        System.out.println("Sending list of files");
+                        response = new Envelope("OK");
+                        response.addObject(fileRetList);
                     }
+                    output.writeObject(response);
                 }
                 if(e.getMessage().equals("UPLOADF")) {
 
