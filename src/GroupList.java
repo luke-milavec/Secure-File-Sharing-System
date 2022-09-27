@@ -6,44 +6,44 @@ public class GroupList implements java.io.Serializable {
 
     // Increment UID version id when changing this file
     private static final long serialVersionUID = 0L;
-    private Hashtable<String, Group> list = new Hashtable<String, Group>(); //<groupName, Group>
+    private Hashtable<String, Group> list = new Hashtable<String, Group>(); //<groupname, Group>
 
-    public synchronized void addGroup(String ownerUsername, String groupName) {
+    public synchronized void addGroup(String ownerUsername, String groupname) {
         Group newGroup = new Group(ownerUsername);
-        list.put(groupName, newGroup);
+        list.put(groupname, newGroup);
     }
-    public synchronized void deleteGroup(String groupName) {
-        list.remove(groupName);
+    public synchronized void deleteGroup(String groupname) {
+        list.remove(groupname);
     }
     // Given the group name returns whether the group exists or not
-    public synchronized boolean checkGroup(String groupName) {
-        if(list.containsKey(groupName)) {
+    public synchronized boolean checkGroup(String groupname) {
+        if(list.containsKey(groupname)) {
             return true;
         } else {
             return false;
         }
     }
 
-    public synchronized ArrayList<String> getGroupMembers(String groupName) {
-        return list.get(groupName).getMembers();
+    public synchronized ArrayList<String> getGroupMembers(String groupname) {
+        return list.get(groupname).getMembers();
     }
 
-    public synchronized String getGroupOwner(String groupName) {
-        return list.get(groupName).getOwner();
+    public synchronized String getGroupOwner(String groupname) {
+        return list.get(groupname).getOwner();
     }
 
-    public synchronized void addMember(String username, String groupName) {
-        list.get(groupName).addMember(username);
+    public synchronized void addMember(String username, String groupname) {
+        list.get(groupname).addMember(username);
     }
 
     // If the user to be removed is the owner, the group is deleted and all members removed
     // ASSUMPTION RIGHT NOW that each user's list of groups (user.groups in UserList) is updated
     // (i.e. this group is removed from their list of groups) elsewhere to reflect the group deletion!!!!
-    public void removeMember(String username, String groupName) {
-        if (list.get(groupName).owner.equals(username)) { // if member to be removed is the owner
-            list.remove(groupName); 
+    public void removeMember(String username, String groupname) {
+        if (list.get(groupname).owner.equals(username)) { // if member to be removed is the owner
+            list.remove(groupname); 
         } else {
-            list.get(groupName).removeMember(username);
+            list.get(groupname).removeMember(username);
         }
     }
 
