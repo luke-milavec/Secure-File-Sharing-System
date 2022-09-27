@@ -20,7 +20,8 @@ public abstract class Client {
           output = new ObjectOutputStream(sock.getOutputStream());
           input = new ObjectInputStream(sock.getInputStream());
           Envelope msg = new Envelope("CONNECTED TO " + server + " ON PORT " + port);
-          output.writeObject(msg);
+          output.writeObject(msg); 
+          // Lack of loop probably correct but not 100% on that yet
           return true;
         }
         catch(Exception e){
