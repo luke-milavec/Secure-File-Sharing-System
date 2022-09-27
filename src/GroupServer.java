@@ -24,6 +24,7 @@ import java.util.Scanner;
 public class GroupServer extends Server {
 
     public UserList userList;
+    public GroupList groupList;
 
     public GroupServer(int _port) {
         super(_port, "alpha");
@@ -33,6 +34,7 @@ public class GroupServer extends Server {
         // Overwrote server.start() because if no user file exists, initial admin account needs to be created
 
         String userFile = "UserList.bin";
+        String groupFile = "GroupList.bin";
         Scanner console = new Scanner(System.in);
         ObjectInputStream userStream;
         ObjectInputStream groupStream;
@@ -67,9 +69,23 @@ public class GroupServer extends Server {
 
         // Open user file to get group list
         try {
-            FileInputStream gfis = new FileInputStream(userFile);
+            FileInputStream gfis = new FileInputStream(groupFile);
             groupStream = new ObjectInputStream(gfis);
-            userList = (UserList)groupStream.readObject();
+            groupList = (GroupList) groupStream.readObject();
+        } catch(FileNotFoundException e) {
+            System.out.println("Group File Does Not Exist. Creating GroupList...");
+            groupList = new GroupList();
+            System.out.println("No Group currently exists.");
+            // I don't think you inititalize it here unlike UserList which has the ADMIN case
+            System.out.print("Enter your username: ");
+            String username = console.next();
+
+            //Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
+            userList = new UserList();
+            userList.addUser(username);
+            userList.addGroup(username, "ADMIN");
+            userList.addOwnership(username, "ADMIN");
+        
         } catch(IOException e) {
             System.out.println("Error reading from UserList file in order to retrieve group list");
             System.exit(-1);
@@ -105,7 +121,7 @@ public class GroupServer extends Server {
 
 }
 
-//This thread saves the user list
+//This thread saves the user list AND group list (added)
 class ShutDownListener extends Thread {
     public GroupServer my_gs;
 
@@ -119,6 +135,9 @@ class ShutDownListener extends Thread {
         try {
             outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
             outStream.writeObject(my_gs.userList);
+
+            outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+            outStream.writeObject(my_gs.groupList);
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -142,6 +161,9 @@ class AutoSave extends Thread {
                 try {
                     outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
                     outStream.writeObject(my_gs.userList);
+
+                    outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+                    outStream.writeObject(my_gs.groupList);
                 } catch(Exception e) {
                     System.err.println("Error: " + e.getMessage());
                     e.printStackTrace(System.err);
