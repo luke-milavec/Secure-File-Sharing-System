@@ -85,6 +85,22 @@ public class GroupThread extends Thread {
                     output.writeObject(response);
                 } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
                     /* TODO:  Write this handler */
+                    if(message.getObjContents().size() < 2) {
+                        response = new Envelope("FAIL");
+                    } else {
+                        response = new Envelope("FAIL");
+                        if(message.getObjContents().get(0) != null) {
+                            if(message.getObjContents().get(1) != null) {
+                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+                                UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+
+                                if(createGroup(groupname, yourToken)) {
+                                    response = new Envelope("OK"); //Success
+                                }
+                            }
+                        }
+                    }
+                    output.writeObject(response);
                 } else if(message.getMessage().equals("DGROUP")) { //Client wants to delete a group
                     /* TODO:  Write this handler */
                 } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
@@ -197,6 +213,24 @@ public class GroupThread extends Thread {
             }
         } else {
             return false; //requester does not exist
+        }
+    }
+
+    private boolean createGroup(String groupname, UserToken yourToken) {
+        String requester = yourToken.getSubject();
+
+        //Does requester exist?
+        if(my_gs.userList.checkUser(requester)) {
+            if(!my_gs.groupList.checkGroup(groupname)) { // if group doesn't already exist
+                    my_gs.groupList.addGroup(requester, groupname); // add group to grouplist
+                    my_gs.userList.addGroup(requester, groupname); // Add group to user's list of groups they belong to
+                    my_gs.userList.addOwnership(requester, groupname); // Add group to user's list of groups they own
+                    return true;
+                } else {
+                    return false; // Group already exists
+                }
+            } else {
+                return false; //requester does not exist
         }
     }
 
