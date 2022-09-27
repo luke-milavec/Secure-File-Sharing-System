@@ -88,7 +88,7 @@ public class GroupThread extends Thread {
                     if(message.getObjContents().size() < 2) {
                         response = new Envelope("FAIL");
                     } else {
-                        response = new Envelope("FAIL");
+                        response = new Envelope("FAIL"); //default fail
                         if(message.getObjContents().get(0) != null) {
                             if(message.getObjContents().get(1) != null) {
                                 String groupname = (String)message.getObjContents().get(0); //Extract the groupname
@@ -103,7 +103,22 @@ public class GroupThread extends Thread {
                     output.writeObject(response);
                 } else if(message.getMessage().equals("DGROUP")) { //Client wants to delete a group
                     /* TODO:  Write this handler */
-                    
+                    if(message.getObjContents().size() < 2) {
+                        response = new Envelope("FAIL");
+                    } else {
+                        response = new Envelope("FAIL"); // default fail
+                        if(message.getObjContents().get(0) != null) {
+                            if(message.getObjContents().get(1) != null) {
+                                String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+                                UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+                                
+                                if(deleteGroup(groupname, yourToken)) {
+                                    response = new Envelope("OK"); //Success
+                                }
+                            }
+                        }
+                    }
+                    output.writeObject(response);
                 } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
                     /* TODO:  Write this handler */
                 } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
@@ -229,6 +244,37 @@ public class GroupThread extends Thread {
                     return true;
                 } else {
                     return false; // Group already exists
+                }
+            } else {
+                return false; //requester does not exist
+        }
+    }
+    
+    // Stub
+    private boolean deleteGroup(String groupname, UserToken yourToken) {
+        String requester = yourToken.getSubject();
+
+        //Does requester exist?
+        if(my_gs.userList.checkUser(requester)) {
+            if(my_gs.groupList.checkGroup(groupname)) { // if group exists
+                    if (my_gs.groupList.getGroupOwner(groupname).equals(requester)) { // if requester is the group owner
+                        ArrayList<String> members = my_gs.groupList.getGroupMembers(groupname); // List of all group members
+                        // Delete the group from every member's list of groups they belong to
+                        for (int i = 0; i < members.size(); i++) {
+                            my_gs.userList.removeGroup(members.get(i), groupname);
+                        }
+                        // delete from owner's ownership list
+                        my_gs.userList.removeOwnership(requester, groupname);
+                        
+                        // delete from grouplist
+                        my_gs.groupList.deleteGroup(groupname);
+                        return true;
+                    }
+                    else {
+                        return false; // Non-owner attempting to delete group
+                    }
+                } else {
+                    return false; // Group doesn't exist, nothing to delete
                 }
             } else {
                 return false; //requester does not exist
