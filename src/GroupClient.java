@@ -86,6 +86,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             return false;
         } catch(Exception e) {
+            
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
             return false;

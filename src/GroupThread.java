@@ -41,7 +41,7 @@ public class GroupThread extends Thread {
                         output.writeObject(response);
                     } else {
                         UserToken yourToken = createToken(username); //Create a token
-                        // added later prints
+                        // TODO remove debug prints
                         if(yourToken != null) {
                             System.out.println("token not null");
                             System.out.println("issuer: " + yourToken.getIssuer() + " subject: " + yourToken.getSubject()

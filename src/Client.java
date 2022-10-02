@@ -21,6 +21,7 @@ public abstract class Client {
           input = new ObjectInputStream(sock.getInputStream());
           Envelope msg = new Envelope("CONNECTED TO " + server + " ON PORT " + port);
           output.writeObject(msg); 
+          System.out.println("Connected to " + server + " on port " + port);
           // Lack of loop probably correct but not 100% on that yet
           return true;
         }

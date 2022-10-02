@@ -62,7 +62,15 @@ public class ClientTerminalApp {
                     if (username != null && gClient.isConnected()) {
                         if (username.equals("ADMIN")) { // Security measure on client side as well
                             if (token != null) {
-                                
+                                if (command.length != 2) {
+                                    System.out.println("Invalid format. Expected: cuser <username>");
+                                } else {
+                                    if (!gClient.createUser(command[1], token)){
+                                        System.out.println("Failed to create user.");
+                                    } else {
+                                        System.out.println("User " + command[1] + " created.");
+                                    }
+                                }               
                             } else {
                                 System.out.println("Token required to create username.");
                             }
@@ -70,6 +78,38 @@ public class ClientTerminalApp {
                             System.out.println("Permission Denied.");
                         }
                     }
+                    break;
+                case "duser": 
+                    if (username != null && gClient.isConnected()) {
+                        if (username.equals("ADMIN")) { // Security measure on client side as well
+                            if (token != null) {
+                                if (command.length != 2) {
+                                    System.out.println("Invalid format. Expected: duser <username>");
+                                } else {
+                                    if (!gClient.deleteUser(command[1], token)){
+                                        System.out.println("Failed to delete user.");
+                                    } else {
+                                        System.out.println("User " + command[1] + " deleted.");
+                                    }
+                                }               
+                            } else {
+                                System.out.println("Token required to create username. Please get a token first using gettoken");
+                            }
+                        } else {
+                            System.out.println("Permission Denied.");
+                        }
+                    }
+                    break;
+                case "cgroup":
+                    break;
+                case "dgroup":
+                    break;
+                case "adduser":
+                    break;
+                case "deleteuser":
+                    break;
+                case "listmembers":
+                    break;
                 case "q":
                     exit = true;
                     break;
@@ -106,18 +146,18 @@ public class ClientTerminalApp {
     public void showOptions() {
         String newLine = System.lineSeparator();
         System.out.println("Options: " + newLine
-                            + "     help                                    Shows the list of valid commands." + newLine
-                            + "     connect <-f or -g> <server> <port>      Connect to file or group server at port." + newLine
-                            + "     disconnect                              Disconnects current connection to file or group server." + newLine
-                            + "     group commands:                         Must be connected to group server." + newLine
-                            + "         gettoken                            Gets a token for the user that is logged in." + newLine
-                            + "         cgroup  <groupname>                 Create a group named group name." + newLine
-                            + "         cuser  <username>                   Create a user named group name." + newLine
-                            + "         dgroup <groupname>                  Delete group groupname." + newLine
-                            + "         duser <username>                    Delete user username." + newLine
-                            + "         adduser  <username>  <groupname>    Adds user username to group groupname." + newLine
-                            + "         deleteuser  <username>  <groupname> Delete user username from group groupname." + newLine
-                            + "     q                                       Closes the application."
+                            + "     help                                        Shows the list of valid commands." + newLine
+                            + "     connect <-f or -g> <server> <port>          Connect to file or group server at port." + newLine
+                            + "     disconnect                                  Disconnects current connection to file or group server." + newLine
+                            + "     group commands:                             Must be connected to group server." + newLine
+                            + "         gettoken                                Gets a token for the user that is logged in." + newLine
+                            + "         cgroup <groupname>                      Create a group named group name." + newLine
+                            + "         cuser <username>                        Create a user named group name." + newLine
+                            + "         dgroup <groupname>                      Delete group groupname." + newLine
+                            + "         duser <username>                        Delete user username." + newLine
+                            + "         adduser <username> <groupname>          Adds user username to group groupname." + newLine
+                            + "         deleteuser <username> <groupname>       Delete user username from group groupname." + newLine
+                            + "     q                                           Closes the application."
 
         );
     }
