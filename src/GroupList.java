@@ -39,7 +39,7 @@ public class GroupList implements java.io.Serializable {
     // If the user to be removed is the owner, the group is deleted and all members removed
     // ASSUMPTION RIGHT NOW that each user's list of groups (user.groups in UserList) is updated
     // (i.e. this group is removed from their list of groups) elsewhere to reflect the group deletion!!!!
-    public void removeMember(String username, String groupname) {
+    public synchronized void removeMember(String username, String groupname) {
         if (list.get(groupname).owner.equals(username)) { // if member to be removed is the owner
             list.remove(groupname); 
         } else {
@@ -64,9 +64,6 @@ public class GroupList implements java.io.Serializable {
             members = new ArrayList<String>();
             owner = ownerUsername;
             members.add(ownerUsername);
-            for (String m : members) {
-                System.out.println("member: " + m);
-            }
         }
 
         public ArrayList<String> getMembers() {
