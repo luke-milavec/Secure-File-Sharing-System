@@ -142,7 +142,11 @@ public class GroupThread extends Thread {
                                 String groupname = (String)message.getObjContents().get(0); //Extract the groupname
                                 UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
                                 
-                                response = new Envelope(listMembers(groupname, yourToken));
+                                ArrayList<String> members = listMembers(groupname, yourToken);
+
+                                //response = new Envelope(listMembers(groupname, yourToken));
+                                response = new Envelope("OK");
+                                response.addObject(members);
                             }
                         }
                     }
@@ -347,25 +351,22 @@ public class GroupThread extends Thread {
         }
     }
 
-    private String listMembers(String groupname, UserToken yourToken){
+    private ArrayList<String> listMembers(String groupname, UserToken yourToken){
         String requester = yourToken.getSubject();
-        String re = groupname+":\n";
+        // String re = groupname+":\n";
+        ArrayList<String> re = null;
 
         if(my_gs.userList.checkUser(requester)) {
             if(my_gs.groupList.checkGroup(groupname)){
                 if (my_gs.groupList.getGroupOwner(groupname).equals(requester)) {
                     ArrayList<String> members = my_gs.groupList.getGroupMembers(groupname); // List of all group members
-                        for (int i = 0; i < members.size(); i++) {
-                            re+=members.get(i)+"\n";
-                        }
-                }else{
-                    re = "FAIL";
+                    return members;
+                    // I think this approach might be incorrect because groupclient is expecting a List<String>
+                        // for (int i = 0; i < members.size(); i++) {
+                        //     re += members.get(i)+"\n";
+                        // }
                 }
-            }else{
-                re = "FAIL";
             }
-        }else{
-            re = "FAIL";
         }
         return re;
     }
