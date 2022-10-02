@@ -32,13 +32,25 @@ public class GroupThread extends Thread {
 
                 if(message.getMessage().equals("GET")) { //Client wants a token
                     String username = (String)message.getObjContents().get(0); //Get the username
+                    
+                    // TODO remove following line, added for testing
+                    System.out.println("username: " + username + " requested a token.");
                     if(username == null) {
                         response = new Envelope("FAIL");
                         response.addObject(null);
                         output.writeObject(response);
                     } else {
                         UserToken yourToken = createToken(username); //Create a token
-
+                        // added later prints
+                        if(yourToken != null) {
+                            System.out.println("token not null");
+                            System.out.println("issuer: " + yourToken.getIssuer() + " subject: " + yourToken.getSubject()
+                            + "  groups: " + yourToken.getGroups());
+                        }
+                        else
+                        {
+                            System.out.println("token is null");
+                        }
                         //Respond to the client. On error, the client will receive a null token
                         response = new Envelope("OK");
                         response.addObject(yourToken);
@@ -193,12 +205,14 @@ public class GroupThread extends Thread {
 
     //Method to create tokens
     private UserToken createToken(String username) {
+        
         //Check that user exists
         if(my_gs.userList.checkUser(username)) {
             //Issue a new token with server's name, user's name, and user's groups
             UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
             return yourToken;
         } else {
+            
             return null;
         }
     }

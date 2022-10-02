@@ -1,15 +1,24 @@
 import java.util.Scanner;
 
+import javax.sound.sampled.SourceDataLine;
+
 public class ClientTerminalApp {
 
     GroupClient gClient;
     FileClient fClient;
+    UserToken token;
+    String username;
+
 
     ClientTerminalApp(){
         gClient = new GroupClient();
         fClient = new FileClient();
+        token = null;
 
         Scanner in = new Scanner(System.in);
+        if (!login(in)) {
+            // TODO
+        }
         showOptions();
 
         boolean exit = false;
@@ -21,14 +30,46 @@ public class ClientTerminalApp {
                     showOptions();
                     break;
                 case "connect":
-                    if(!connect(command[1], command[2], command[3])) {
+                    // What sort of input validation should we add?
+                    if (command.length != 4) {
+                        System.out.println("Invalid parameters. Expected format: connect <-f or -g> <server> <port>");
+                    } else if (!connect(command[1], command[2], command[3])) {
                         System.out.println("Connection failed: " + commandLine);
                     }
                      break;
                 case "disconnect":
-                     gClient.disconnect();
-                     fClient.disconnect();
-                     break;
+                    gClient.disconnect();
+                    fClient.disconnect();
+                    System.out.println("Disconnected from server");
+                    break;
+                case "gettoken": 
+                // BUG 1: server sees ADMIN username and it creates token fine but first gettoken
+                // request is recieved as a FAIL on client side, second gettoken request works fine
+                    if(username != null && gClient.isConnected()) {
+                        token = gClient.getToken(username);
+                        if (token != null) {
+                            System.out.println("Token Recieved");            
+                            // for testing
+                            System.out.println("issuer: " + token.getIssuer() + " subject: " + token.getSubject()
+                            + " groups: " + token.getGroups());
+                            
+                        } else {
+                            System.out.println("Request for token failed.");
+                        }
+                    }
+                    break;
+                case "cuser":
+                    if (username != null && gClient.isConnected()) {
+                        if (username.equals("ADMIN")) { // Security measure on client side as well
+                            if (token != null) {
+                                
+                            } else {
+                                System.out.println("Token required to create username.");
+                            }
+                        } else {
+                            System.out.println("Permission Denied.");
+                        }
+                    }
                 case "q":
                     exit = true;
                     break;
@@ -40,38 +81,42 @@ public class ClientTerminalApp {
         in.close();
     }
 
+    public boolean login(Scanner in) {
+        System.out.println("Enter username to login: ");
+        username = in.nextLine();
+        return true; // For now there are no checks 
+    }
+
     public boolean connect(String serverType, String serverName, String port) {
         if (serverType.equals("-g")) {
             if (gClient.connect(serverName, Integer.parseInt(port))) {
                 return true;
             }
-            else {
-                System.out.println("ouchee could not connect to group server");
-            }
-
         } else if (serverType.equals("-f")) {
-            System.out.println("TODO");
+            if (fClient.connect(serverName, Integer.parseInt(port))) {
+                return true;
+            }
         }
         else {
             System.out.println("Invalid server type. Correct options were -g or -f");
         }
-        
         return false;
     }
+
     public void showOptions() {
         String newLine = System.lineSeparator();
         System.out.println("Options: " + newLine
                             + "     help                                    Shows the list of valid commands." + newLine
-                            + "     connect [-f or -g] [server] [port]      Connect to file or group server at port." + newLine
+                            + "     connect <-f or -g> <server> <port>      Connect to file or group server at port." + newLine
                             + "     disconnect                              Disconnects current connection to file or group server." + newLine
                             + "     group commands:                         Must be connected to group server." + newLine
-                            + "         token                               Gets a token based on the user login info??." + newLine
-                            + "         cgroup  <groupname>                 Create a group named group name. Must be Admin" + newLine
-                            + "         cuser  <username>                   Create a user named group name. Must be ADMIN" + newLine
+                            + "         gettoken                            Gets a token for the user that is logged in." + newLine
+                            + "         cgroup  <groupname>                 Create a group named group name." + newLine
+                            + "         cuser  <username>                   Create a user named group name." + newLine
                             + "         dgroup <groupname>                  Delete group groupname." + newLine
                             + "         duser <username>                    Delete user username." + newLine
-                            + "         addUser  <username>  <groupname>    Adds user username to group groupname." + newLine
-                            + "         deleteUser  <username>  <groupname> Delete user username from group groupname." + newLine
+                            + "         adduser  <username>  <groupname>    Adds user username to group groupname." + newLine
+                            + "         deleteuser  <username>  <groupname> Delete user username from group groupname." + newLine
                             + "     q                                       Closes the application."
 
         );

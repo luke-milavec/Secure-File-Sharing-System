@@ -19,9 +19,12 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Get the response from the server
             response = (Envelope)input.readObject();
 
+            // TODO Remove debug
+            System.out.println("here and server response was: " + response.getMessage());
             //Successful response
             if(response.getMessage().equals("OK")) {
                 //If there is a token in the Envelope, return it
+                
                 ArrayList<Object> temp = null;
                 temp = response.getObjContents();
 
