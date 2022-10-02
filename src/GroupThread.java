@@ -383,7 +383,6 @@ public class GroupThread extends Thread {
                         } else {
                             return false; 
                         }
-                        
                     } else {
                         return false; 
                     }

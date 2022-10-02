@@ -1,6 +1,7 @@
 import java.util.Scanner;
+import java.util.List;
 
-import javax.sound.sampled.SourceDataLine;
+
 
 public class ClientTerminalApp {
 
@@ -101,14 +102,72 @@ public class ClientTerminalApp {
                     }
                     break;
                 case "cgroup":
+                    if (gClient.isConnected()) {
+                        if (token != null) {
+                            if (command.length != 2) {
+                                System.out.println("Invalid format. Expected: cgroup <groupname>");
+                            } else {
+                                if (!gClient.createGroup(command[1], token)){
+                                    System.out.println("Failed to create group.");
+                                } else {
+                                    System.out.println("Group " + command[1] + " created.");
+                                }
+                            }               
+                        } else {
+                            System.out.println("Token required to create group. Please get a token first using gettoken");
+                        }
+                    }
+                    else {
+                        System.out.println("Connect to a group server first.");
+                    }
                     break;
                 case "dgroup":
+                    // TODO
                     break;
                 case "adduser":
+                    if (gClient.isConnected()) {
+                        if (token != null) {
+                            if (command.length != 3) {
+                                System.out.println("Invalid format. Expected: adduser <username> <groupname>");
+                            } else {
+                                if (!gClient.addUserToGroup(command[1], command[2], token)){
+                                    System.out.println("Failed to add " + command[1] + " to " + command[2] + ".");
+                                } else {
+                                    System.out.println(command[1] + " added to " + command[2] + ".");
+                                }
+                            }               
+                        } else {
+                            System.out.println("Valid token required to add user to group. Please get a token first using gettoken.");
+                        }
+                    }
+                    else {
+                        System.out.println("Connect to a group server first.");
+                    }
                     break;
                 case "deleteuser":
+                    // TODO
                     break;
                 case "listmembers":
+                    if (gClient.isConnected()) {
+                        if (token != null) {
+                            if (command.length != 2) {
+                                System.out.println("Invalid format. Expected: listmembers <groupname>");
+                            } else {
+                                List<String> members = gClient.listMembers(command[1], token);
+                                if (members != null) {
+                                    for (String member : members) {
+                                        System.out.println(member);
+                                    }
+                                } else {
+                                    System.out.println("Failed to get list of members.");
+                                }
+                            }               
+                        } else {
+                            System.out.println("Valid token required to list group members. Please get a token first using gettoken.");
+                        }
+                    } else {
+                        System.out.println("Connect to a group server first.");
+                    }
                     break;
                 case "q":
                     exit = true;
@@ -149,7 +208,7 @@ public class ClientTerminalApp {
                             + "     help                                        Shows the list of valid commands." + newLine
                             + "     connect <-f or -g> <server> <port>          Connect to file or group server at port." + newLine
                             + "     disconnect                                  Disconnects current connection to file or group server." + newLine
-                            + "     group commands:                             Must be connected to group server." + newLine
+                            + "     group commands:                             Must be connected to group server. Commands other than gettoken require valid token." + newLine
                             + "         gettoken                                Gets a token for the user that is logged in." + newLine
                             + "         cgroup <groupname>                      Create a group named group name." + newLine
                             + "         cuser <username>                        Create a user named group name." + newLine
@@ -157,6 +216,7 @@ public class ClientTerminalApp {
                             + "         duser <username>                        Delete user username." + newLine
                             + "         adduser <username> <groupname>          Adds user username to group groupname." + newLine
                             + "         deleteuser <username> <groupname>       Delete user username from group groupname." + newLine
+                            + "         listmembers <groupname>                 Lists all members of groupname." + newLine
                             + "     q                                           Closes the application."
 
         );
