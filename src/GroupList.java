@@ -63,6 +63,10 @@ public class GroupList implements java.io.Serializable {
         Group(String ownerUsername) {
             members = new ArrayList<String>();
             owner = ownerUsername;
+            members.add(ownerUsername);
+            for (String m : members) {
+                System.out.println("member: " + m);
+            }
         }
 
         public ArrayList<String> getMembers() {
