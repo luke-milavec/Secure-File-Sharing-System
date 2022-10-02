@@ -379,6 +379,7 @@ public class GroupThread extends Thread {
                     if (my_gs.groupList.getGroupOwner(groupname).equals(requester)) { 
                         if(my_gs.userList.checkUser(username)){
                             my_gs.groupList.addMember(username, groupname); 
+                            my_gs.userList.addGroup(username, groupname); 
                             return true;
                         } else {
                             return false; 
