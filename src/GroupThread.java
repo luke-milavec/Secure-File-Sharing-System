@@ -7,6 +7,8 @@ import java.lang.Thread;
 import java.net.Socket;
 import java.util.ArrayList;
 
+
+
 public class GroupThread extends Thread {
     private final Socket socket;
     private GroupServer my_gs;
@@ -216,7 +218,7 @@ public class GroupThread extends Thread {
             UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
             return yourToken;
         } else {
-            
+    
             return null;
         }
     }

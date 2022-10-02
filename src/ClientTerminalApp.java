@@ -18,7 +18,7 @@ public class ClientTerminalApp {
 
         Scanner in = new Scanner(System.in);
         if (!login(in)) {
-            // TODO
+            // to do in next phase 
         }
         showOptions();
 
@@ -169,6 +169,50 @@ public class ClientTerminalApp {
                         System.out.println("Connect to a group server first.");
                     }
                     break;
+                case "download":
+                    if (fClient.isConnected()) { 
+                        if (token != null) {
+                            // TODO
+                        } else {
+                            System.out.println("Valid token required to download file. Please get a token first using gettoken.");
+                        }
+                    } else {
+                        System.out.println("Connect to a file server first.");
+                    }     
+                    break;
+                case "upload":
+                    if (fClient.isConnected()) { 
+                        if (token != null) {
+                            // TODO
+                        } else {
+                            System.out.println("Valid token required to upload file to group. Please get a token first using gettoken.");
+                        }
+                    } else {
+                        System.out.println("Connect to a file server first.");
+                    }     
+                    break;
+                case "listfiles":
+                    if (fClient.isConnected()) { 
+                        if (token != null) {
+                            // TODO
+                        } else {
+                            System.out.println("Valid token required to list files. Please get a token first using gettoken.");
+                        }
+                    } else {
+                        System.out.println("Connect to a file server first.");
+                    }     
+                    break;
+                case "delete":
+                    if (fClient.isConnected()) { 
+                        if (token != null) {
+                            // TODO
+                        } else {
+                            System.out.println("Valid token required to delete file. Please get a token first using gettoken.");
+                        }
+                    } else {
+                        System.out.println("Connect to a file server first.");
+                    }     
+                    break;
                 case "q":
                     exit = true;
                     break;
@@ -205,20 +249,24 @@ public class ClientTerminalApp {
     public void showOptions() {
         String newLine = System.lineSeparator();
         System.out.println("Options: " + newLine
-                            + "     help                                        Shows the list of valid commands." + newLine
-                            + "     connect <-f or -g> <server> <port>          Connect to file or group server at port." + newLine
-                            + "     disconnect                                  Disconnects current connection to file or group server." + newLine
-                            + "     group commands:                             Must be connected to group server. Commands other than gettoken require valid token." + newLine
-                            + "         gettoken                                Gets a token for the user that is logged in." + newLine
-                            + "         cgroup <groupname>                      Create a group named group name." + newLine
-                            + "         cuser <username>                        Create a user named group name." + newLine
-                            + "         dgroup <groupname>                      Delete group groupname." + newLine
-                            + "         duser <username>                        Delete user username." + newLine
-                            + "         adduser <username> <groupname>          Adds user username to group groupname." + newLine
-                            + "         deleteuser <username> <groupname>       Delete user username from group groupname." + newLine
-                            + "         listmembers <groupname>                 Lists all members of groupname." + newLine
-                            + "     q                                           Closes the application."
-
+                            + "     help                                                    Shows the list of valid commands." + newLine
+                            + "     connect <-f or -g> <server> <port>                      Connect to file or group server at port." + newLine
+                            + "     disconnect                                              Disconnects current connection to file or group server." + newLine
+                            + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
+                            + "         gettoken                                            Gets a token for the user that is logged in." + newLine
+                            + "         cgroup <groupname>                                  Create a group named group name." + newLine
+                            + "         cuser <username>                                    Create a user named group name." + newLine
+                            + "         dgroup <groupname>                                  Delete group groupname." + newLine
+                            + "         duser <username>                                    Delete user username." + newLine
+                            + "         adduser <username> <groupname>                      Adds user username to group groupname." + newLine
+                            + "         deleteuser <username> <groupname>                   Delete user username from group groupname." + newLine
+                            + "         listmembers <groupname>                             Lists all members of groupname." + newLine
+                            + "     file commands:                                          Must be connected to a file server. Commands require valid tokens" + newLine
+                            + "         download <sourceFile> <destFile> <token>            Downloads <sourceFile> from server and saves it as destFile." + newLine
+                            + "         upload   <srcFile> <destFile> <group> <token>       Uploads <sourceFile> to file server as a file of <group>." + newLine
+                            + "         listfiles <token>                                   Lists all files that <token> allows access to." + newLine
+                            + "         delete <filename> <token>                           Deletes file <filename> from server." + newLine
+                            + "     q                                                       Closes the application."
         );
     }
 
