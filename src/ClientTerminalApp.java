@@ -122,7 +122,24 @@ public class ClientTerminalApp {
                     }
                     break;
                 case "dgroup":
-                    // TODO
+                    if (gClient.isConnected()) {
+                        if (token != null) {
+                            if (command.length != 2) {
+                                System.out.println("Invalid format. Expected: dgroup <groupname>");
+                            } else {
+                                if (!gClient.deleteGroup(command[1], token)){
+                                    System.out.println("Failed to delete group.");
+                                } else {
+                                    System.out.println("Group " + command[1] + " deleted.");
+                                }
+                            }               
+                        } else {
+                            System.out.println("Token required to delete group. Please get a token first using gettoken");
+                        }
+                    }
+                    else {
+                        System.out.println("Connect to a group server first.");
+                    }
                     break;
                 case "adduser":
                     if (gClient.isConnected()) {
@@ -145,7 +162,24 @@ public class ClientTerminalApp {
                     }
                     break;
                 case "deleteuser":
-                    // TODO
+                    if (gClient.isConnected()) {
+                        if (token != null) {
+                            if (command.length != 3) {
+                                System.out.println("Invalid format. Expected: deleteuser <username> <groupname>");
+                            } else {
+                                if (!gClient.addUserToGroup(command[1], command[2], token)){
+                                    System.out.println("Failed to delete " + command[1] + " from " + command[2] + ".");
+                                } else {
+                                    System.out.println(command[1] + " deleted from " + command[2] + ".");
+                                }
+                            }               
+                        } else {
+                            System.out.println("Valid token required to delete user from group. Please get a token first using gettoken.");
+                        }
+                    }
+                    else {
+                        System.out.println("Connect to a group server first.");
+                    }
                     break;
                 case "listmembers":
                     if (gClient.isConnected()) {
