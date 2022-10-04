@@ -167,7 +167,7 @@ public class ClientTerminalApp {
                             if (command.length != 3) {
                                 System.out.println("Invalid format. Expected: deleteuser <username> <groupname>");
                             } else {
-                                if (!gClient.addUserToGroup(command[1], command[2], token)){
+                                if (!gClient.deleteUserFromGroup(command[1], command[2], token)){
                                     System.out.println("Failed to delete " + command[1] + " from " + command[2] + ".");
                                 } else {
                                     System.out.println(command[1] + " deleted from " + command[2] + ".");
@@ -189,6 +189,7 @@ public class ClientTerminalApp {
                             } else {
                                 List<String> members = gClient.listMembers(command[1], token);
                                 if (members != null) {
+                                    System.out.println("There are " + members.size() + " members.");
                                     for (String member : members) {
                                         System.out.println(member);
                                     }
@@ -206,7 +207,19 @@ public class ClientTerminalApp {
                 case "download":
                     if (fClient.isConnected()) { 
                         if (token != null) {
-                            // TODO
+                            if(command.length != 3) {
+                                System.out.println("Invalid format. Expected: download <sourcefilename> <destfilename>");
+                            } else {
+                                if(!token.getGroups().contains(username)) {
+                                    System.out.println(username + " does not have access to this file.");
+                                } else {
+                                    boolean isdownloaded = fClient.download(command[1], command[2], token);
+                                    if(!isdownloaded) {
+                                        System.out.println("Failed to download file.");
+                                    }
+                                }
+
+                            }
                         } else {
                             System.out.println("Valid token required to download file. Please get a token first using gettoken.");
                         }
@@ -217,7 +230,18 @@ public class ClientTerminalApp {
                 case "upload":
                     if (fClient.isConnected()) { 
                         if (token != null) {
-                            // TODO
+                            if(command.length != 4) {
+                                System.out.println("Invalid format. Expected: upload <sourcefilename> <destfilename> <group>");
+                            } else {
+                                if(!token.getGroups().contains(username)) {
+                                    System.out.println(username + " is not in the group: " + command[3]);
+                                } else {
+                                    boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
+                                    if(!isuploaded) {
+                                        System.out.println("Failed to upload file.");
+                                    }
+                                }
+                            }
                         } else {
                             System.out.println("Valid token required to upload file to group. Please get a token first using gettoken.");
                         }
@@ -228,7 +252,7 @@ public class ClientTerminalApp {
                 case "listfiles":
                     if (fClient.isConnected()) { 
                         if (token != null) {
-                            // TODO
+                            
                         } else {
                             System.out.println("Valid token required to list files. Please get a token first using gettoken.");
                         }
@@ -293,7 +317,7 @@ public class ClientTerminalApp {
                             + "         dgroup <groupname>                                  Delete group groupname." + newLine
                             + "         duser <username>                                    Delete user username." + newLine
                             + "         adduser <username> <groupname>                      Adds user username to group groupname." + newLine
-                            + "         deleteuser <username> <groupname>                   Delete user username from group groupname." + newLine
+                            + "         duserfromgroup <username> <groupname>                   Delete user username from group groupname." + newLine
                             + "         listmembers <groupname>                             Lists all members of groupname." + newLine
                             + "     file commands:                                          Must be connected to a file server. Commands require valid tokens" + newLine
                             + "         download <sourceFile> <destFile> <token>            Downloads <sourceFile> from server and saves it as destFile." + newLine

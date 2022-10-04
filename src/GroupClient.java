@@ -27,6 +27,7 @@ public class GroupClient extends Client implements GroupClientInterface {
                 
                 ArrayList<Object> temp = null;
                 temp = response.getObjContents();
+                
 
                 if(temp.size() == 1) {
                     token = (UserToken)temp.get(0);

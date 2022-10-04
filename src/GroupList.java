@@ -11,6 +11,8 @@ public class GroupList implements java.io.Serializable {
     public synchronized void addGroup(String ownerUsername, String groupname) {
         Group newGroup = new Group(ownerUsername);
         list.put(groupname, newGroup);
+
+        System.err.println("in grouplist addGroup(): " + list.toString());
     }
     public synchronized void deleteGroup(String groupname) {
         list.remove(groupname);
@@ -34,6 +36,9 @@ public class GroupList implements java.io.Serializable {
 
     public synchronized void addMember(String username, String groupname) {
         list.get(groupname).addMember(username);
+
+        System.err.println(" Debug in grouplist addMember(): " + list.toString());
+        
     }
 
     // If the user to be removed is the owner, the group is deleted and all members removed
@@ -76,6 +81,8 @@ public class GroupList implements java.io.Serializable {
 
         public void addMember(String username) {
             members.add(username);
+
+            System.err.println("in grouplist group class addMember(): " + members.toString());
         }
 
         public void removeMember(String username) {
