@@ -360,35 +360,28 @@ public class GroupThread extends Thread {
 
     private ArrayList<String> listMembers(String groupname, UserToken yourToken){
         String requester = yourToken.getSubject();
-        // String re = groupname+":\n";
-        ArrayList<String> re = null;
+        ArrayList<String> members = null;
 
         if(my_gs.userList.checkUser(requester)) {
             if(my_gs.groupList.checkGroup(groupname)){
                 if (my_gs.groupList.getGroupOwner(groupname).equals(requester)) {
                     System.err.println("request for list members in groupthread listMembers(): requester " + requester
                     + " groupname: " + groupname + " my_gs.groupList.getGroupOwner: " + my_gs.groupList.getGroupOwner(groupname));
-
-                    
-                    ArrayList<String> members = my_gs.groupList.getGroupMembers(groupname); // List of all group members
+                    members = my_gs.groupList.getGroupMembers(groupname); // List of all group members
                     System.err.println("in listMembers(): " + members.toString());
                     return members;
-                    // I think this approach might be incorrect because groupclient is expecting a List<String>
-                        // for (int i = 0; i < members.size(); i++) {
-                        //     re += members.get(i)+"\n";
-                        // }
                 }
             }
         }
-        return re;
+        return members;
     }
 
     private boolean addUserGroup(String username,String groupname, UserToken yourToken) {
         String requester = yourToken.getSubject();
-        System.err.println(" Debug groupthread addUserGroup(): requester: " + requester + "; groupname: " + groupname);
-        System.err.println(" Debug groupthread addUserGroup(): groupowner: " + my_gs.groupList.getGroupOwner(groupname));
-        System.err.println(" Debug groupthread addUserGroup(): checkgroup: " + my_gs.groupList.checkGroup(groupname));
-        System.err.println(" Debug groupthread UserGroup(): checkuser username: " + username + " checkuser: " + my_gs.userList.checkUser(username));
+        // System.err.println(" Debug groupthread addUserGroup(): requester: " + requester + "; groupname: " + groupname);
+        // System.err.println(" Debug groupthread addUserGroup(): groupowner: " + my_gs.groupList.getGroupOwner(groupname));
+        // System.err.println(" Debug groupthread addUserGroup(): checkgroup: " + my_gs.groupList.checkGroup(groupname));
+        // System.err.println(" Debug groupthread UserGroup(): checkuser username: " + username + " checkuser: " + my_gs.userList.checkUser(username));
         //Does requester exist?
         if(my_gs.userList.checkUser(requester)) {
             if(my_gs.groupList.checkGroup(groupname)) { // if group exists
