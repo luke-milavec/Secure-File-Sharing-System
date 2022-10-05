@@ -152,7 +152,7 @@ public class FileThread extends Thread {
 
                                     e.addObject(buf);
                                     e.addObject(Integer.valueOf(n));
-
+                                    
                                     output.writeObject(e);
 
                                     e = (Envelope)input.readObject();
@@ -180,6 +180,7 @@ public class FileThread extends Thread {
                                     System.out.printf("Upload failed: %s\n", e.getMessage());
 
                                 }
+                                fis.close();
                             }
                         } catch(Exception e1) {
                             System.err.println("Error: " + e.getMessage());

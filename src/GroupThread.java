@@ -1,6 +1,7 @@
 /* This thread does all the work. It communicates with the client through Envelopes.
  *
  */
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.Thread;
@@ -28,6 +29,7 @@ public class GroupThread extends Thread {
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 
             do {
+                output.reset();
                 Envelope message = (Envelope)input.readObject();
                 System.out.println("Request received: " + message.getMessage());
                 Envelope response;

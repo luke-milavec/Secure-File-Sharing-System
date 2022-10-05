@@ -252,7 +252,11 @@ public class ClientTerminalApp {
                 case "listfiles":
                     if (fClient.isConnected()) { 
                         if (token != null) {
-                            
+                            List<String> files = fClient.listFiles(token);
+                            System.out.println("There are " + files.size() + " files.");
+                                    for (String file : files) {
+                                        System.out.println(file);
+                                    }
                         } else {
                             System.out.println("Valid token required to list files. Please get a token first using gettoken.");
                         }
@@ -263,7 +267,14 @@ public class ClientTerminalApp {
                 case "delete":
                     if (fClient.isConnected()) { 
                         if (token != null) {
-                            // TODO
+                            if(command.length != 2) {
+                                System.out.println("Invalid format. Expected: delete <filename>");
+                            } else {
+                                boolean isdeleted = fClient.delete(command[1], token);
+                                if(!isdeleted) {
+                                    System.out.println("Failed to delete file.");
+                                }
+                            }
                         } else {
                             System.out.println("Valid token required to delete file. Please get a token first using gettoken.");
                         }
