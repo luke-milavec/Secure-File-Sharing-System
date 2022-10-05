@@ -51,11 +51,7 @@ public class ClientTerminalApp {
                         if(username != null) {
                             token = gClient.getToken(username);
                             if (token != null) {
-                                System.out.println("Token Recieved");            
-                                // for testing
-                                System.out.println("issuer: " + token.getIssuer() + " subject: " + token.getSubject()
-                                + " groups: " + token.getGroups());
-                                
+                                System.out.println("Token Recieved");                                            
                             } else {
                                 System.out.println("Request for token failed.");
                             }
@@ -194,7 +190,6 @@ public class ClientTerminalApp {
                             } else {
                                 List<String> members = gClient.listMembers(command[1], token);
                                 if (members != null) {
-                                    //System.out.println("There are " + members.size() + " members.");
                                     for (String member : members) {
                                         System.out.println(member);
                                     }
@@ -215,14 +210,10 @@ public class ClientTerminalApp {
                             if(command.length != 3) {
                                 System.out.println("Invalid format. Expected: download <sourcefilename> <destfilename>");
                             } else {
-                                // if(!token.getGroups().contains(username)) {
-                                //     System.out.println(username + " does not have access to this file.");
-                                // } else {
                                     boolean isdownloaded = fClient.download(command[1], command[2], token);
                                     if(!isdownloaded) {
                                         System.out.println("Failed to download file.");
                                     }
-                               // }
 
                             }
                         } else {
@@ -238,13 +229,9 @@ public class ClientTerminalApp {
                             if(command.length != 4) {
                                 System.out.println("Invalid format. Expected: upload <sourcefilename> <destfilename> <group>");
                             } else {
-                                // if(!token.getGroups().contains(username)) {
-                                //     System.out.println(username + " is not in the group: " + command[3]);
-                                // } else {
                                     boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
                                     if(!isuploaded) {
                                         System.out.println("Failed to upload file.");
-                                   // }
                                 }
                             }
                         } else {

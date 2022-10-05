@@ -13,26 +13,21 @@ public class UserList implements java.io.Serializable {
     public synchronized void addUser(String username) {
         User newUser = new User();
         list.put(username, newUser);
-        System.err.println("in list addUser(): " + list.toString());
     }
 
     public synchronized void deleteUser(String username) {
         list.remove(username);
-        System.err.println("in list deleteUser(): " + list.toString());
     }
 
     public synchronized boolean checkUser(String username) {
-        System.err.println(" debug in userlist checkUser(): " + list.toString());
         if(list.containsKey(username)) {
             return true;
         } else {
-            System.err.println("User " + username +  " does not exist");
             return false;
         }
     }
 
     public synchronized ArrayList<String> getUserGroups(String username) {
-        System.err.println(" Debug in list getUsergroups(): " + list.get(username).getGroups().toString());
         return list.get(username).getGroups();
         
     }
