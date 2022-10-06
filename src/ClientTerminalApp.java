@@ -61,46 +61,56 @@ public class ClientTerminalApp {
                     }  
                     break;
                 case "cuser":
-                    if (username != null && gClient.isConnected()) {
-                        if (username.equals("ADMIN")) { // Security measure on client side as well
-                            if (token != null) {
-                                if (command.length != 2) {
-                                    System.out.println("Invalid format. Expected: cuser <username>");
-                                } else {
-                                    if (!gClient.createUser(command[1], token)){
-                                        System.out.println("Failed to create user.");
+                    if(gClient.isConnected()) {
+                        if (username != null) {
+                            if (username.equals("ADMIN")) { // Security measure on client side as well
+                                if (token != null) {
+                                    if (command.length != 2) {
+                                        System.out.println("Invalid format. Expected: cuser <username>");
                                     } else {
-                                        System.out.println("User " + command[1] + " created.");
-                                    }
-                                }               
+                                        if (!gClient.createUser(command[1], token)){
+                                            System.out.println("Failed to create user.");
+                                        } else {
+                                            System.out.println("User " + command[1] + " created.");
+                                        }
+                                    }               
+                                } else {
+                                    System.out.println("Token required to create username.");
+                                }
                             } else {
-                                System.out.println("Token required to create username.");
+                                System.out.println("Permission Denied.");
                             }
-                        } else {
-                            System.out.println("Permission Denied.");
                         }
+                    } else {
+                        System.out.println("Connect to a group server first.");
                     }
                     break;
                 case "duser": 
-                    if (username != null && gClient.isConnected()) {
-                        if (username.equals("ADMIN")) { // Security measure on client side as well
-                            if (token != null) {
-                                if (command.length != 2) {
-                                    System.out.println("Invalid format. Expected: duser <username>");
-                                } else {
-                                    if (!gClient.deleteUser(command[1], token)){
-                                        System.out.println("Failed to delete user.");
+                    if (gClient.isConnected()) {
+                        if (username != null) {
+                            if (username.equals("ADMIN")) { // Security measure on client side as well
+                                if (token != null) {
+                                    if (command.length != 2) {
+                                        System.out.println("Invalid format. Expected: duser <username>");
                                     } else {
-                                        System.out.println("User " + command[1] + " deleted.");
-                                    }
-                                }               
+                                        if (!gClient.deleteUser(command[1], token)){
+                                            System.out.println("Failed to delete user.");
+                                        } else {
+                                            System.out.println("User " + command[1] + " deleted.");
+                                        }
+                                    }               
+                                } else {
+                                    System.out.println("Token required to create new user. Please get a token first using gettoken");
+                                }
                             } else {
-                                System.out.println("Token required to create new user. Please get a token first using gettoken");
+                                System.out.println("Permission Denied.");
                             }
-                        } else {
-                            System.out.println("Permission Denied.");
                         }
+                    } else {
+                        System.out.println("Connect to a group server first.");
                     }
+                    
+                    
                     break;
                 case "cgroup":
                     if (gClient.isConnected()) {
