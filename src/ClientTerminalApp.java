@@ -1,4 +1,5 @@
 import java.util.Scanner;
+import java.io.File;
 import java.util.List;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -72,46 +73,56 @@ public class ClientTerminalApp {
                     }  
                     break;
                 case "cuser":
-                    if (username != null && gClient.isConnected()) {
-                        if (username.equals("ADMIN")) { // Security measure on client side as well
-                            if (token != null) {
-                                if (command.length != 2) {
-                                    System.out.println("Invalid format. Expected: cuser <username>");
-                                } else {
-                                    if (!gClient.createUser(command[1], token)){
-                                        System.out.println("Failed to create user.");
+                    if(gClient.isConnected()) {
+                        if (username != null) {
+                            if (username.equals("ADMIN")) { // Security measure on client side as well
+                                if (token != null) {
+                                    if (command.length != 2) {
+                                        System.out.println("Invalid format. Expected: cuser <username>");
                                     } else {
-                                        System.out.println("User " + command[1] + " created.");
-                                    }
-                                }               
+                                        if (!gClient.createUser(command[1], token)){
+                                            System.out.println("Failed to create user.");
+                                        } else {
+                                            System.out.println("User " + command[1] + " created.");
+                                        }
+                                    }               
+                                } else {
+                                    System.out.println("Token required to create username.");
+                                }
                             } else {
-                                System.out.println("Token required to create username.");
+                                System.out.println("Permission Denied.");
                             }
-                        } else {
-                            System.out.println("Permission Denied.");
                         }
+                    } else {
+                        System.out.println("Connect to a group server first.");
                     }
                     break;
                 case "duser": 
-                    if (username != null && gClient.isConnected()) {
-                        if (username.equals("ADMIN")) { // Security measure on client side as well
-                            if (token != null) {
-                                if (command.length != 2) {
-                                    System.out.println("Invalid format. Expected: duser <username>");
-                                } else {
-                                    if (!gClient.deleteUser(command[1], token)){
-                                        System.out.println("Failed to delete user.");
+                    if (gClient.isConnected()) {
+                        if (username != null) {
+                            if (username.equals("ADMIN")) { // Security measure on client side as well
+                                if (token != null) {
+                                    if (command.length != 2) {
+                                        System.out.println("Invalid format. Expected: duser <username>");
                                     } else {
-                                        System.out.println("User " + command[1] + " deleted.");
-                                    }
-                                }               
+                                        if (!gClient.deleteUser(command[1], token)){
+                                            System.out.println("Failed to delete user.");
+                                        } else {
+                                            System.out.println("User " + command[1] + " deleted.");
+                                        }
+                                    }               
+                                } else {
+                                    System.out.println("Token required to create new user. Please get a token first using gettoken");
+                                }
                             } else {
-                                System.out.println("Token required to create new user. Please get a token first using gettoken");
+                                System.out.println("Permission Denied.");
                             }
-                        } else {
-                            System.out.println("Permission Denied.");
                         }
+                    } else {
+                        System.out.println("Connect to a group server first.");
                     }
+                    
+                    
                     break;
                 case "cgroup":
                     if (gClient.isConnected()) {
@@ -240,10 +251,15 @@ public class ClientTerminalApp {
                             if(command.length != 4) {
                                 System.out.println("Invalid format. Expected: upload <sourcefilename> <destfilename> <group>");
                             } else {
-                                    boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
-                                    if(!isuploaded) {
-                                        System.out.println("Failed to upload file.");
-                                }
+                                    File f = new File(command[1]);
+                                    if (!f.exists()) {
+                                        System.out.println("File " + command[1] + " does not exist.");
+                                    } else {
+                                        boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
+                                        if(!isuploaded) {
+                                            System.out.println("Failed to upload file.");
+                                        }
+                                    }
                             }
                         } else {
                             System.out.println("Valid token required to upload file to group. Please get a token first using gettoken.");
@@ -314,6 +330,7 @@ public class ClientTerminalApp {
         username = in.nextLine();
         gClient = new GroupClient();
         fClient = new FileClient();
+        
         showOptions();
         return true; // For now there are no checks 
     }

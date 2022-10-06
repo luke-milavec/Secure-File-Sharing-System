@@ -31,6 +31,7 @@ public class GroupThread extends Thread {
             do {
                 output.reset();
                 Envelope message = (Envelope)input.readObject();
+                System.out.println("Request received: " + message.getMessage());
                 Envelope response;
 
                 if(message.getMessage().equals("GET")) { //Client wants a token
@@ -312,7 +313,7 @@ public class GroupThread extends Thread {
                 }
             } else {
                 return false; //requester does not exist
-        }
+            } 
     }
     
     // Stub
