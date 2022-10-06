@@ -1,9 +1,16 @@
 import java.util.Scanner;
 import java.util.List;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileOutputStream;
+
 
 
 
 public class ClientTerminalApp {
+
+    public UserList userList;
+    public GroupList groupList;
 
     GroupClient gClient;
     FileClient fClient;
@@ -15,6 +22,10 @@ public class ClientTerminalApp {
         gClient = new GroupClient();
         fClient = new FileClient();
         token = null;
+
+        //This runs a thread that saves the lists on program exit
+        Runtime runtime = Runtime.getRuntime();
+        runtime.addShutdownHook(new AppShutDownListener(this));
 
         Scanner in = new Scanner(System.in);
         if (!login(in)) {
@@ -348,11 +359,37 @@ public class ClientTerminalApp {
         );
     }
 
+
     
     
     public static void main(String[] args) {
+        
         new ClientTerminalApp();
         
     }
     
+}
+
+//This thread saves the user list AND group list (added)
+class AppShutDownListener extends Thread {
+    public ClientTerminalApp my_app;
+
+    public AppShutDownListener (ClientTerminalApp _app) {
+        my_app = _app;
+    }
+
+    public void run() {
+        System.out.println("Shutting down app");
+        ObjectOutputStream outStream;
+        try {
+            outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
+            outStream.writeObject(my_app.userList);
+
+            outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+            outStream.writeObject(my_app.groupList);
+        } catch(Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+    }
 }

@@ -1,9 +1,11 @@
 import javax.swing.*;
 import java.awt.event.*; 
 import java.util.List;
+import java.awt.Color;
+import javax.swing.UIManager;
 
 
-public class ClientSwingApp {
+public class ClientSwingApp extends JFrame {
     
     GroupClient gClient;
     FileClient fClient;
@@ -16,6 +18,11 @@ public class ClientSwingApp {
         fClient = new FileClient();
         token = null;
         frame =  new JFrame();
+        Color darkpurp = new Color(48,25,52);
+
+        frame.setTitle("File Sharing Application");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setBackground(darkpurp);
 
         username=JOptionPane.showInputDialog(frame,"Enter User Name"); 
 
@@ -27,7 +34,7 @@ public class ClientSwingApp {
         b1.setBounds(0,0,200,75);  
         b1.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
-                String server = JOptionPane.showInputDialog(frame,"Enter Server");  
+                String server = JOptionPane.showInputDialog(frame,"Enter File Server");  
                 int port = Integer.parseInt(JOptionPane.showInputDialog(frame,"Enter Port")); 
                 fClient.connect(server,port);
             }
@@ -38,7 +45,7 @@ public class ClientSwingApp {
         b2.setBounds(200,0,200,75);  
         b2.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){ 
-                String server = JOptionPane.showInputDialog(frame,"Enter Server");  
+                String server = JOptionPane.showInputDialog(frame,"Enter Group Server");  
                 int port = Integer.parseInt(JOptionPane.showInputDialog(frame,"Enter Port")); 
                 gClient.connect(server,port); 
             }  
@@ -52,11 +59,7 @@ public class ClientSwingApp {
                 if(username != null && gClient.isConnected()) {
                     token = gClient.getToken(username);
                     if (token != null) {
-                        ta.append("Token Recieved \n");            
-                        // for testing
-                        ta.append("issuer: " + token.getIssuer() + " subject: " + token.getSubject()
-                        + " groups: " + token.getGroups()+"\n");
-                        
+                        ta.append("Token Recieved \n");                        
                     } else {
                         ta.append("Request for token failed.\n");
                     }
@@ -251,13 +254,13 @@ public class ClientSwingApp {
                         String dest = JOptionPane.showInputDialog(frame,"Enter Destination File");
                         boolean isdownloaded = fClient.download(src, dest, token);
                         if(!isdownloaded) {
-                            System.out.println("Failed to download file.\n");
+                            ta.append("Failed to download file.\n");
                         }
                     } else {
-                        System.out.println("Valid token required to download file. Please get a token first using gettoken.\n");
+                        ta.append("Valid token required to download file. Please get a token first using gettoken.\n");
                     }
                 } else {
-                    System.out.println("Connect to a file server first.\n");
+                    ta.append("Connect to a file server first.\n");
                 }
             }  
         });  
@@ -274,13 +277,13 @@ public class ClientSwingApp {
                         String groupname = JOptionPane.showInputDialog(frame,"Enter Group Name");
                         boolean isuploaded = fClient.upload(src, dest, groupname, token);
                         if(!isuploaded) {
-                            System.out.println("Failed to upload file.\n");
+                            ta.append("Failed to upload file.\n");
                         }
                     } else {
-                        System.out.println("Valid token required to upload file to group. Please get a token first using gettoken.\n");
+                        ta.append("Valid token required to upload file to group. Please get a token first using gettoken.\n");
                     }
                 } else {
-                    System.out.println("Connect to a file server first.\n");
+                    ta.append("Connect to a file server first.\n");
                 }     
             }  
         });  
@@ -295,14 +298,14 @@ public class ClientSwingApp {
                         String src = JOptionPane.showInputDialog(frame,"Enter File"); 
                         boolean isdeleted = fClient.delete(src, token);
                         if(!isdeleted) {
-                            System.out.println("Failed to delete file.\n");
+                            ta.append("Failed to delete file.\n");
                         }
                  
                     } else {
-                        System.out.println("Valid token required to delete file. Please get a token first using gettoken.\n");
+                        ta.append("Valid token required to delete file. Please get a token first using gettoken.\n");
                     }
                 } else {
-                    System.out.println("Connect to a file server first.\n");
+                    ta.append("Connect to a file server first.\n");
                 }     
             }  
         }); 
@@ -315,19 +318,33 @@ public class ClientSwingApp {
                 if (fClient.isConnected()) { 
                     if (token != null) {
                         List<String> files = fClient.listFiles(token);
-                        System.out.println("There are " + files.size() + " files\n.");
+                        ta.append("There are " + files.size() + " files\n.");
                         for (String file : files) {
-                            System.out.println(file+"\n");
+                            ta.append(file+"\n");
                         }
                     } else {
-                        System.out.println("Valid token required to list files. Please get a token first using gettoken.\n");
+                        ta.append("Valid token required to list files. Please get a token first using gettoken.\n");
                     }
                 } else {
-                    System.out.println("Connect to a file server first.\n");
+                    ta.append("Connect to a file server first.\n");
                 }  
             }  
         });  
         frame.add(b14);
+
+        JButton b15=new JButton("Disconnect");  
+        b15.setBounds(800,150,200,75);  
+        b15.addActionListener(new ActionListener(){  
+            public void actionPerformed(ActionEvent e){  
+                gClient.disconnect();
+                ta.append("Disconnect from group server");
+                System.out.println("Disconnected from group server");
+                fClient.disconnect();
+                ta.append("Disconnect from file server(s)");
+                System.out.println("Disconnected from file server(s)");
+            }  
+        });  
+        frame.add(b15);
 
 
         frame.setSize(1000,600);  

@@ -6,9 +6,6 @@
 /*
  * TODO: This file will need to be modified to save state related to
  *       groups that are created in the system
- *  ?? Question: Do I need a filenotfound exception for the groupstream. I assume no since it is
- *  already being handled before that with userstream ??
- *  ?? anything else needed ??
  */
 
 import java.io.FileInputStream;
