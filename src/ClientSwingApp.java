@@ -3,6 +3,8 @@ import java.awt.event.*;
 import java.util.List;
 import java.awt.Color;
 import javax.swing.UIManager;
+import java.awt.GridLayout;
+import java.awt.Font;
 
 
 public class ClientSwingApp extends JFrame {
@@ -27,7 +29,9 @@ public class ClientSwingApp extends JFrame {
         username=JOptionPane.showInputDialog(frame,"Enter User Name"); 
 
         JTextArea ta = new JTextArea();
-        ta.setBounds(0,225,1000,375);
+        ta.setBounds(250, 0,250, 500);
+        JTabbedPane tabButtonPane = new JTabbedPane();
+        Font font = new Font(Font.MONOSPACED, Font.BOLD, 24);
         frame.add(ta);
 
         JButton b1=new JButton("Connect to File Server");  
@@ -40,7 +44,9 @@ public class ClientSwingApp extends JFrame {
                 ta.append("Connected to file server: " + server + " on port " + port + "\n");
             }
         });  
-        frame.add(b1);
+        // frame.add(b1);
+        
+
 
         JButton b2=new JButton("Connect to Group Server");  
         b2.setBounds(200,0,200,75);  
@@ -52,7 +58,7 @@ public class ClientSwingApp extends JFrame {
                 ta.append("Connected to group server: " + server + " on port " + port + "\n");
             }  
         });  
-        frame.add(b2);
+        // frame.add(b2);
 
         JButton b3=new JButton("Get Token");  
         b3.setBounds(400,0,200,75);  
@@ -68,7 +74,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }
         });  
-        frame.add(b3);
+        // frame.add(b3);
 
         JButton b4=new JButton("Create Group");  
         b4.setBounds(600,0,200,75);  
@@ -92,7 +98,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b4);
+        // frame.add(b4);
 
         JButton b5=new JButton("Create User");  
         b5.setBounds(800,0,200,75);  
@@ -117,7 +123,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b5);
+        // frame.add(b5);
 
         JButton b6=new JButton("Delete Group");  
         b6.setBounds(0,75,200,75);  
@@ -140,7 +146,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b6);
+        // frame.add(b6);
 
         JButton b7=new JButton("Delete User");  
         b7.setBounds(200,75,200,75);  
@@ -166,7 +172,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b7);
+        // frame.add(b7);
 
         JButton b8=new JButton("Add User to Group");  
         b8.setBounds(400,75,200,75);  
@@ -191,7 +197,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b8);
+        // frame.add(b8);
 
         JButton b9=new JButton("Delete User From Group");  
         b9.setBounds(600,75,200,75);  
@@ -217,7 +223,7 @@ public class ClientSwingApp extends JFrame {
                 
             }  
         });  
-        frame.add(b9);
+        //frame.add(b9);
 
         JButton b10=new JButton("List Group Members");  
         b10.setBounds(800,75,200,75);  
@@ -244,7 +250,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b10);
+        //frame.add(b10);
 
         JButton b11=new JButton("Download");  
         b11.setBounds(0,150,200,75);  
@@ -266,7 +272,7 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        frame.add(b11);
+        //frame.add(b11);
 
         JButton b12=new JButton("Upload");  
         b12.setBounds(200,150,200,75);  
@@ -289,7 +295,7 @@ public class ClientSwingApp extends JFrame {
                 }     
             }  
         });  
-        frame.add(b12);
+        //frame.add(b12);
 
         JButton b13=new JButton("Delete");  
         b13.setBounds(400,150,200,75);  
@@ -311,7 +317,7 @@ public class ClientSwingApp extends JFrame {
                 }     
             }  
         }); 
-        frame.add(b13);
+        //frame.add(b13);
 
         JButton b14=new JButton("List Files");  
         b14.setBounds(600,150,200,75);  
@@ -332,10 +338,10 @@ public class ClientSwingApp extends JFrame {
                 }  
             }  
         });  
-        frame.add(b14);
+        //frame.add(b14);
 
         JButton b15=new JButton("Disconnect");  
-        b15.setBounds(800,150,200,75);  
+        b15.setBounds(800,150,300,75);  
         b15.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 gClient.disconnect();
@@ -346,10 +352,40 @@ public class ClientSwingApp extends JFrame {
                 System.out.println("Disconnected from file server(s)");
             }  
         });  
-        frame.add(b15);
+        //frame.add(b15);
 
+        JPanel groupButtons = new JPanel();
+        groupButtons.add(b2);
+        groupButtons.add(b3);
+        groupButtons.add(b4);
+        groupButtons.add(b5);
+        groupButtons.add(b6);
+        groupButtons.add(b7);
+        groupButtons.add(b8);
+        groupButtons.add(b9);
+        groupButtons.add(b10);
+        groupButtons.add(b15);
 
-        frame.setSize(1000,600);  
+        JPanel fileButtons = new JPanel();
+        fileButtons.add(b1);
+        fileButtons.add(b11);
+        fileButtons.add(b12);
+        fileButtons.add(b13);
+        fileButtons.add(b14);
+        fileButtons.add(b15);
+
+        groupButtons.setLayout(new GridLayout(10, 1, 20, 10));
+        //groupButtons.setAlignmentX(groupButtons.RIGHT_ALIGNMENT); //Centres the button
+
+        tabButtonPane.addTab("Group Server", groupButtons);
+        tabButtonPane.addTab("File Server", fileButtons);
+        tabButtonPane.setSize(250, 500);
+
+        
+        frame.add(tabButtonPane);
+        tabButtonPane.setVisible(true);
+
+        frame.setSize(500,500);  
 
         frame.setLayout(null);//using no layout managers  
         frame.setVisible(true); 
