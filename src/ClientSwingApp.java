@@ -37,6 +37,7 @@ public class ClientSwingApp extends JFrame {
                 String server = JOptionPane.showInputDialog(frame,"Enter File Server");  
                 int port = Integer.parseInt(JOptionPane.showInputDialog(frame,"Enter Port")); 
                 fClient.connect(server,port);
+                ta.append("Connected to file server: " + server + " on port " + port + "\n");
             }
         });  
         frame.add(b1);
@@ -48,6 +49,7 @@ public class ClientSwingApp extends JFrame {
                 String server = JOptionPane.showInputDialog(frame,"Enter Group Server");  
                 int port = Integer.parseInt(JOptionPane.showInputDialog(frame,"Enter Port")); 
                 gClient.connect(server,port); 
+                ta.append("Connected to group server: " + server + " on port " + port + "\n");
             }  
         });  
         frame.add(b2);
@@ -337,10 +339,10 @@ public class ClientSwingApp extends JFrame {
         b15.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 gClient.disconnect();
-                ta.append("Disconnect from group server");
+                ta.append("Disconnected from group server\n");
                 System.out.println("Disconnected from group server");
                 fClient.disconnect();
-                ta.append("Disconnect from file server(s)");
+                ta.append("Disconnected from file server(s)\n");
                 System.out.println("Disconnected from file server(s)");
             }  
         });  

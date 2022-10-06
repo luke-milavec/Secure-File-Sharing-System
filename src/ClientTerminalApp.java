@@ -356,23 +356,23 @@ public class ClientTerminalApp {
         System.out.println("Options: " + newLine
                             + "     help                                                    Shows the list of valid commands." + newLine
                             + "     relog                                                   Re-login to app, perhaps to change accounts." + newLine
-                            + "     connect <-f or -g> <server> <port>                      Connect to file or group server at port." + newLine
-                            + "     disconnect                                              Disconnects current connection to file or group server." + newLine
+                            + "     connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified." + newLine
+                            + "     disconnect                                              Disconnect current connection to file and/or group server." + newLine
                             + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
-                            + "         gettoken                                            Gets a token for the user that is logged in." + newLine
-                            + "         cgroup <groupname>                                  Create a group named group name." + newLine
-                            + "         cuser <username>                                    Create a user named group name." + newLine
-                            + "         dgroup <groupname>                                  Delete group groupname." + newLine
-                            + "         duser <username>                                    Delete user username." + newLine
-                            + "         adduser <username> <groupname>                      Adds user username to group groupname." + newLine
-                            + "         ruser <username> <groupname>               Delete user username from group groupname." + newLine
-                            + "         listmembers <groupname>                             Lists all members of groupname." + newLine
+                            + "         gettoken                                            Fetch a token for the user that is logged in." + newLine
+                            + "         cgroup <groupname>                                  Create a group named <groupname>." + newLine
+                            + "         cuser <username>                                    Create a user named <username>." + newLine
+                            + "         dgroup <groupname>                                  Delete the group specified by <groupname>." + newLine
+                            + "         duser <username>                                    Delete the user specified by <username>." + newLine
+                            + "         adduser <username> <groupname>                      Add user <username> to group <groupname>." + newLine
+                            + "         ruser <username> <groupname>                        Delete user <username> from group <groupname>." + newLine
+                            + "         listmembers <groupname>                             List all members of <groupname>." + newLine
                             + "     file commands:                                          Must be connected to a file server. Commands require valid tokens" + newLine
-                            + "         download <sourceFile> <destFile>                    Downloads <sourceFile> from server and saves it as destFile." + newLine
-                            + "         upload   <srcFile> <destFile> <group>               Uploads <sourceFile> to file server as a file of <group>." + newLine
-                            + "         listfiles                                           Lists all files that <token> allows access to." + newLine
-                            + "         delete <filename>                                   Deletes file <filename> from server." + newLine
-                            + "     q                                                       Closes the application."
+                            + "         download <sourceFile> <destFile>                    Download <sourceFile> from server and saves it as <destFile>." + newLine
+                            + "         upload   <srcFile> <destFile> <group>               Upload <sourceFile> to file server as a file of <group>." + newLine
+                            + "         listfiles                                           List all files that the logged in user has access to via their token." + newLine
+                            + "         delete <filename>                                   Delete file <filename> from server." + newLine
+                            + "     q                                                       Close the application."
         );
     }
 
