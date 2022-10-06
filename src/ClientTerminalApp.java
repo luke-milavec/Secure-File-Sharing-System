@@ -1,4 +1,5 @@
 import java.util.Scanner;
+import java.io.File;
 import java.util.List;
 
 
@@ -239,10 +240,15 @@ public class ClientTerminalApp {
                             if(command.length != 4) {
                                 System.out.println("Invalid format. Expected: upload <sourcefilename> <destfilename> <group>");
                             } else {
-                                    boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
-                                    if(!isuploaded) {
-                                        System.out.println("Failed to upload file.");
-                                }
+                                    File f = new File(command[1]);
+                                    if (!f.exists()) {
+                                        System.out.println("File " + command[1] + " does not exist.");
+                                    } else {
+                                        boolean isuploaded = fClient.upload(command[1], command[2], command[3], token);
+                                        if(!isuploaded) {
+                                            System.out.println("Failed to upload file.");
+                                        }
+                                    }
                             }
                         } else {
                             System.out.println("Valid token required to upload file to group. Please get a token first using gettoken.");
@@ -313,6 +319,7 @@ public class ClientTerminalApp {
         username = in.nextLine();
         gClient = new GroupClient();
         fClient = new FileClient();
+        
         showOptions();
         return true; // For now there are no checks 
     }
