@@ -321,7 +321,7 @@ public class ClientTerminalApp {
             gClient.disconnect();
             gClient = null;
         }
-        if(gClient != null && fClient.isConnected()){
+        if(fClient != null && fClient.isConnected()){
             fClient.disconnect();
             fClient = null;
         }
