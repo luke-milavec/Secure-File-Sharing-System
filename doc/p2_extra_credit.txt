@@ -1,6 +1,7 @@
 Client Swing Application
 
-We have created a simple GUI using Java Swing that showcases all commands as buttons. 
+We have created a GUI version of the client application using Java Swing that showcases all commands as buttons. 
+There are 2 tabs 
 When each button is pressed, a small window or 2 will pop up prompting for the appropriate information based on 
 what command you have selected.
     - For the prompts for connecting to both the File Server and Group Server, you will enter the server name
