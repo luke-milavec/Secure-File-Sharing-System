@@ -329,7 +329,7 @@ public class ClientSwingApp extends JFrame {
                 if (fClient.isConnected()) { 
                     if (token != null) {
                         List<String> files = fClient.listFiles(token);
-                        ta.append("There are " + files.size() + " files\n.");
+                        ta.append("There are " + files.size() + " files.\n");
                         for (String file : files) {
                             ta.append(file+"\n");
                         }
