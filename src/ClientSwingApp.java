@@ -341,21 +341,24 @@ public class ClientSwingApp extends JFrame {
                 }  
             }  
         });  
-        //frame.add(b14);
 
-        JButton b15=new JButton("Disconnect");  
-        b15.setBounds(800,150,300,75);  
-        b15.addActionListener(new ActionListener(){  
+        ActionListener disconnectListener =  new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 gClient.disconnect();
                 ta.append("Disconnected from group server\n");
                 System.out.println("Disconnected from group server");
                 fClient.disconnect();
                 ta.append("Disconnected from file server(s)\n");
-                System.out.println("Disconnected from file server(s)");
+                System.out.println("Disconnected from file server");
             }  
-        });  
-        //frame.add(b15);
+        };
+        JButton b15=new JButton("Disconnect");  
+        b15.setBounds(800,150,300,75);  
+        b15.addActionListener(disconnectListener); 
+
+        JButton b17 = new JButton("Disconnect");
+        b17.setBounds(800,150,300,75);
+        b17.addActionListener(disconnectListener);
 
         JButton b16 = new JButton("Relog");
         b16.setBounds(100, 150, 300, 75);
@@ -386,11 +389,11 @@ public class ClientSwingApp extends JFrame {
         fileButtons.add(b12);
         fileButtons.add(b13);
         fileButtons.add(b14);
-        fileButtons.add(b15);
-        groupButtons.add(b16);
+        fileButtons.add(b16);
+        fileButtons.add(b17);
 
         groupButtons.setLayout(new GridLayout(11, 1, 5, 5));
-        fileButtons.setLayout(new GridLayout(7, 1, 5, 5));
+        fileButtons.setLayout(new GridLayout(8, 1, 5, 5));
         //groupButtons.setAlignmentX(groupButtons.RIGHT_ALIGNMENT); //Centres the button
 
         tabButtonPane.addTab("Group Server", groupButtons);
