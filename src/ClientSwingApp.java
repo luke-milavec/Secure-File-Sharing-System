@@ -312,6 +312,9 @@ public class ClientSwingApp extends JFrame {
                         if(!isdeleted) {
                             ta.append("Failed to delete file.\n");
                         }
+                        else {
+                            ta.append(src + " deleted.\n");
+                        }
                  
                     } else {
                         ta.append("Valid token required to delete file. Please get a token first using gettoken.\n");
