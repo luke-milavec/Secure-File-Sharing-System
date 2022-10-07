@@ -61,7 +61,8 @@ For the Extra-Credit GUI Client App:
         1. Group Server
         2. File Server
 
-        Click on the tab
+        Click on the tab to view commands for the server. Click on a button to run a command, 
+        and enter any information it asks for if a dialog box pops up. The commands work
+        the same as ClientTerminalApp which is described above.
 
-
-
+        Responses from the client app or server are shown in the gray panel to the right. 
