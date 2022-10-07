@@ -1,37 +1,18 @@
-FileSharing Usage Information
+Client Swing Application
 
-USAGE:
-Start the Group Server: 
-    In a terminal, type "java RunGroupServer [(optional) port number]"
-    - When the group server is first started, there are no users or groups. 
-    - Since there must be an administrator of the system, the user is prompted 
-    via the console to enter a username. This name becomes the first user and is a member of the ADMIN group. No other groups exist. 
-    - The group server will by default select (and print out) a random port, but a custom port can be passed as the first
-    command line argument.
+We have created a simple GUI using Java Swing that showcases all commands as buttons. 
+When each button is pressed, a small window or 2 will pop up prompting for the appropriate information based on 
+what command you have selected.
+    - For the prompts for connecting to both the File Server and Group Server, you will enter the server name
+    in the first window (example: localhost) and then the port number in the second window.
 
-Start the File Server: 
-    In a terminal, type "java RunFileServer [(optional) port number]" 
-    - The file server will create a shared_files directory inside the working directory if one does not exist. 
-    - The file server is now online. The file server will by default select (and print out) a random port, but a custom port can be passed as the first
-    command line argument.
+Helpful output will display in the same window to inform you on successes and errors when running the commands.
+To disconnect from the servers, the disconnect button only disconnects the client. The servers will stay running.
+All of the commands are the same as the ClientTerminalApp with the exception of "help" since there are buttons to
+display all commands for the user now and "q", since to exit the application the user can hit the "X" in the top
+right corner.
 
-Reset the File server:
-    - Delete file named FileList.bin 
-    - Delete directory named shared_files
-
-Reset the Group Server:
-    - Delete file named UserList.bin 
-    - Delete file named GroupList.bin
-
-
- Starting Client App:
-    1)  In a terminal, type "java ClientTerminalApp"
-    2)  There will be a prompt for login, type whatever username you desire
-            - Typing ADMIN makes you administrator and you will have admin privileges
-    3)  All command options will be listed
-    
-    Commands:
-        help                                                    Shows the list of valid commands.
+Commands:
         relog                                                   Re-login to app, perhaps to change accounts.
         connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified.
         disconnect                                              Disconnect current connection to file and/or group server.
@@ -49,7 +30,3 @@ Reset the Group Server:
             upload   <srcFile> <destFile> <group>               Upload <sourceFile> to file server as a file of <group>.
             listfiles                                           List all files that the logged in user has access to via their token.
             delete <filename>                                   Delete file <filename> from server.
-        q                                                       Close the application.
-
-
-

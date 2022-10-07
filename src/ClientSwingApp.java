@@ -1,8 +1,6 @@
 import javax.swing.*;
 import java.awt.event.*; 
 import java.util.List;
-import java.awt.Color;
-import javax.swing.UIManager;
 
 
 public class ClientSwingApp extends JFrame {
@@ -18,11 +16,9 @@ public class ClientSwingApp extends JFrame {
         fClient = new FileClient();
         token = null;
         frame =  new JFrame();
-        Color darkpurp = new Color(48,25,52);
 
-        frame.setTitle("File Sharing Application");
+        frame.setTitle("Group-Based File Sharing Application");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setBackground(darkpurp);
 
         username=JOptionPane.showInputDialog(frame,"Enter User Name"); 
 
