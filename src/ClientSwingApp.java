@@ -340,21 +340,27 @@ public class ClientSwingApp extends JFrame {
             }  
         };
         JButton b15=new JButton("Disconnect");  
-        b15.setBounds(800,150,300,75);  
+        b15.setBounds(800,150,300,50);  
         b15.addActionListener(disconnectListener); 
 
         JButton b17 = new JButton("Disconnect");
-        b17.setBounds(800,150,300,75);
+        b17.setBounds(800,150,300,50);
         b17.addActionListener(disconnectListener);
 
-        JButton b16 = new JButton("Relog");
-        b16.setBounds(100, 150, 300, 75);
-        b16.addActionListener(new ActionListener(){
+        ActionListener relogListener = new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 ta.setText(null);
                 login();
             }
-        });
+        };
+        JButton b16 = new JButton("Relog"); // could technically remove relog from filer server options
+        b16.setBounds(100, 150, 300, 50);
+        b16.addActionListener(relogListener);
+
+        JButton bGRelog = new JButton("Relog"); 
+        bGRelog.setBounds(100, 150, 300, 50);
+        bGRelog.addActionListener(relogListener); 
+
 
         JPanel groupButtons = new JPanel();
         groupButtons.add(b2);
@@ -366,8 +372,9 @@ public class ClientSwingApp extends JFrame {
         groupButtons.add(b8);
         groupButtons.add(b9);
         groupButtons.add(b10);
+        groupButtons.add(bGRelog);
         groupButtons.add(b15);
-        groupButtons.add(b16);
+        
 
         JPanel fileButtons = new JPanel();
         fileButtons.add(b1);
@@ -378,8 +385,8 @@ public class ClientSwingApp extends JFrame {
         fileButtons.add(b16);
         fileButtons.add(b17);
 
-        groupButtons.setLayout(new GridLayout(11, 1, 5, 5));
-        fileButtons.setLayout(new GridLayout(8, 1, 5, 5));
+        groupButtons.setLayout(new GridLayout(12, 1, 5, 5));
+        fileButtons.setLayout(new GridLayout(10, 1, 5, 5));
 
         tabButtonPane.addTab("Group Server", groupButtons);
         tabButtonPane.addTab("File Server", fileButtons);
@@ -412,8 +419,6 @@ public class ClientSwingApp extends JFrame {
         
         return true; // For now there are no checks 
     }
-
-
 
     public static void main(String[] args) {
         new ClientSwingApp();
