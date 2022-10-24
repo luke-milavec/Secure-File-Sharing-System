@@ -41,32 +41,6 @@ your group has decided to use to address threats T1–T4.</p>
       <h2>Threat T1: Unauthorized Token Issuance</h2>
 <!-- BEGIN CHANGES HERE -->
 
-<p>Begin this section by describing threat T1. This may include describing
-examples of the threat being exploited by an adversary, a short discussion of
-why this threat is problematic and needs to be addressed, and/or diagrams
-showing how the threat might manifest in your group’s insecure
-implementation.</p>
-
-<p>Next, provide a short description of the mechanism that you chose to
-implement to protect against this threat. For interactive protocols, include
-diagrams explaining the messages exchanged between participating principals (use
-html &lt;img&gt; tag to import such images). Be sure to explain any
-cryptographic choices that your group makes: What types of algorithms, modes of
-operation, and/or key lengths did you choose? <b>Why?</b> If shared keys are
-needed, how are they exchanged? Recall that security is not absolute nor are any
-tools appropriate for all situations; every component of your design should be
-intentional and justified relative to the given threat model.</p>
-
-<p>Finally, provide a short argument addressing why your proposed mechanism
-sufficiently addresses this particular threat. This argument should address the
-correctness of your approach, as well as its overall security. For example, if
-your mechanism involves a key agreement or key exchange protocol, you should
-argue that both parties agree on the same key (correctness) and that no other
-party can figure out the key (security). You do not need a formal proof, but you
-should convince me that an attacker can no longer exploit each threat.</p>
-
-<p>Remove these instructions and examples from your final submission.</p>
-
 <p>Threat 1 is the threat of the group server granting an illegitimate user a token they are not authorized to have. If this threat was left unguarded, a user Alice could request a different user’s, Bob’s, token and use it to get access to files she is not allowed to, undermining any sort of security function groups and tokens have. If Bob is an owner of a group she could add other unauthorized users to a group or even delete it entirely along with all of its files. 
 
     To make sure that tokens are only given to users that the token belong to, we will adopt an asymmetric authentication protocol.  To begin, all users will be created by an admin using the “cuser” command which will create a username and also an RSA-2048 bit keypair consisting of a private, Ku^-1 and public key KU. The private key will be stored out-of-bound by the user. We chose RSA due to the level of assurance that has been established over the years with its widespread use and a key size of 2048 because a 2048 bit key is the current NIST recommendation.  
@@ -84,9 +58,16 @@ should convince me that an attacker can no longer exploit each threat.</p>
     </section>
     <section id="threat2">
       <h2>Threat T2: Token Modification/Forgery</h2>
-<!-- BEGIN CHANGES HERE -->
 
-<p>Repeat the steps as for Threat T1. Remove these instructions from your final submission.</p>
+      <p>Threat 2 is the threat of a user modifying their token to grant them access to more groups/files than they should or forging someone else’s token to impersonate them. Under the current model, Alice could properly authenticate with the group server and get a token giving her access to the groups and files she is a member of, let's say groups A and B and files 1 and 2, but then modify the token to also grant her access to group C and file 3. This is a problem because file 3 could contain sensitive information not meant for Alice. She could even add herself to the admin group and delete users, add new illegitimate users to existing groups, and in general wreck the entire system. Alice could also forge a token to look like another user to get access to the specific groups and files the user does. Also an attacker completely unknown to the system could theoretically create a token from scratch resembling the one produced by the Group server to get unauthorized access. This is possible under the current model because there is no mechanism for file servers to be able to determine whether or not a token has been modified since the group server issued it. 
+
+        The solution is using digital signatures to detect modified/forged tokens and prevent access when detected. The user and group server will first mutually authenticate and establish a shared secret as described above before a user requests a token. Once completed and upon a token request, the group server will create the token as before, but also hash the token using SHA-256 (to reduce the size) and sign the hash using its private RSA key KS^-1. It will then send both the token and the signature to the user. 
+        
+        To use the token, the user will first mutually authenticate with the file server and establish a shared secret, the process of which is described in threat 3. Once completed, the user will hand both the token and the signature to the file server which will  then verify the signature using the group server’s public key KS, compute the hash of the token using the same algorithm as the group server, and compare the two hashes to check for a match. The file server will have access to the group server’s public key because the user who creates the file server will register it with the file server. 
+        
+        Now if Alice modifies a token, she will not be able to sign it because she does not have access the the group server’s public key. If she signs it with her own key, the file server will not be able to decrypt it with the group server’s public key and will refuse the token. An attacker could not forge a token or construct one completely from scratch either because of the same reason.  
+        </p>
+<!-- BEGIN CHANGES HERE -->
 
 <!-- END CHANGES HERE -->
     </section>
