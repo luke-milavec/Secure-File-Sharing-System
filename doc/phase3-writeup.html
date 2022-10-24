@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CS 1653 Project P3 Writeup</title>
+  <style>
+/* BEGIN CHANGES HERE */
+
+/* In this section, you may add CSS styling if desired.
+ * Be sure your writeup still prints legibly. */
+header {
+  text-align: center;
+}
+
+/* END CHANGES HERE */
+  </style>
+  <body>
+    <header>
+      <h1>CS 1653 Project P3 Writeup</h1>
+      <h2>
+<!-- BEGIN CHANGES HERE -->
+
+Add your names and Pitt email addresses here
+Taha Ahmad - taa95@pitt.edu
+
+<!-- END CHANGES HERE -->
+      </h2>
+    </header>
+    <section id="overview">
+      <h2>Overview</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>In this section, broadly overview the types of cryptographic techniques that
+your group has decided to use to address threats T1–T4.</p>
+
+<p>Remove these instructions from your final submission.</p>
+
+<!-- END CHANGES HERE -->
+    </section>
+    <section id="threat1">
+      <h2>Threat T1: Unauthorized Token Issuance</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>Begin this section by describing threat T1. This may include describing
+examples of the threat being exploited by an adversary, a short discussion of
+why this threat is problematic and needs to be addressed, and/or diagrams
+showing how the threat might manifest in your group’s insecure
+implementation.</p>
+
+<p>Next, provide a short description of the mechanism that you chose to
+implement to protect against this threat. For interactive protocols, include
+diagrams explaining the messages exchanged between participating principals (use
+html &lt;img&gt; tag to import such images). Be sure to explain any
+cryptographic choices that your group makes: What types of algorithms, modes of
+operation, and/or key lengths did you choose? <b>Why?</b> If shared keys are
+needed, how are they exchanged? Recall that security is not absolute nor are any
+tools appropriate for all situations; every component of your design should be
+intentional and justified relative to the given threat model.</p>
+
+<p>Finally, provide a short argument addressing why your proposed mechanism
+sufficiently addresses this particular threat. This argument should address the
+correctness of your approach, as well as its overall security. For example, if
+your mechanism involves a key agreement or key exchange protocol, you should
+argue that both parties agree on the same key (correctness) and that no other
+party can figure out the key (security). You do not need a formal proof, but you
+should convince me that an attacker can no longer exploit each threat.</p>
+
+<p>Remove these instructions and examples from your final submission.</p>
+
+<p>Threat 1 is the threat of the group server granting an illegitimate user a token they are not authorized to have. If this threat was left unguarded, a user Alice could request a different user’s, Bob’s, token and use it to get access to files she is not allowed to, undermining any sort of security function groups and tokens have. If Bob is an owner of a group she could add other unauthorized users to a group or even delete it entirely along with all of its files. 
+
+    To make sure that tokens are only given to users that the token belong to, we will adopt an asymmetric authentication protocol.  To begin, all users will be created by an admin using the “cuser” command which will create a username and also an RSA-2048 bit keypair consisting of a private, Ku^-1 and public key KU. The private key will be stored out-of-bound by the user. We chose RSA due to the level of assurance that has been established over the years with its widespread use and a key size of 2048 because a 2048 bit key is the current NIST recommendation.  
+    
+    Upon the user’s first connection to the group server, the user will send their public key to the server which will store the public key in a list of keys it keeps of users. A user who is able to prove they have the private key associated with that public key will be given access to the token associated with the account. Also, the first time the user connects to the group server, the latter will display its public key to the user, and similar to SSH, the user will be responsible for verifying out-of-band with an Admin that the key is legitimate. The client app will maintain a list of public keys of servers it has connected to in the past.
+    
+    Mutual authentication and the establishment of a session will take place using Diffie-Helman. To initiate a connection to the server, a user will first choose a random ‘a’  from a public finite cyclic group G of large prime order q, along with a public g generator. They will compute g^a (mod q) and also sign  a SHA-256 hash of it with their private RSA key KU^-1. The hash is required because g^a (mod q) would be too long (because we will pick large primes to make it hard to brute-force) to sign with RSA otherwise. SHA-2 is chosen because it is considered secure currently unlike the Mx series or SHA-1. They will then send g^a (mod q) and the signed hash along with their RSA public key (as a marker for who they are) to the server. Upon receiving this, the group server will choose an ‘b’ in the same group, compute g^b (mod q), sign a hash of it with its private RSA key KS^-1, and send both to the user. Both the user and the server will then compute a shared secret K = g^(ab) (mod q) which will be used to derive symmetric session keys. 
+    
+    Since asymmetric ciphers are slow and are limited in the size of data that can be encrypted, the rest of the session will be conducted using AES-256 symmetric key protocol. The  encryption key for the AES-256 protocol will be  Ke = SHA-256(K || H || “AES Confidentiality”) where H is a SHA-256 hash of the messages up to this point. We chose a 256 bit AES key because it is long enough to be considered impossible to brute force given modern methods and hardware and because it works well with SHA-2’s output because that is also 256 bits. The block mode will be CBC, which is safe against replay attacks unlike something like ECB, and with the secure PKCS7Padding  padding scheme.
+    
+    Going back to threat 1, Alice, given that she does not have access to Bob’s private key in this scenario will not be able to sign g^a (mod q) and so won’t be able to derive the shared secret to be able to get the token. 
+    </p>
+
+<!-- END CHANGES HERE -->
+    </section>
+    <section id="threat2">
+      <h2>Threat T2: Token Modification/Forgery</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>Repeat the steps as for Threat T1. Remove these instructions from your final submission.</p>
+
+<!-- END CHANGES HERE -->
+    </section>
+    <section id="threat3">
+      <h2>Threat T3: Unauthorized File Servers</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>Repeat the steps as for Threat T1. Remove these instructions from your final submission.</p>
+
+<!-- END CHANGES HERE -->
+    </section>
+    <section id="threat4">
+      <h2>Threat T4: Information Leakage via Passive Monitoring</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>Repeat the steps as for Threat T1. Remove these instructions from your final submission.</p>
+
+<!-- END CHANGES HERE -->
+    </section>
+    <section id="discussion">
+      <h2>Discussion</h2>
+<!-- BEGIN CHANGES HERE -->
+
+<p>Conclude with a paragraph or two discussing the interplay between your
+proposed mechanisms, and commenting on the design process that your group
+followed. Did you discuss other ideas that didn’t pan out before settling on the
+above-documented approach? Did you end up designing a really interesting
+protocol suite that addresses multiple threats at once? Use this space to show
+off your hard work!</p>
+
+<p>If your group did any extra credit, please discuss that in this section, as
+well.</p>
+
+<p>Remove these instructions and examples from your final submission.</p>
+
+<!-- END CHANGES HERE -->
+    </section>
+  </body>
+</html>
