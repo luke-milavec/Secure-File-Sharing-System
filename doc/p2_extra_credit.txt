@@ -1,6 +1,9 @@
 Client Swing Application
 
-We have created a simple GUI using Java Swing that showcases all commands as buttons. 
+We created a GUI version of the client application using Java Swing that showcases all commands as buttons. 
+There are 2 tabs, one for Group Server and one for File Server. Commands are button based, and client and 
+server responses are shown in a gray panel towards the right. 
+
 When each button is pressed, a small window or 2 will pop up prompting for the appropriate information based on 
 what command you have selected.
     - For the prompts for connecting to both the File Server and Group Server, you will enter the server name
@@ -12,9 +15,11 @@ All of the commands are the same as the ClientTerminalApp with the exception of 
 display all commands for the user now and "q", since to exit the application the user can hit the "X" in the top
 right corner.
 
+The following help section still applies except the commands are buttons and items in <> will be popup dialog boxes
+instead. 
 Commands:
         relog                                                   Re-login to app, perhaps to change accounts.
-        connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified.
+        connect <server> <port>                                 Connect to a file or group server at the port specified.
         disconnect                                              Disconnect current connection to file and/or group server.
         group commands:                                         Must be connected to group server. Commands other than gettoken require valid token.
             gettoken                                            Fetch a token for the user that is logged in.

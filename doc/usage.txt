@@ -1,6 +1,7 @@
 FileSharing Usage Information
-
 USAGE:
+cd into src directory
+
 Start the Group Server: 
     In a terminal, type "java RunGroupServer [(optional) port number]"
     - When the group server is first started, there are no users or groups. 
@@ -51,5 +52,17 @@ Reset the Group Server:
             delete <filename>                                   Delete file <filename> from server.
         q                                                       Close the application.
 
+For the Extra-Credit GUI Client App:
+    run "java ClientSwingApp" on the terminal
 
+    Type ADMIN or another username into the dialog box that pops up to login
 
+    There are two tabs on the top left of the box that pops up: 
+        1. Group Server
+        2. File Server
+
+        Click on the tab to view commands for the server. Click on a button to run a command, 
+        and enter any information it asks for if a dialog box pops up. The commands work
+        the same as ClientTerminalApp which is described above.
+
+        Responses from the client app or server are shown in the gray panel to the right. 

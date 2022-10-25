@@ -2,7 +2,6 @@ import javax.swing.*;
 import java.awt.event.*; 
 import java.util.List;
 import java.awt.Color;
-import javax.swing.UIManager;
 import java.awt.GridLayout;
 import java.awt.Font;
 
@@ -50,7 +49,6 @@ public class ClientSwingApp extends JFrame {
                 ta.append("Connected to file server: " + server + " on port " + port + "\n");
             }
         });  
-        // frame.add(b1);
 
         JButton b2=new JButton("Connect to Group Server");  
         b2.setBounds(200,0,200,50);  
@@ -62,7 +60,6 @@ public class ClientSwingApp extends JFrame {
                 ta.append("Connected to group server: " + server + " on port " + port + "\n");
             }  
         });  
-        // frame.add(b2);
 
         JButton b3=new JButton("Get Token");  
         b3.setBounds(400,0,200,50);  
@@ -78,7 +75,6 @@ public class ClientSwingApp extends JFrame {
                 }
             }
         });  
-        // frame.add(b3);
 
         JButton b4=new JButton("Create Group");  
         b4.setBounds(600,0,200,50);  
@@ -102,14 +98,13 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        // frame.add(b4);
 
         JButton b5=new JButton("Create User");  
         b5.setBounds(800,0,200,50);  
         b5.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 if (username != null && gClient.isConnected()) {
-                    if (username.equals("ADMIN")) { // Security measure on client side as well
+                    // if (username.equals("ADMIN")) { // Security measure on client side as well
                         if (token != null) {
                             String cname = JOptionPane.showInputDialog(frame,"Enter Name"); 
                             if (!gClient.createUser(cname, token)){
@@ -121,13 +116,12 @@ public class ClientSwingApp extends JFrame {
                         } else {
                             ta.append("Token required to create username.\n");
                         }
-                    } else {
-                        ta.append("Permission Denied.\n");
-                    }
+                    // } else {
+                    //     ta.append("Permission Denied.\n");
+                    // }
                 }
             }  
         });  
-        // frame.add(b5);
 
         JButton b6=new JButton("Delete Group");  
         b6.setBounds(0,75,200,50);  
@@ -150,14 +144,13 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        // frame.add(b6);
 
         JButton b7=new JButton("Delete User");  
         b7.setBounds(200,75,200,50);  
         b7.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 if (username != null && gClient.isConnected()) {
-                    if (username.equals("ADMIN")) { // Security measure on client side as well
+                    // if (username.equals("ADMIN")) { // Security measure on client side as well
                         if (token != null) {
                             String cname = JOptionPane.showInputDialog(frame,"Enter Name"); 
                         
@@ -170,13 +163,12 @@ public class ClientSwingApp extends JFrame {
                         } else {
                             ta.append("Token required to create username. Please get a token first using gettoken\n");
                         }
-                    } else {
-                        ta.append("Permission Denied.\n");
-                    }
+                    // } else {
+                    //     ta.append("Permission Denied.\n");
+                    // }
                 }
             }  
         });  
-        // frame.add(b7);
 
         JButton b8=new JButton("Add User to Group");  
         b8.setBounds(400,75,200,50);  
@@ -201,7 +193,6 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        // frame.add(b8);
 
         JButton b9=new JButton("Delete User From Group");  
         b9.setBounds(600,75,200,50);  
@@ -227,7 +218,6 @@ public class ClientSwingApp extends JFrame {
                 
             }  
         });  
-        //frame.add(b9);
 
         JButton b10=new JButton("List Group Members");  
         b10.setBounds(800,50,200, 50);  
@@ -254,7 +244,6 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        //frame.add(b10);
 
         JButton b11=new JButton("Download");  
         b11.setBounds(0,150,200,75);  
@@ -276,7 +265,6 @@ public class ClientSwingApp extends JFrame {
                 }
             }  
         });  
-        //frame.add(b11);
 
         JButton b12=new JButton("Upload");  
         b12.setBounds(200,150,200,75);  
@@ -299,7 +287,6 @@ public class ClientSwingApp extends JFrame {
                 }     
             }  
         });  
-        //frame.add(b12);
 
         JButton b13=new JButton("Delete");  
         b13.setBounds(400,150,200,75);  
@@ -324,7 +311,6 @@ public class ClientSwingApp extends JFrame {
                 }     
             }  
         }); 
-        //frame.add(b13);
 
         JButton b14=new JButton("List Files");  
         b14.setBounds(600,150,200,75);  
@@ -345,30 +331,38 @@ public class ClientSwingApp extends JFrame {
                 }  
             }  
         });  
-        //frame.add(b14);
 
-        JButton b15=new JButton("Disconnect");  
-        b15.setBounds(800,150,300,75);  
-        b15.addActionListener(new ActionListener(){  
+        ActionListener disconnectListener =  new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 gClient.disconnect();
                 ta.append("Disconnected from group server\n");
                 System.out.println("Disconnected from group server");
                 fClient.disconnect();
                 ta.append("Disconnected from file server(s)\n");
-                System.out.println("Disconnected from file server(s)");
+                System.out.println("Disconnected from file server");
             }  
-        });  
-        //frame.add(b15);
+        };
+        JButton b15=new JButton("Disconnect");  
+        b15.setBounds(800,150,300,50);  
+        b15.addActionListener(disconnectListener); 
 
-        JButton b16 = new JButton("Relog");
-        b16.setBounds(100, 150, 300, 75);
-        b16.addActionListener(new ActionListener(){
+        JButton b17 = new JButton("Disconnect");
+        b17.setBounds(800,150,300,50);
+        b17.addActionListener(disconnectListener);
+
+        ActionListener relogListener = new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 ta.setText(null);
                 login();
             }
-        });
+        };
+        JButton b16 = new JButton("Relog"); // could technically remove relog from filer server options
+        b16.setBounds(100, 150, 300, 50);
+        b16.addActionListener(relogListener);
+
+        JButton bGRelog = new JButton("Relog"); 
+        bGRelog.setBounds(100, 150, 300, 50);
+        bGRelog.addActionListener(relogListener); 
 
 
         JPanel groupButtons = new JPanel();
@@ -381,8 +375,9 @@ public class ClientSwingApp extends JFrame {
         groupButtons.add(b8);
         groupButtons.add(b9);
         groupButtons.add(b10);
+        groupButtons.add(bGRelog);
         groupButtons.add(b15);
-        groupButtons.add(b16);
+        
 
         JPanel fileButtons = new JPanel();
         fileButtons.add(b1);
@@ -390,29 +385,24 @@ public class ClientSwingApp extends JFrame {
         fileButtons.add(b12);
         fileButtons.add(b13);
         fileButtons.add(b14);
-        fileButtons.add(b15);
-        groupButtons.add(b16);
+        fileButtons.add(b16);
+        fileButtons.add(b17);
 
-        groupButtons.setLayout(new GridLayout(11, 1, 5, 5));
-        fileButtons.setLayout(new GridLayout(7, 1, 5, 5));
-        //groupButtons.setAlignmentX(groupButtons.RIGHT_ALIGNMENT); //Centres the button
+        groupButtons.setLayout(new GridLayout(12, 1, 5, 5));
+        fileButtons.setLayout(new GridLayout(10, 1, 5, 5));
 
         tabButtonPane.addTab("Group Server", groupButtons);
         tabButtonPane.addTab("File Server", fileButtons);
         tabButtonPane.setSize(250, 500);
 
-        
         frame.add(tabButtonPane);
         tabButtonPane.setVisible(true);
-
         frame.setSize(800, 500);  
-
-        frame.setLayout(null);//using no layout managers  
+        frame.setLayout(null); // using no layout managers  
         frame.setVisible(true); 
     }
 
     public boolean login() {
-
         // In case of relogging, close out previous session. 
         token = null;
         username = null;
@@ -427,17 +417,13 @@ public class ClientSwingApp extends JFrame {
 
         username=JOptionPane.showInputDialog(frame,"Enter User Name"); 
         
-        // System.out.println("Enter username to login: ");
-        // username = in.nextLine();
         gClient = new GroupClient();
         fClient = new FileClient();
         
         return true; // For now there are no checks 
     }
 
-
-
-    public static void main(String[] args){
+    public static void main(String[] args) {
         new ClientSwingApp();
     }
 }
