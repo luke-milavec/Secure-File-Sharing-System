@@ -104,7 +104,7 @@ public class ClientSwingApp extends JFrame {
         b5.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 if (username != null && gClient.isConnected()) {
-                    if (username.equals("ADMIN")) { // Security measure on client side as well
+                    // if (username.equals("ADMIN")) { // Security measure on client side as well
                         if (token != null) {
                             String cname = JOptionPane.showInputDialog(frame,"Enter Name"); 
                             if (!gClient.createUser(cname, token)){
@@ -116,9 +116,9 @@ public class ClientSwingApp extends JFrame {
                         } else {
                             ta.append("Token required to create username.\n");
                         }
-                    } else {
-                        ta.append("Permission Denied.\n");
-                    }
+                    // } else {
+                    //     ta.append("Permission Denied.\n");
+                    // }
                 }
             }  
         });  
@@ -150,7 +150,7 @@ public class ClientSwingApp extends JFrame {
         b7.addActionListener(new ActionListener(){  
             public void actionPerformed(ActionEvent e){  
                 if (username != null && gClient.isConnected()) {
-                    if (username.equals("ADMIN")) { // Security measure on client side as well
+                    // if (username.equals("ADMIN")) { // Security measure on client side as well
                         if (token != null) {
                             String cname = JOptionPane.showInputDialog(frame,"Enter Name"); 
                         
@@ -163,9 +163,9 @@ public class ClientSwingApp extends JFrame {
                         } else {
                             ta.append("Token required to create username. Please get a token first using gettoken\n");
                         }
-                    } else {
-                        ta.append("Permission Denied.\n");
-                    }
+                    // } else {
+                    //     ta.append("Permission Denied.\n");
+                    // }
                 }
             }  
         });  
