@@ -115,7 +115,9 @@
       considered safe because it is considered infeasible to brute force given the available cryptanalysis currently. Once it
       is initialized, a key pair is generated giving the user a public (k<sub>ecu</sub>) and private 
       (k<sub>ecu</sub><super>-1</super>) key. The user will then send their public key, signed with their RSA private key,
-      to the server. The group server will do the exact same steps, initializing a Bouncy Castle ECDH key generator, generating
+      to the server. The public key does not need to be hashed first since its size will not be large enough to cause trouble
+      encrypting with RSA.
+      The group server will do the exact same steps, initializing a Bouncy Castle ECDH key generator, generating
       a key pair ((k<sub>ecs</sub>), k<sub>ecs</sub><super>-1</super>), and send the public key signed by its RSA private key.
       Using a key agreement, their private ECDH key, and the public ECDH key recieved from the other, the user and group server will
       will then generate a shared secret, K<sub>ab</sub>, which will be used to derive symmetric session keys (process described in T3).
@@ -179,7 +181,7 @@
       as to make sure it is the actual user sending it, and because it keeps messages consistent because HMACs are otherwise
       necessary and simplifies the implementation.
     </p>
-    <p><strong>Note: how specifially token serialization is handled in order to be able to encrypt/sign it is describes in T4</strong></p>
+    <p><strong>Note: how specifially token serialization is handled in order to be able to encrypt/sign it is described in T4</strong></p>
     <div class="img">
       <img src="./img/token.jpg" alt="Diagram showing token acquisition protocol.">
     </div>
@@ -225,8 +227,10 @@
 
     <p> An issue with the above implementation is that asymmetric ciphers are slow and are limited in the amount of data
       they can encrypt. Therefore the rest of the session will be conducted using AES-256 symmetric key protocol with
-      CBC mode and PKCS7Padding. The encryption key for the AES-256 protocol will be K<sub>e</sub> =
-       SHA-256(K<sub>ab</sub> || “AES Confidentiality”).
+      CBC mode and PKCS7Padding. The block mode is CBC because it is secure against replay attacks unlike ECB, and
+      PKCS7Padding because it can handle different multiples of bytes and is a secure RFC standard padding scheme.
+      The encryption key for the AES-256 protocol will be K<sub>e</sub> =
+      SHA-256(K<sub>ab</sub> || “AES Confidentiality”).
       The integrity key will be K<sub>i</sub> = SHA-256(K<sub>ab</sub> || “AES Integrity”). Normally the derivation of these
       symmetric keys would also concatenate an H value which is a hash of all of the messages that have taken place up to this
       point. This binds the mutual authentication to the session, but it is unneeded here because the Diffie-Helman key exchange
@@ -270,9 +274,16 @@
     </p>
     <p>
       In order to transmit objects, like Token and array lists, we will be using Java SealedObject to serialize and
-      encrypt the Token. This allows us to easily encrypt and decrypt objects without concerns of serialization vulnerabilities.
-      Improper serialization could lead to information leakage in which a passive monitor could deduce the type of the
-      encrypted object.
+      encrypt the Token. Improper serialization could lead to information leakage in which a passive monitor could deduce the type of the
+      encrypted object. Java SealedObject takes a serializable object (e.g. token) and an initialized cipher which in our
+      case will be AES-256 in CBC mode with PKCS7Padding and with symmetric key K<sub>e</sub>, and encrypts the object with
+      given cipher and key. This allows us to easily encrypt and decrypt objects without concerns of serialization vulnerabilities.
+    </p>
+    <p>
+      <strong>Alternate approach:</strong> serialize by: issuer || ~ || subject || ~ || timestamp || ~ || group1 || ~ || group2 || ~ || ....
+      where ~ is a separator which is checked to make sure is not a character in subject name or any group name so that attackers
+      cannot conduct a serialization attack where they create usernames or groupnames which merge with the following field resulting
+      in incorrect deserialization. The serialized version can then be hashed
     </p>
     <p>Under the trust model for phase 3, group and file servers are assumed to be secure, and the only snooping threat
       is in transit.
