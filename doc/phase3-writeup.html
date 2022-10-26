@@ -119,6 +119,12 @@
       token.
     </p>
 
+    <p>
+    We also added a timestamp field to the token in order to track the expiration of tokens. Tokens expire after 1 hour to ensure users are 
+    properly authorized by the group server. Without this, tokens could be indefinitely reused, allowing for users to gain access to groups 
+    they have been previously removed from. 
+    File servers will reject any expired tokens and inform the user to request a new token from the group server.
+    </p>  
     <!-- END CHANGES HERE -->
   </section>
   <section id="threat2">
@@ -267,6 +273,11 @@
       SHA-256 is vulnerable to extension attacks, this HMAC scheme is used to prevent an attacker from modifying the
       message and extending the hash.
     </p>
+    <p>
+      In order to transmit objects, like Token and array lists, we will be using Java SealedObject to serialize and encrypt the Token. 
+      This allows us to easily encrypt and decrypt objects without concerns of serialization vulnerabilities. 
+      Improper serialization could lead to information leakage in which a passive monitor could deduce the type of the encrypted object.
+    </p>
     <p>Under the trust model for phase 3, group and file servers are assumed to be secure, and the only snooping threat
       is in transit.
     </p>
@@ -277,17 +288,17 @@
     <h2>Discussion</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>Conclude with a paragraph or two discussing the interplay between your
-      proposed mechanisms, and commenting on the design process that your group
-      followed. Did you discuss other ideas that didn’t pan out before settling on the
-      above-documented approach? Did you end up designing a really interesting
-      protocol suite that addresses multiple threats at once? Use this space to show
-      off your hard work!</p>
+    <p>These mechanisms work in tandem to ensure confidentiality and integrity while exchanging information. 
+      Handshake A ensures a secure key exchange between client and server while AES and HMACs ensure secure communication. 
+      This core design addresses the T1,T3 and T4 while T2 is covered by the use of a signed version of the token. Our group came 
+      to this solution by iterating upon our design with each added threat. First Handshake A as our solution to T1 provided a basis 
+      for server-client key exchange. Our solution T3 and T4 built on this idea by using AES and HMACs along with the shared key generated 
+      in Handshake A. To incorporate T2 required a modification to Handshake A for the file server and user to use in which the user sends a 
+      token signed by the group server to ensure the integrity of the token. We later addressed information leakage and integrity issues with 
+      Tokens by serializing the Token using SealObject and adding a timestamp field to Tokens for the purpose of tracking expiration. 
+      We thought about implementing a password system, but this would require us to flush out an entire system to share, store and access.</p>
 
-    <p>If your group did any extra credit, please discuss that in this section, as
-      well.</p>
-
-    <p>Remove these instructions and examples from your final submission.</p>
+    
 
     <!-- END CHANGES HERE -->
   </section>
