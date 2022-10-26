@@ -67,8 +67,7 @@
       with a Diffie-Helman exchange, to create a shared symmetric key. This allows for users and servers to communicate
       effectively
       while preserving confidentiality using AES. SHA-256 and HMAC protocol are integral to the systems protocol because
-      it is used alongside
-      AES and RSA to ensure the integrity of the messages while in transit.
+      it is used alongside RSA to ensure the integrity of the messages while in transit.
     </p>
 
     <!-- END CHANGES HERE -->
@@ -100,38 +99,37 @@
     with its widespread use and a key size of 2048 because a 2048 bit key is the current NIST recommendation.
     <p>
       Upon the user’s first connection to the group server, the user will send their public key to the server
-      which will store the public key in a list of keys assigned to users. A user who is able to prove they
+      which will store the public key in a list of public keys or users it keeps. A user who is able to prove they
       have the private key associated with that public key will be given access to the token associated with
       the account. Also, the first time the user connects to the group server, the server will display its
       public key to the user and, similar to SSH, the user will be responsible for verifying out-of-band
       with an Admin that the key is legitimate. The client app will maintain a list of
-      public keys of servers it has connected to in the past.
+      public keys of servers it has connected to in the past. This is reasonable because the company setting
+      means users have easy out-of-band options to communicate with an admin, and because it is cached for
+      subsequent use, this is expected to be mainly a one time thing. 
     </p>
     <p>
-      Establishment of a secure session over an insecure network will take place using Elliptic Curve Diffie-Helman
-      adapted
-      from the bouncy castle library. To initiate a connection to the server, Diffie-Helman parameters are fetched and a
-      key
-      pair is generated with the elliptic curve and the parameters. The user now has a public and private key. The user
-      then
-      sends their public key (signed with their RSA public key) to the server. The group server will do the exact same
-      steps.
-      Using a key agreement and the elliptic curve Diffie-Helman algorithm as well as the provider Bouncy Castle, the
-      user and
-      the server will then generate a shared secret which will be used to derive symmetric session keys.
+      Establishment of a secure session over an insecure network will take place using Elliptic Curve Diffie-Hellman
+      adapted from the Bouncy Castle library. To initiate a connection to the server, the user will initialize a Bouncy Castle
+      Elliptic Curve Diffie-Hellman (ECDH) key generator using the "secp256k1" elliptic curve. This curve was chosen because it is 
+      considered safe because it is considered infeasible to brute force given the available cryptanalysis currently. Once it
+      is initialized, a key pair is generated giving the user a public (k<sub>ecu</sub>) and private 
+      (k<sub>ecu</sub><super>-1</super>) key. The user will then send their public key, signed with their RSA private key,
+      to the server. The group server will do the exact same steps, initializing a Bouncy Castle ECDH key generator, generating
+      a key pair ((k<sub>ecs</sub>), k<sub>ecs</sub><super>-1</super>), and send the public key signed by its RSA private key.
+      Using a key agreement, their private ECDH key, and the public ECDH key recieved from the other, the user and group server will
+      will then generate a shared secret which will be used to derive symmetric session keys.
     </p>
     <div class="img">
       <img src="./img/handshakeA.jpg" alt="Diagram of session establishment protocol.">
     </div>
 
-    <p>
-      We also added a timestamp field to the token in order to track the expiration of tokens. Tokens expire after 1
-      hour to ensure users are
-      properly authorized by the group server. Without this, tokens could be indefinitely reused, allowing for users to
-      gain access to groups
-      they have been previously removed from.
-      File servers will reject any expired tokens and inform the user to request a new token from the group server.
-    </p>
+    <p>Going back to threat 1, Alice, given that she does not have access to Bob’s private key in this scenario will not
+        be able to sign the ECDH public key she generated, and so the group server will not reciprocate by generating its own
+        ECDH public key and will therefore not be able to derive the shared secret to be able to get Bob's token.
+      </p>
+  
+
     <!-- END CHANGES HERE -->
   </section>
   <section id="threat2">
@@ -160,6 +158,14 @@
       It will then send the token, the signature, and the HMAC to the user.
 
     </p>
+    <p>
+        We also added a timestamp field to the token in order to track the expiration of tokens. Tokens expire after 1
+        hour to ensure users are
+        properly authorized by the group server. Without this, tokens could be indefinitely reused, allowing for users to
+        gain access to groups
+        they have been previously removed from.
+        File servers will reject any expired tokens and inform the user to request a new token from the group server.
+      </p>
     <p>To use the token, the user will first mutually authenticate with the file server and establish a shared secret,
       the process of which is described in threat 3. Once completed, the user will hand the token, the signature, and
       the HMAC
