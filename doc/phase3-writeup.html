@@ -57,6 +57,13 @@
       which is then used to produce shared symmetric keys used as session keys with AES with 256 bit keys in CBC mode.
       Public keys are verified out-of-band which is reasonable given a company scenario where out-of-band communication
       is possible and expected.
+      <br>
+      The threat model for this phase requires: group server and user authentication,  file server and user authentication, 
+      token integrity verification and protection against passive monitoring. The system uses RSA, SHA-256, HMACs, ECC, and 
+      AES to accomplish these goals. RSA is the standard solution for the key distribution problem which the system uses, along 
+      with a Diffie-Helman exchange, to create a shared symmetric key. This allows for users and servers to communicate effectively 
+      while preserving confidentiality using AES. SHA-256 and HMAC protocol are integral to the systems protocol because it is used alongside 
+      AES and RSA to ensure the integrity of the messages while in transit.
     </p>
 
     <!-- END CHANGES HERE -->
