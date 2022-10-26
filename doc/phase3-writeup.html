@@ -58,11 +58,16 @@
       Public keys are verified out-of-band which is reasonable given a company scenario where out-of-band communication
       is possible and expected.
       <br>
-      The threat model for this phase requires: group server and user authentication,  file server and user authentication, 
-      token integrity verification and protection against passive monitoring. The system uses RSA, SHA-256, HMACs, ECC, and 
-      AES to accomplish these goals. RSA is the standard solution for the key distribution problem which the system uses, along 
-      with a Diffie-Helman exchange, to create a shared symmetric key. This allows for users and servers to communicate effectively 
-      while preserving confidentiality using AES. SHA-256 and HMAC protocol are integral to the systems protocol because it is used alongside 
+      The threat model for this phase requires: group server and user authentication, file server and user
+      authentication,
+      token integrity verification and protection against passive monitoring. The system uses RSA, SHA-256, HMACs, ECC,
+      and
+      AES to accomplish these goals. RSA is the standard solution for the key distribution problem which the system
+      uses, along
+      with a Diffie-Helman exchange, to create a shared symmetric key. This allows for users and servers to communicate
+      effectively
+      while preserving confidentiality using AES. SHA-256 and HMAC protocol are integral to the systems protocol because
+      it is used alongside
       AES and RSA to ensure the integrity of the messages while in transit.
     </p>
 
@@ -102,36 +107,31 @@
       with an Admin that the key is legitimate. The client app will maintain a list of
       public keys of servers it has connected to in the past.
     </p>
-    <p>Mutual authentication and the establishment of a session will take place using Diffie-Helman. See Handshake A
-      diagram below. To initiate a connection to the server, a user will first choose a random ‘a’ from a public
-      finite cyclic group G of large prime order q, along with a public g generator. They will compute g<sup>a</sup>
-      (mod q)
-      and also sign a SHA-256 hash of it with their private RSA key K<sub>u</sub><sup>-1</sup>. The hash is required
-      because g<sup>a</sup> (mod q) would be too long (because we will pick large primes to make it hard to brute-force)
-      to sign with RSA otherwise. SHA-2 is chosen because it is considered secure currently unlike the Mx series or
-      SHA-1.
-      They will then send g<sup>a</sup> (mod q) and the signed hash along with
-      their RSA public key (as a marker for who they are) to the server. Upon receiving this, the group server will
-      choose a random ‘b’ in the same group, compute g<sup>b</sup> (mod q), sign a hash of it with its private RSA key
-      K<sub>s</sub><sup>-1</sup>, and send
-      both to the user. Both the user and the server will then compute a shared secret K = g<sup>ab</sup> (mod q) which
-      will be used to derive symmetric session keys.
+    <p>
+      Establishment of a secure session over an insecure network will take place using Elliptic Curve Diffie-Helman
+      adapted
+      from the bouncy castle library. To initiate a connection to the server, Diffie-Helman parameters are fetched and a
+      key
+      pair is generated with the elliptic curve and the parameters. The user now has a public and private key. The user
+      then
+      sends their public key (signed with their RSA public key) to the server. The group server will do the exact same
+      steps.
+      Using a key agreement and the elliptic curve Diffie-Helman algorithm as well as the provider Bouncy Castle, the
+      user and
+      the server will then generate a shared secret which will be used to derive symmetric session keys.
     </p>
     <div class="img">
-      <img src="./img/handshakeA.jpg" alt="Diagram of mutual auth and session establishment protocol.">
+      <img src="./img/handshakeA.jpg" alt="Diagram of session establishment protocol.">
     </div>
 
-    <p>Going back to threat 1, Alice, given that she does not have access to Bob’s private key in this scenario will not
-      be able to sign g<sup>a</sup> (mod q) and so won’t be able to derive the shared secret to be able to get the
-      token.
-    </p>
-
     <p>
-    We also added a timestamp field to the token in order to track the expiration of tokens. Tokens expire after 1 hour to ensure users are 
-    properly authorized by the group server. Without this, tokens could be indefinitely reused, allowing for users to gain access to groups 
-    they have been previously removed from. 
-    File servers will reject any expired tokens and inform the user to request a new token from the group server.
-    </p>  
+      We also added a timestamp field to the token in order to track the expiration of tokens. Tokens expire after 1
+      hour to ensure users are
+      properly authorized by the group server. Without this, tokens could be indefinitely reused, allowing for users to
+      gain access to groups
+      they have been previously removed from.
+      File servers will reject any expired tokens and inform the user to request a new token from the group server.
+    </p>
     <!-- END CHANGES HERE -->
   </section>
   <section id="threat2">
@@ -157,16 +157,21 @@
       user requests a token. Once completed and upon a token request, the group server will create the token as before,
       but also hash the token using SHA-256 (to reduce the size) and sign the hash using its private RSA key
       K<sub>s</sub><sup>-1</sup>.
-      It will then send both the token and the signature to the user.
+      It will then send the token, the signature, and the HMAC to the user.
 
     </p>
     <p>To use the token, the user will first mutually authenticate with the file server and establish a shared secret,
-      the process of which is described in threat 3. Once completed, the user will hand both the token and the signature
-      to the file server which will then verify the signature using the group server’s public key K<sub>s</sub>, compute
-      the hash
-      of the token using the same algorithm as the group server, and compare the two hashes to check for a match. The
-      file server will have access to the group server’s public key because the user who creates the file server will
-      register it with the file server.
+      the process of which is described in threat 3. Once completed, the user will hand the token, the signature, and
+      the HMAC
+      of the message to the file server which will then compute the HMAC to verify the integrity of the message.
+      Then the file server will verify the signature using the group server’s public key K<sub>s</sub>, compute the hash
+      using the same
+      algorithm as the group server, compare the two hashes to check for a match. The file server will have access to
+      the
+      group server’s public key because the user who creates the file server will register it with the file server.
+      Integrity
+      is largely covered here by the signed hash but, including the HMAC adds a layer of security and simlifies the
+      implementation.
 
     </p>
     <div class="img">
@@ -193,8 +198,9 @@
       could also download a file thinking it is legitimate but instead be given malware. This is because users currently
       connect to the file server and do not authenticate it in any way, instead just blindly handing it a token and
       downloading/uploading files.
+    </p>
 
-    <p>We will secure this threat using an approach similar to SSH and the protocol described in T1 for the group
+    <p>We will secure this threat using the same approach described in T1 for the group
       server. Algorithm and key size choices are made using the same reasoning described in T1. The first time a user
       connects to a file server, it will display its public key which the user will be responsible for verifying
       out-of-band.
@@ -202,28 +208,19 @@
       users will have methods of contacting the file server creator and/or an admin. The client app will maintain a list
       of public keys of file servers it has connected to in the past, so on subsequent connections to the file server,
       the user will know the server’s public key.
+      <br>
+      Connections to a file server will be secure by doing the same method mentioned in Threat 1 with Elliptic curves
+      and Diffie-Helman.
+      Refer back to T1 if needed.
 
     </p>
-    <p>To initiate a connection to the server, a user will first choose a random ‘a’ from a public finite cyclic group G
-      of large prime order q, along with a public g generator. They will then compute g<sup>a</sup> (mod q) and also
-      sign a SHA-256
-      hash of it with their private RSA key K<sub>u</sub><sup>-1</sup>. The hash is required because g<sup>a</sup> (mod
-      q) would be too long (because
-      we will pick large primes to make it hard to brute-force) to sign with RSA otherwise. They will then send
-      g<sup>a</sup> (mod
-      q) and the signed hash along with their RSA public key (as a marker for who they are) to the server. Upon
-      receiving this, the file server will choose a ‘b’ in the same group, compute g<sup>b</sup> (mod q), sign a hash of
-      it with
-      its private RSA key K<sub>s</sub><sup>-1</sup>, and send both to the user. Both the user and the server will then
-      compute a shared
-      secret K = g<sup>ab</sup> (mod q) which will be used to derive symmetric session keys.
 
     <p>Asymmetric ciphers are slow and are limited in the amount of data they can encrypt which will be a problem since
       files are expected to be much larger than the RSA key size. Therefore the rest of the session will be conducted
       using AES-256 symmetric key protocol with CBC mode and PKCS7Padding. The encryption key for the AES-256 protocol
-      will be K<sub>e</sub> = SHA-256(K<sub>ab</sub> || H || “AES Confidentiality”) where H is a SHA-256 hash of the
+      will be K<sub>e</sub> = SHA-256(K<sub>ab</sub> || “AES Confidentiality”) where H is a SHA-256 hash of the
       messages up to this
-      point. The integrity key will be K<sub>i</sub> = SHA-256(K<sub>ab</sub> || H || “AES Integrity”) where H is a
+      point. The integrity key will be K<sub>i</sub> = SHA-256(K<sub>ab</sub> || “AES Integrity”) where H is a
       SHA-256 hash of the
       messages up to this point. Every message sent between the client and servers will be encrypted by the sender using
       AES-256 in CBC mode with PKCS7Padding with K<sub>e</sub>. The sender will also create an HMAC using the message m
@@ -243,9 +240,7 @@
 
     </p>
     <p>Going back to the example, a user connecting to s can now be assured they are not actually connecting to an
-      impersonator because an impersonator would not be able to sign g<sup>a</sup> (mod q) because they will not have
-      s’s private
-      key.
+      impersonator because an impersonator would not be able to sign because they will not have s’s private key.
     </p>
 
     <!-- END CHANGES HERE -->
@@ -268,10 +263,10 @@
       AES-256 symmetric keys to provide confidentiality and integrity for all communications.
     </p>
     <p>How the symmetric keys provide confidentiality and integrity is as follows: </p>
-    <p>The encryption key for the AES-256 protocol will be K<sub>e</sub> = SHA-256(K<sub>ab</sub> || H || “AES
+    <p>The encryption key for the AES-256 protocol will be K<sub>e</sub> = SHA-256(K<sub>ab</sub> || “AES
       Confidentiality”) where H is a
-      SHA-256 hash of the messages up to this point. The integrity key will be K<sub>i</sub> = SHA-256(K<sub>ab</sub> ||
-      H || “AES Integrity”)
+      SHA-256 hash of the messages up to this point. The integrity key will be K<sub>i</sub> = SHA-256(K<sub>ab</sub>
+      || “AES Integrity”)
       where H is a SHA-256 hash of the messages up to this point. Every message sent between the client and servers will
       be encrypted by the sender using AES-256 in CBC mode with PKCS7Padding with K<sub>e</sub>. The sender will also
       create an
@@ -281,9 +276,11 @@
       message and extending the hash.
     </p>
     <p>
-      In order to transmit objects, like Token and array lists, we will be using Java SealedObject to serialize and encrypt the Token. 
-      This allows us to easily encrypt and decrypt objects without concerns of serialization vulnerabilities. 
-      Improper serialization could lead to information leakage in which a passive monitor could deduce the type of the encrypted object.
+      In order to transmit objects, like Token and array lists, we will be using Java SealedObject to serialize and
+      encrypt the Token.
+      This allows us to easily encrypt and decrypt objects without concerns of serialization vulnerabilities.
+      Improper serialization could lead to information leakage in which a passive monitor could deduce the type of the
+      encrypted object.
     </p>
     <p>Under the trust model for phase 3, group and file servers are assumed to be secure, and the only snooping threat
       is in transit.
@@ -295,17 +292,25 @@
     <h2>Discussion</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>These mechanisms work in tandem to ensure confidentiality and integrity while exchanging information. 
-      Handshake A ensures a secure key exchange between client and server while AES and HMACs ensure secure communication. 
-      This core design addresses the T1,T3 and T4 while T2 is covered by the use of a signed version of the token. Our group came 
-      to this solution by iterating upon our design with each added threat. First Handshake A as our solution to T1 provided a basis 
-      for server-client key exchange. Our solution T3 and T4 built on this idea by using AES and HMACs along with the shared key generated 
-      in Handshake A. To incorporate T2 required a modification to Handshake A for the file server and user to use in which the user sends a 
-      token signed by the group server to ensure the integrity of the token. We later addressed information leakage and integrity issues with 
-      Tokens by serializing the Token using SealObject and adding a timestamp field to Tokens for the purpose of tracking expiration. git push
-      We thought about implementing a password system, but this would require us to flush out an entire system to share, store and access.</p>
+    <p>These mechanisms work in tandem to ensure confidentiality and integrity while exchanging information.
+      Handshake A ensures a secure key exchange between client and server while AES and HMACs ensure secure
+      communication.
+      This core design addresses the T1,T3 and T4 while T2 is covered by the use of a signed version of the token. Our
+      group came
+      to this solution by iterating upon our design with each added threat. First Handshake A as our solution to T1
+      provided a basis
+      for server-client key exchange. Our solution T3 and T4 built on this idea by using AES and HMACs along with the
+      shared key generated
+      in Handshake A. To incorporate T2 required a modification to Handshake A for the file server and user to use in
+      which the user sends a
+      token signed by the group server to ensure the integrity of the token. We later addressed information leakage and
+      integrity issues with
+      Tokens by serializing the Token using SealObject and adding a timestamp field to Tokens for the purpose of
+      tracking expiration. git push
+      We thought about implementing a password system, but this would require us to flush out an entire system to share,
+      store and access.</p>
 
-    
+
 
     <!-- END CHANGES HERE -->
   </section>
