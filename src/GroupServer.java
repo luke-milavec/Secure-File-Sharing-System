@@ -56,6 +56,11 @@ public class GroupServer extends Server {
             userList.addUser(username);
             userList.addGroup(username, "ADMIN");
             userList.addOwnership(username, "ADMIN");
+            CryptoSec cs = new CryptoSec();
+            cs.writeKey(username, cs.genRSAKeyPair());
+//            System.out.println(cs.readRSAPublicKey(username).toString());
+//            System.out.println(cs.readRSAPrivateKey(username).toString());
+
         } catch(IOException e) {
             System.out.println("Error reading from UserList file");
             System.exit(-1);
