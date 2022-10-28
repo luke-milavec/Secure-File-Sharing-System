@@ -328,6 +328,7 @@ public class ClientTerminalApp {
 
         System.out.println("Enter username to login: ");
         username = in.nextLine();
+
         gClient = new GroupClient();
         fClient = new FileClient();
         showOptions();
@@ -379,7 +380,7 @@ public class ClientTerminalApp {
     
     
     public static void main(String[] args) {
-        
+        java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         new ClientTerminalApp();
         
     }
