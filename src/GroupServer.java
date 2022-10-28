@@ -56,8 +56,13 @@ public class GroupServer extends Server {
             userList.addUser(username);
             userList.addGroup(username, "ADMIN");
             userList.addOwnership(username, "ADMIN");
+            System.out.println("Generating and storing RSA key pair for " + username + "...");
+
             CryptoSec cs = new CryptoSec();
             cs.writeKey(username, cs.genRSAKeyPair());
+            System.out.println("An RSA Key Pair has been generated and stored in files '" + username +
+                    ".public' and '" + username + ".private' in the current directory.");
+            System.out.println();
 //            System.out.println(cs.readRSAPublicKey(username).toString());
 //            System.out.println(cs.readRSAPrivateKey(username).toString());
 

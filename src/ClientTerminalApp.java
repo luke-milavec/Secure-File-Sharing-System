@@ -334,17 +334,21 @@ public class ClientTerminalApp {
         // If user accidentally deletes key files should we check for that and let them regenerate them?
         if (!pubKFile.exists() || !privKFile.exists()) {
             System.out.println("No RSA Key Pair exists yet for " + username + " or it was lost." +
-                    " Generating RSA Key Pair. If you encounter trouble getting a token, an Admin may not" +
-                    " have created a user with this username yet. Please contact an admin to setup a user" +
-                    " under this username if you encounter this issue. If the Admin has already created a user" +
-                    " with this username there should be no trouble using the system.");
+                    " Generating RSA Key Pair." + System.lineSeparator() +
+                     "If you encounter trouble getting a token, an Admin may not" +
+                    " have created a user with this username yet." + System.lineSeparator() +
+                    "Please contact an admin to setup a user" +
+                    " under this username if you encounter this issue." + System.lineSeparator() +
+                    "If the Admin has already created a user with this" +
+                    " username there should be no trouble using the system." + System.lineSeparator());
 
             CryptoSec cs = new CryptoSec();
             KeyPair rsaKeyPair = cs.genRSAKeyPair();
             if(cs.writeKey(username, rsaKeyPair)) {
-                System.out.println("An RSA Key Pair has been generated and stored in files " + username + ".public"
-                    + " and " + username + ".private in the current directory. Please do not delete them if you" +
-                        " wish to continue using this account.");
+                System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
+                        + " and '" + username + ".private' in the current directory." + System.lineSeparator() +
+                        "Please do not delete them if you wish to continue using this account."
+                        + System.lineSeparator());
             } else {
                 System.out.println("Sorry error generating keys, please try again");
                 System.exit(-1);
@@ -353,7 +357,7 @@ public class ClientTerminalApp {
         }
         gClient = new GroupClient();
         fClient = new FileClient();
-        showOptions();
+        System.out.println("Type 'help' to see options.");
         return true; // For now there are no checks 
     }
 

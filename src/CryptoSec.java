@@ -1,9 +1,7 @@
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
-
 import java.io.*;
-
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -63,7 +61,7 @@ public class CryptoSec {
         } catch (IOException e) {
             System.out.println("Error reading in private key");
         } catch (InvalidKeySpecException e) {
-            System.out.println("The public key encoding was improperly configured so turning it back into a" +
+            System.out.println("The private key encoding was improperly configured so turning it back into a" +
                     " RSAPrivateKey key failed");
             e.printStackTrace();
         }
@@ -91,8 +89,4 @@ public class CryptoSec {
         }
         return false;
     }
-
-
-
-
 }
