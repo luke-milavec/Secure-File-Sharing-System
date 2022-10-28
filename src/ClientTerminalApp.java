@@ -1,3 +1,4 @@
+import java.security.KeyPair;
 import java.util.Scanner;
 import java.io.File;
 import java.util.List;
@@ -328,7 +329,28 @@ public class ClientTerminalApp {
 
         System.out.println("Enter username to login: ");
         username = in.nextLine();
+        File pubKFile = new File(username + ".public");
+        File privKFile = new File(username + ".private");
+        // If user accidentally deletes key files should we check for that and let them regenerate them?
+        if (!pubKFile.exists() || !privKFile.exists()) {
+            System.out.println("No RSA Key Pair exists yet for " + username + " or it was lost." +
+                    " Generating RSA Key Pair. If you encounter trouble getting a token, an Admin may not" +
+                    " have created a user with this username yet. Please contact an admin to setup a user" +
+                    " under this username if you encounter this issue. If the Admin has already created a user" +
+                    " with this username there should be no trouble using the system.");
 
+            CryptoSec cs = new CryptoSec();
+            KeyPair rsaKeyPair = cs.genRSAKeyPair();
+            if(cs.writeKey(username, rsaKeyPair)) {
+                System.out.println("An RSA Key Pair has been generated and stored in files " + username + ".public"
+                    + " and " + username + ".private in the current directory. Please do not delete them if you" +
+                        " wish to continue using this account.");
+            } else {
+                System.out.println("Sorry error generating keys, please try again");
+                System.exit(-1);
+            }
+
+        }
         gClient = new GroupClient();
         fClient = new FileClient();
         showOptions();
