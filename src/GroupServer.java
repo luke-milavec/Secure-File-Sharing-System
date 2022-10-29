@@ -71,6 +71,8 @@ public class GroupServer extends Server {
             cs.writeKey("gs", gsKeyPair);
             System.out.println("An RSA Key Pair has been generated for the group server and stored in files " +
                     "'gs.public' and 'gs.private' in the current directory.");
+            System.out.println("The public key for the group server in hex format is: ");
+            System.out.println(cs.byteArrToHexStr(gsKeyPair.getPublic().getEncoded()));
             System.out.println();
 
 //            System.out.println(cs.readRSAPublicKey(username).toString());

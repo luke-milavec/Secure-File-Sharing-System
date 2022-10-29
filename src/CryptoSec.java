@@ -89,4 +89,12 @@ public class CryptoSec {
         }
         return false;
     }
+
+    public String byteArrToHexStr(byte [] byteArr) {
+        StringBuilder hexStr = new StringBuilder();
+        for (byte b: byteArr) {
+            hexStr.append(String.format("%02x", b));
+        }
+        return hexStr.toString();
+    }
 }
