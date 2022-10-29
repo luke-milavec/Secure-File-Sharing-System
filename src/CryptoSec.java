@@ -13,6 +13,10 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
 
+/**Implement helper method to create RSA Signature given private key ← working on it (Taha)
+Implement helper method to verify RSA Signature given signature and public key 
+ */
+
 public class CryptoSec {
     CryptoSec() {
         java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
@@ -193,6 +197,30 @@ public class CryptoSec {
             e.printStackTrace();
         }
         return null;
+    }
+
+    /** Generate shared secret Kab
+    * @params privateKey - ECDH private key of party calling this function
+    *         publicKey - ECDH public key of other party provided by party calling this function
+    * return - byte[] of shared secret
+    */
+    public byte[] generateSharedSecret(PrivateKey privateKey, PublicKey publicKey,) {
+        try {
+            KeyAgreement keyAgree = KeyAgreement.getInstance("ECDH", "BC");
+            keyAgree.init(privateKey);
+            keyAgree.doPhase(publicKey, true);
+            byte[] sharedSecret = keyAgree.generateSecret();
+            // System.out.println("Shared secret: ", printHexBinary(sharedSecret));
+            return sharedSecret;
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Error: No algorithm exists");
+        } catch (InvalidAlgorithmParameterException e) {
+            System.out.println("Error: Invalid Algorithm Parameters");
+        } catch(InvalidKeyException e) {
+            System.out.println("Error: Invlid Key");
+        } catch(NoSuchProviderException e) {
+            System.out.println("Error: No such provider exists");
+        }
     }
 
 }

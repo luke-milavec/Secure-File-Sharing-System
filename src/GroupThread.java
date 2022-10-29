@@ -8,6 +8,7 @@ import java.lang.Thread;
 import java.net.Socket;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.security.*;
 
 
 
@@ -24,6 +25,7 @@ public class GroupThread extends Thread {
         boolean proceed = true;
 
         try {
+            CryptoSec cs = new CryptoSec();
             //Announces connection and opens object streams
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
@@ -45,6 +47,38 @@ public class GroupThread extends Thread {
                 Envelope message = (Envelope)input.readObject();
                 System.out.println("Request received: " + message.getMessage());
                 Envelope response;
+
+                // Handshake
+                if(message.getMessage().equals("SignatureForHandshake")) {
+                    String username = (String)message.getObjContents().get(0);
+                    RSAPublicKey userRSApublickey = message.getObjContents().get(1);
+                    byte[] userPrivateECKeySig = message.getObjContents().get(2);
+
+                    // Checks for if any are null
+                    if(username == null || userRSApublickey == null || userPrivateECKeySig == null) {
+                        response = new Envelope("FAIL");
+                        response.addObject(null);
+                        output.writeObject(response);
+                    } else {
+                        // Generate ECDH keypair
+                        KeyPair ECDHkeys = cs.genECDHKeyPair();
+                        PublicKey ECDHpubkey = ECDHkeys.getPublic();
+                        PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+
+                        // Sign ECDH public key with RSA private key of group server
+                        PrivateKey serverRSApublickey = cs.readRSAPublicKey("gs");
+                        PrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs");
+                        byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+
+                        // Send back to user
+                        response = new Envelope("OK");
+                        response.addObject("gs");
+                        response.addObject(serverRSApublickey);
+                        response.addObject(serverPrivateECDHKeySig);
+                        output.writeObject(response);
+
+                    }
+                }
 
                 if(message.getMessage().equals("GET")) { //Client wants a token
                     String username = (String)message.getObjContents().get(0); //Get the username

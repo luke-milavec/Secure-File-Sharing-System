@@ -82,28 +82,38 @@ public abstract class Client {
                   }
               }
           }
-          // If we get to this point it the server we are connecting to is legitimate
+            /** To establish a secure connection, a handshake is done.
+            * Steps: After user clicks/types "connect to group/file server"
+            * 1) ECDH keypair is generated
+            * 2) Sign ECDH public key with RSA private key
+            * 3) Send to server you want to connect with
+            * 4) Repeat steps 1-3 for server to send to client
+            * 5) Key Agreement - generation of Kab
+            */
+
+            // 1) ECDH keypair is generated
           KeyPair ecKeyPair = cs.genECDHKeyPair();
           //          System.out.println(ecKeyPair.getPublic().toString());
           //          System.out.println(ecKeyPair.getPrivate().toString());
-          RSAPrivateKey userPrivateKey = cs.readRSAPrivateKey(username);
-          if (userPrivateKey == null) {
-              System.out.println("Could not find " + username + "'s private key.");
+          RSAPrivateKey userRSAprivatekey = cs.readRSAPrivateKey(username);
+          if (userRSAprivatekey == null) {
+              System.out.println("Could not find " + username + "'s RSA private key.");
           }
-          RSAPublicKey userPublicKey = cs.readRSAPublicKey(username + ".public");
-          if (userPublicKey == null) {
-              System.out.println("Could not find " + username + "'s public key.");
+          RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username + ".public");
+          if (userRSApublickey == null) {
+              System.out.println("Could not find " + username + "'s RSA public key.");
           }
-          byte[] userPrivateECKeySig = cs.rsaSign(userPrivateKey, ecKeyPair.getPublic().getEncoded());
-
+          // 2) Sign ECDH public key with RSA private key
+          byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
+            // 3) Send to server you want to connect with
           Envelope connectRequest = new Envelope("SignatureForHandshake");
           connectRequest.addObject(username); // TODO confirm w/ Prof it is okay to send username & userPublic key unencrypted
-          connectRequest.addObject(userPublicKey); // So the server can verify the signature
+          connectRequest.addObject(userRSApublickey); // So the server can verify the signature
           connectRequest.addObject(userPrivateECKeySig);
           output.writeObject(connectRequest);
 
-          // TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
-            // TODO complete rest of HandshakeA
+          // KATELYN (working on) - TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
+            // KATELYN (working on) - TODO complete rest of HandshakeA
 
           System.out.println("Connected to " + server + " on port " + port);
           return true;
