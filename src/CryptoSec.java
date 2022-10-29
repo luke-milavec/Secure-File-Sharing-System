@@ -1,14 +1,17 @@
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.security.*;
+import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAKeyGenParameterSpec;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.*;
 
 public class CryptoSec {
     CryptoSec() {
@@ -125,4 +128,71 @@ public class CryptoSec {
         }
         return false;
     }
+
+    public KeyPair genECDHKeyPair() {
+       try {
+           ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256k1");
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
+           keyGen.initialize(ecAlgoSpec);
+           return keyGen.generateKeyPair();
+       } catch (NoSuchAlgorithmException e) {
+           System.out.println("Invalid algorithm specified for ECDH keygen");
+           e.printStackTrace();
+       } catch (InvalidAlgorithmParameterException e) {
+           System.out.println("Invalid algorithm parameters specified for ECDH keygen");
+           e.printStackTrace();
+       }
+       return null;
+    }
+
+    // TODO Key may be incorrect:
+    public byte[] rsaEncrypt(byte[] msg, Key key) {
+        try {
+            Cipher rsaCipher = Cipher.getInstance("RSA", "BC");
+            rsaCipher.init(Cipher.ENCRYPT_MODE, key);
+            return rsaCipher.doFinal(msg);
+        } catch (InvalidKeyException e) {
+            System.out.println("RSA encryption failed due to invalid key");
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            System.out.println("RSA encryption failed due to invalid padding");
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Encryption failed due to no such encryption algorithm existing");
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            System.out.println("RSA encryption failed due to invalid provider");
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            System.out.println("RSA encryption failed due to invalid block size");
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            System.out.println("RSA encryption failed due to bad padding");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
+        try {
+            Signature rsaSig = Signature.getInstance("SHA256withRSA", "BC");
+            rsaSig.initSign(privateKey);
+            rsaSig.update(msg);
+            return rsaSig.sign();
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Signature algorithm specified not found");
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            System.out.println("Issue signing RSA");
+            e.printStackTrace();
+        } catch (NoSuchProviderException e) {
+            System.out.println("Invalid security provider provided for RSA signature");
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            System.out.println("Invalid key specified for RSA signature");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

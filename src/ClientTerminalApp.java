@@ -1,4 +1,5 @@
 import java.security.KeyPair;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.Scanner;
 import java.io.File;
 import java.util.List;
@@ -18,12 +19,14 @@ public class ClientTerminalApp {
     FileClient fClient;
     UserToken token;
     String username;
+    CryptoSec cs;
 
 
     ClientTerminalApp(){
         gClient = new GroupClient();
         fClient = new FileClient();
         token = null;
+        cs = new CryptoSec();
 
         //This runs a thread that saves the lists on program exit
         Runtime runtime = Runtime.getRuntime();
@@ -50,9 +53,10 @@ public class ClientTerminalApp {
                     // What sort of input validation should we add?
                     if (command.length != 4) {
                         System.out.println("Invalid parameters. Expected format: connect <-f or -g> <server> <port>");
-                    } else if (!connect(command[1], command[2], command[3])) {
-                        System.out.println("Connection failed: " + commandLine);
+                    } else if (!connect(command[1], command[2], command[3], username)) {
+                            System.out.println("Connection failed: " + commandLine);
                     }
+
                      break;
                 case "disconnect":
                     gClient.disconnect();
@@ -342,7 +346,7 @@ public class ClientTerminalApp {
                     "If the Admin has already created a user with this" +
                     " username there should be no trouble using the system." + System.lineSeparator());
 
-            CryptoSec cs = new CryptoSec();
+
             KeyPair rsaKeyPair = cs.genRSAKeyPair();
             if(cs.writeKeyPair(username, rsaKeyPair)) {
                 System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
@@ -361,13 +365,13 @@ public class ClientTerminalApp {
         return true; // For now there are no checks 
     }
 
-    public boolean connect(String serverType, String serverName, String port) {
+    public boolean connect(String serverType, String serverName, String port, String username) {
         if (serverType.equals("-g")) {
-            if (gClient.connect(serverName, Integer.parseInt(port))) {
+            if (gClient.connect(serverName, Integer.parseInt(port), username)) {
                 return true;
             }
         } else if (serverType.equals("-f")) {
-            if (fClient.connect(serverName, Integer.parseInt(port))) {
+            if (fClient.connect(serverName, Integer.parseInt(port), username)) {
                 return true;
             }
         }

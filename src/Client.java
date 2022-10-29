@@ -1,9 +1,13 @@
 import org.bouncycastle.crypto.io.SignerOutputStream;
 
+import javax.crypto.Cipher;
+import javax.crypto.SealedObject;
 import java.io.File;
 import java.net.Socket;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.security.KeyPair;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Scanner;
 
@@ -16,7 +20,7 @@ public abstract class Client {
     protected ObjectOutputStream output;
     protected ObjectInputStream input;
 
-    public boolean connect(final String server, final int port) {
+    public boolean connect(final String server, final int port, String username) {
         System.out.println("attempting to connect");
 
         try {
@@ -63,7 +67,6 @@ public abstract class Client {
                       if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                               System.out.println("Error creating " + knownServerDir);
                       }
-
                       String pubKeyFilePath ="known_servers" + File.separator + pubKeyMsg.getMessage();
                       if (cs.writePubKey(pubKeyFilePath, gsPubKey)) {
                           System.out.println("Group Server's public key cached in " + pubKeyFilePath);
@@ -79,6 +82,29 @@ public abstract class Client {
                   }
               }
           }
+          // If we get to this point it the server we are connecting to is legitimate
+          KeyPair ecKeyPair = cs.genECDHKeyPair();
+          //          System.out.println(ecKeyPair.getPublic().toString());
+          //          System.out.println(ecKeyPair.getPrivate().toString());
+          RSAPrivateKey userPrivateKey = cs.readRSAPrivateKey(username);
+          if (userPrivateKey == null) {
+              System.out.println("Could not find " + username + "'s private key.");
+          }
+          RSAPublicKey userPublicKey = cs.readRSAPublicKey(username + ".public");
+          if (userPublicKey == null) {
+              System.out.println("Could not find " + username + "'s public key.");
+          }
+          byte[] userPrivateECKeySig = cs.rsaSign(userPrivateKey, ecKeyPair.getPublic().getEncoded());
+
+          Envelope connectRequest = new Envelope("SignatureForHandshake");
+          connectRequest.addObject(username); // TODO confirm w/ Prof it is okay to send username & userPublic key unencrypted
+          connectRequest.addObject(userPublicKey); // So the server can verify the signature
+          connectRequest.addObject(userPrivateECKeySig);
+          output.writeObject(connectRequest);
+
+          // TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
+            // TODO complete rest of HandshakeA
+
           System.out.println("Connected to " + server + " on port " + port);
           return true;
         }
@@ -88,6 +114,7 @@ public abstract class Client {
             return false;
         }
     }
+
 
     public boolean isConnected() {
         if (sock == null || !sock.isConnected()) {
