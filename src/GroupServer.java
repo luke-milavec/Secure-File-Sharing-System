@@ -16,6 +16,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.util.Scanner;
 
 public class GroupServer extends Server {
@@ -58,11 +59,20 @@ public class GroupServer extends Server {
             userList.addOwnership(username, "ADMIN");
             System.out.println("Generating and storing RSA key pair for " + username + "...");
 
+            // Generate RSA keypair and for the group server
             CryptoSec cs = new CryptoSec();
             cs.writeKey(username, cs.genRSAKeyPair());
-            System.out.println("An RSA Key Pair has been generated and stored in files '" + username +
+            System.out.println("An RSA Key Pair has been generated for " + username +
+                    " and stored in files '" + username +
                     ".public' and '" + username + ".private' in the current directory.");
             System.out.println();
+
+            KeyPair gsKeyPair =  cs.genRSAKeyPair();
+            cs.writeKey("gs", gsKeyPair);
+            System.out.println("An RSA Key Pair has been generated for the group server and stored in files " +
+                    "'gs.public' and 'gs.private' in the current directory.");
+            System.out.println();
+
 //            System.out.println(cs.readRSAPublicKey(username).toString());
 //            System.out.println(cs.readRSAPrivateKey(username).toString());
 
