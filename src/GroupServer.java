@@ -16,6 +16,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
 import java.util.Scanner;
 
 public class GroupServer extends Server {
@@ -58,11 +59,32 @@ public class GroupServer extends Server {
             userList.addOwnership(username, "ADMIN");
             System.out.println("Generating and storing RSA key pair for " + username + "...");
 
+            // Generate RSA keypair for the user and another for the group server
             CryptoSec cs = new CryptoSec();
-            cs.writeKey(username, cs.genRSAKeyPair());
-            System.out.println("An RSA Key Pair has been generated and stored in files '" + username +
+            cs.writeKeyPair(username, cs.genRSAKeyPair());
+            System.out.println("An RSA Key Pair has been generated for " + username +
+                    " and stored in files '" + username +
                     ".public' and '" + username + ".private' in the current directory.");
             System.out.println();
+
+            KeyPair gsKeyPair =  cs.genRSAKeyPair();
+            cs.writeKeyPair("gs", gsKeyPair);
+            System.out.println("An RSA Key Pair has been generated for the group server and stored in files " +
+                    "'gs.public' and 'gs.private' in the current directory.");
+
+            // Write a hex version of the group server's public key to a new file, meant to be used for verification
+            // purposes
+            String pubHexString = cs.byteArrToHexStr(gsKeyPair.getPublic().getEncoded());
+            if (cs.writeStrToFile("gs_pub_key_hex", pubHexString)) {
+                System.out.println("A hex version of the Group Server's public key has been written to" +
+                        " gs_pub_key_hex.txt in the current directory.");
+                System.out.println("This is meant to be given to trusted new users out-of-band as needed so they can" +
+                        " verify they are connecting to the right group server.");
+            } else {
+                System.out.println("There was an error writing hex version of the group servers public key to file.");
+            }
+            System.out.println();
+
 //            System.out.println(cs.readRSAPublicKey(username).toString());
 //            System.out.println(cs.readRSAPrivateKey(username).toString());
 
