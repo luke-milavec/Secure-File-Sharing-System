@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.Thread;
 import java.net.Socket;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 
 
@@ -27,6 +28,14 @@ public class GroupThread extends Thread {
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+
+            // Send over group server's Public Key as RSAPublicKey so that user can verify it
+            CryptoSec cs = new CryptoSec();
+            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
+            Envelope resKey = new Envelope("gs_pub_key");
+            resKey.addObject(gsPubKey);
+            output.writeObject(resKey);
+
 
             do {
                 output.reset();
