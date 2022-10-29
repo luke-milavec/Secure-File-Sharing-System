@@ -61,14 +61,14 @@ public class GroupServer extends Server {
 
             // Generate RSA keypair for the user and another for the group server
             CryptoSec cs = new CryptoSec();
-            cs.writeKey(username, cs.genRSAKeyPair());
+            cs.writeKeyPair(username, cs.genRSAKeyPair());
             System.out.println("An RSA Key Pair has been generated for " + username +
                     " and stored in files '" + username +
                     ".public' and '" + username + ".private' in the current directory.");
             System.out.println();
 
             KeyPair gsKeyPair =  cs.genRSAKeyPair();
-            cs.writeKey("gs", gsKeyPair);
+            cs.writeKeyPair("gs", gsKeyPair);
             System.out.println("An RSA Key Pair has been generated for the group server and stored in files " +
                     "'gs.public' and 'gs.private' in the current directory.");
 

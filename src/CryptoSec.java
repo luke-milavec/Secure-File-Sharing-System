@@ -27,17 +27,17 @@ public class CryptoSec {
         return null;
     }
 
-    public RSAPublicKey readRSAPublicKey(String username) {
+    public RSAPublicKey readRSAPublicKey(String fileName) {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PemReader pemReader = new PemReader(new FileReader(username + ".public"));
+            PemReader pemReader = new PemReader(new FileReader(fileName));
             byte[] pubBytes = pemReader.readPemObject().getContent();
             return (RSAPublicKey) keyFactory.generatePublic(new X509EncodedKeySpec(pubBytes));
 
         } catch (NoSuchAlgorithmException e) {
             System.out.println("Error finding RSA");
         } catch (FileNotFoundException e) {
-            System.out.println("Unable to find RSA public key for " + username);
+            System.out.println("Unable to find RSA public key for " + fileName);
         } catch (IOException e) {
             System.out.println("Error reading in public key");
         } catch (InvalidKeySpecException e) {
@@ -47,17 +47,17 @@ public class CryptoSec {
         return null;
     }
 
-    public RSAPrivateKey readRSAPrivateKey(String username) {
+    public RSAPrivateKey readRSAPrivateKey(String fileName) {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PemReader pemReader = new PemReader(new FileReader(username + ".private"));
+            PemReader pemReader = new PemReader(new FileReader(fileName + ".private"));
             byte[] privBytes = pemReader.readPemObject().getContent();
             return (RSAPrivateKey) keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privBytes));
 
         } catch (NoSuchAlgorithmException e) {
             System.out.println("Error finding RSA algorithm");
         } catch (FileNotFoundException e) {
-            System.out.println("Unable to find RSA private key for " + username);
+            System.out.println("Unable to find RSA private key for " + fileName);
         } catch (IOException e) {
             System.out.println("Error reading in private key");
         } catch (InvalidKeySpecException e) {
@@ -69,7 +69,7 @@ public class CryptoSec {
         return null;
     }
 
-    public boolean writeKey(String username, KeyPair keypair) {
+    public boolean writeKeyPair(String username, KeyPair keypair) {
         try {
             // Write public key to file
             String pubFilename = username + ".public";
@@ -85,7 +85,22 @@ public class CryptoSec {
 
             return true;
         } catch (IOException e) {
-            System.out.println("Error writing key to file");
+            System.out.println("Error writing key to file.");
+        }
+        return false;
+    }
+
+    public boolean writePubKey(String filename, RSAPublicKey pubKey) {
+        try {
+            // Write public key to file
+            String pubFilename = filename + ".public";
+            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(pubFilename)));
+            pemWriter.writeObject(new PemObject("RSA PUBLIC KEY", pubKey.getEncoded()));
+            pemWriter.close();
+            return true;
+        } catch (IOException e) {
+            System.out.println("Error writing public key to file.");
+            e.printStackTrace();
         }
         return false;
     }
