@@ -36,6 +36,9 @@ public class GroupThread extends Thread {
             resKey.addObject(gsPubKey);
             output.writeObject(resKey);
 
+            Envelope signedRSA = (Envelope)input.readObject();
+
+            output.reset(); // TODO test if this causes issues
 
             do {
                 output.reset();
