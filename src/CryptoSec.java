@@ -97,4 +97,16 @@ public class CryptoSec {
         }
         return hexStr.toString();
     }
+
+    public boolean writeStrToFile(String filename, String str) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(filename + ".txt"));
+            bw.write(str);
+            bw.close();
+            return true;
+        } catch (IOException e) {
+            System.out.println("There was an issue writing string to " + filename + ".txt");
+        }
+        return false;
+    }
 }
