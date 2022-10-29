@@ -38,6 +38,7 @@ public class CryptoSec {
             System.out.println("Error finding RSA");
         } catch (FileNotFoundException e) {
             System.out.println("Unable to find RSA public key for " + fileName);
+            e.printStackTrace();
         } catch (IOException e) {
             System.out.println("Error reading in public key");
         } catch (InvalidKeySpecException e) {

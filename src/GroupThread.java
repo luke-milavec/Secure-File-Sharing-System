@@ -31,7 +31,7 @@ public class GroupThread extends Thread {
 
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
             CryptoSec cs = new CryptoSec();
-            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
+            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs.public");
             Envelope resKey = new Envelope("gs_pub_key");
             resKey.addObject(gsPubKey);
             output.writeObject(resKey);
