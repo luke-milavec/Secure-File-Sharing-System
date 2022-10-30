@@ -6,6 +6,12 @@ import java.io.ObjectInputStream;
 
 public class GroupClient extends Client implements GroupClientInterface {
 
+    CyptoSec cs;
+
+    public GroupClient() {
+        cs = new CryptoSec();
+    }
+
     public UserToken getToken(String username) {
         try {
             UserToken token = null;

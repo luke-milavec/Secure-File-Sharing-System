@@ -3,7 +3,10 @@ import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
+
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
@@ -219,4 +222,91 @@ public class CryptoSec {
         return null;
     }
 
+    public Message encryptString(String s,  SecretKey k){
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            String toHash = new String(k.getEncoded());
+            toHash += "AES Integtrity";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
+            
+            toHash = new String(k.getEncoded());
+            toHash += "AES Confidentiality";
+            hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
+
+            sha256_HMAC.init(ki);
+
+            String sha256hex = byteArrToHexStr(hash);
+
+            sha256_HMAC.init(ki);
+            String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
+            c.init(Cipher.ENCRYPT_MODE,ke);
+            String enc = byteArrToHexStr(c.doFinal(s.getBytes()));
+            return new Message(enc,hmac);
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e){
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e){
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e){
+            e.printStackTrace();
+        } catch (BadPaddingException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String decryptString(Message m, SecretKey k){
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            String toHash = new String(k.getEncoded());
+            toHash += "AES Integtrity";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
+            
+            toHash = new String(k.getEncoded());
+            toHash += "AES Confidentiality";
+            hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
+
+            sha256_HMAC.init(ki);
+
+            String sha256hex = byteArrToHexStr(hash);
+
+            sha256_HMAC.init(ki);
+            
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
+            c.init(Cipher.DECRYPT_MODE,ke);
+            String s = byteArrToHexStr(c.doFinal(s.getBytes()));
+            String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
+            if (hmac.equals(m.hmac)){
+                return s;
+            } else {
+                System.out.println("INTEGRITY VIOLATION: Error with HMAC");
+                return s;
+            }
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e){
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e){
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e){
+            e.printStackTrace();
+        } catch (BadPaddingException e){
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
