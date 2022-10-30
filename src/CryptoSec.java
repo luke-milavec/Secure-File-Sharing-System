@@ -2,10 +2,7 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
 import java.io.*;
 import java.security.*;
 import java.security.interfaces.RSAKey;
@@ -204,7 +201,7 @@ public class CryptoSec {
     *         publicKey - ECDH public key of other party provided by party calling this function
     * return - byte[] of shared secret
     */
-    public byte[] generateSharedSecret(PrivateKey privateKey, PublicKey publicKey,) {
+    public byte[] generateSharedSecret(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
         try {
             KeyAgreement keyAgree = KeyAgreement.getInstance("ECDH", "BC");
             keyAgree.init(privateKey);
@@ -214,13 +211,12 @@ public class CryptoSec {
             return sharedSecret;
         } catch (NoSuchAlgorithmException e) {
             System.out.println("Error: No algorithm exists");
-        } catch (InvalidAlgorithmParameterException e) {
-            System.out.println("Error: Invalid Algorithm Parameters");
         } catch(InvalidKeyException e) {
             System.out.println("Error: Invlid Key");
         } catch(NoSuchProviderException e) {
             System.out.println("Error: No such provider exists");
         }
+        return null;
     }
 
 }
