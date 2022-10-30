@@ -6,8 +6,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.Thread;
 import java.net.Socket;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.security.*;
 
 
 
@@ -24,13 +26,13 @@ public class GroupThread extends Thread {
         boolean proceed = true;
 
         try {
+            CryptoSec cs = new CryptoSec();
             //Announces connection and opens object streams
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
-            CryptoSec cs = new CryptoSec();
             RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs.public");
             Envelope resKey = new Envelope("gs_pub_key");
             resKey.addObject(gsPubKey);
@@ -38,13 +40,55 @@ public class GroupThread extends Thread {
 
             Envelope signedRSA = (Envelope)input.readObject();
 
-            output.reset(); // TODO test if this causes issues
+            // Handshake
+            if(signedRSA.getMessage().equals("SignatureForHandshake")) {
+                String username = (String) signedRSA.getObjContents().get(0);
+                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
+                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
+
+                Envelope res;
+                // Checks for if any are null
+                if(username == null || userRSApublickey == null || userPrivateECKeySig == null) {
+                    res = new Envelope("FAIL");
+                    res.addObject(null);
+                    output.writeObject(res);
+                } else {
+                    // TODO need to verify whether user sent signature was really signed by the user before doing:
+
+                    // Generate ECDH keypair
+                    KeyPair ECDHkeys = cs.genECDHKeyPair();
+                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
+                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+
+                    // Sign ECDH public key with RSA private key of group server
+                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs.public");
+                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs");
+                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+
+                    // Send back to user
+                    res = new Envelope("SignatureForHandshake");
+
+//                  res.addObject("gs"); commented out because group server doesn't need to send a username to user per protocol
+//                  res.addObject(serverRSApublickey); commented out because user already has gs's public key and so gs doesn't need to send it according to the diagram
+                    res.addObject(serverPrivateECDHKeySig);
+                    output.writeObject(res);
+
+                }
+            } else {
+                System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
+            }
+
+//            output.reset(); // TODO test if this causes issues
+
+
 
             do {
                 output.reset();
                 Envelope message = (Envelope)input.readObject();
                 System.out.println("Request received: " + message.getMessage());
                 Envelope response;
+
+
 
                 if(message.getMessage().equals("GET")) { //Client wants a token
                     String username = (String)message.getObjContents().get(0); //Get the username
