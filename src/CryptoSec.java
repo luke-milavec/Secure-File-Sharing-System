@@ -286,7 +286,7 @@ public class CryptoSec {
             
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             c.init(Cipher.DECRYPT_MODE,ke);
-            String s = byteArrToHexStr(c.doFinal(s.getBytes()));
+            String s = byteArrToHexStr(c.doFinal(m.enc.getBytes()));
             String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
             if (hmac.equals(m.hmac)){
                 return s;
