@@ -1,14 +1,13 @@
 
+import java.time.Instant;
 import java.util.List;
 
 /**
  * A simple interface to the token data structure that will be
  * returned by a group server.
- *
  * You will need to develop a class that implements this interface so
  * that your code can interface with the tokens created by your group
  * server.
- *
  */
 public interface UserToken {
     /**
@@ -46,5 +45,15 @@ public interface UserToken {
      *
      */
     public List<String> getGroups();
+
+    /**
+     * This method returns an Instant timestamp dating to when the
+     * token was created to be used to check for expiry. Instant
+     * timestamp is based on second since the Unix Epoch and is
+     * not tied to local timezones.
+     *
+     * @return An Instant timestamp dating to initial token creation
+     */
+    public Instant getTimestamp();
 
 }   //-- end interface UserToken
