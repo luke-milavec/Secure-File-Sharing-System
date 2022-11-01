@@ -1,12 +1,120 @@
 /* FileClient provides all the client functionality regarding the file server */
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.Socket;
+import java.security.KeyPair;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.List;
+import java.util.Scanner;
 
 public class FileClient extends Client implements FileClientInterface {
+
+    @Override
+    public boolean connect(String server, int port, String username) {
+        System.out.println("attempting to connect");
+
+        try {
+            sock = new Socket(server, port);
+            output = new ObjectOutputStream(sock.getOutputStream());
+            input = new ObjectInputStream(sock.getInputStream());
+
+            // Check to see if the server's public key is cached or not, if not get the key sent by server
+            // display it and ask user to verify it out-of-bound. If it is cached don't display, instead compare it
+            // to see if the file server sent the same public key as the one that is cached.
+            // If it is, continue with connection else disconnect and display a message saying that
+            // the file server could not be verified.
+            CryptoSec cs = new CryptoSec();
+            Envelope pubKeyMsg = (Envelope)input.readObject();
+            RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
+            File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+
+            if (serverKeys.exists()) {
+                // Compare key sent by server to the cached one
+                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage() + ".public");
+                if(cs.byteArrToHexStr(fsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedFSPubKey.getEncoded()))) {
+                    System.out.println("The cached public key for this server matched the public key sent by " + server +
+                            " at port " + port + ". Connecting...");
+                } else {
+                    disconnect();
+                    System.out.println("Cached public key for server did not match the public key " +
+                            server + " at port " + port + " provided. Disconnected. Type 'help' to see options.");
+                    return false;
+                }
+            } else {
+                System.out.println("No prior connection to this server found:");
+                System.out.println("This file server's RSA public key in hex is:");
+                System.out.println(cs.byteArrToHexStr(fsPubKey.getEncoded()));
+                System.out.println("Verify with an admin or the server's creator to verify this is the correct " +
+                        "file server public key.");
+                System.out.println("Enter 'y' to verify that the public key is valid and to continue and connect" +
+                        " to the file server or 'n' to end the session:");
+                Scanner in = new Scanner(System.in);
+                boolean validInput = false;
+                while(!validInput) {
+                    String userInput = in.nextLine();
+                    if (userInput.equalsIgnoreCase("y")) {
+                        // Create new directory if it doesn't exist
+                        File knownServerDir = new File("known_servers");
+                        if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
+                            System.out.println("Error creating " + knownServerDir);
+                        }
+                        String pubKeyFilePath = "known_servers" + File.separator + pubKeyMsg.getMessage();
+                        if (cs.writePubKey(pubKeyFilePath, fsPubKey)) {
+                            System.out.println("File Server's public key cached in " + pubKeyFilePath);
+                        }
+                        validInput = true;
+                    } else if (userInput.equalsIgnoreCase("n")) {
+                        disconnect();
+                        System.out.println("Disconnected. Type 'help' to see options.");
+                        return false;
+                    } else {
+                        System.out.println("Invalid input. Enter 'y' to verify that the public key is valid and" +
+                                " connect to the file server or 'n' to end the session:");
+                    }
+                }
+            }
+
+            /** To establish a secure connection, a handshake is done.
+             * Steps: After user clicks/types "connect to group/file server"
+             * 1) ECDH keypair is generated
+             * 2) Sign ECDH public key with RSA private key
+             * 3) Send to server you want to connect with
+             * 4) Repeat steps 1-3 for server to send to client
+             * 5) Key Agreement - generation of Kab
+             */
+
+            // 1) ECDH keypair is generated
+            KeyPair ecKeyPair = cs.genECDHKeyPair();
+            RSAPrivateKey userRSAprivatekey = cs.readRSAPrivateKey(username);
+            if (userRSAprivatekey == null) {
+                System.out.println("Could not find " + username + "'s RSA private key.");
+            }
+            RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username + ".public");
+            if (userRSApublickey == null) {
+                System.out.println("Could not find " + username + "'s RSA public key.");
+            }
+            // 2) Sign ECDH public key with RSA private key
+            byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
+            // 3) Send to server you want to connect with
+            Envelope connectRequest = new Envelope("SignatureForHandshake");
+            connectRequest.addObject(username); // TODO confirm w/ Prof it is okay to send username & userPublic key unencrypted
+            connectRequest.addObject(userRSApublickey); // So the server can verify the signature
+            connectRequest.addObject(userPrivateECKeySig);
+            output.writeObject(connectRequest);
+
+            // KATELYN (working on) - TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
+            // KATELYN (working on) - TODO complete rest of HandshakeA
+
+            System.out.println("Connected to " + server + " on port " + port);
+            return true;
+        }
+        catch(Exception e){
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace(System.err);
+            return false;
+        }
+    }
 
     public boolean delete(String filename, UserToken token) {
         String remotePath;

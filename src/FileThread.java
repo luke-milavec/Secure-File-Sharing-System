@@ -2,6 +2,11 @@
 
 import java.lang.Thread;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
@@ -12,9 +17,13 @@ import java.io.ObjectOutputStream;
 
 public class FileThread extends Thread {
     private final Socket socket;
+    String fsName;
+    CryptoSec cs;
 
-    public FileThread(Socket _socket) {
+    public FileThread(Socket _socket, String _fsName) {
         socket = _socket;
+        fsName = _fsName;
+        cs = new CryptoSec();
     }
 
     public void run() {
@@ -25,12 +34,19 @@ public class FileThread extends Thread {
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             Envelope response;
 
+            // conduct Handshake A
+            if (!handshake(input, output)) {
+                System.out.println("Error connecting, file server could not be verified.");
+                Envelope errMsg = new Envelope("FAIL");
+                errMsg.addObject(null);
+                output.writeObject(errMsg);
+            }
+
             do {
                 Envelope e = (Envelope)input.readObject();
                 System.out.println("Request received: " + e.getMessage());
                 // Handler to list files that this user is allowed to see
                 if(e.getMessage().equals("LFILES")) {
-                    /* TODO: Write this handler */
                     if(e.getObjContents().size() < 1) {  // no token sent
                         response = new Envelope("FAIL-BADCONTENTS");
                     } else if (e.getObjContents().get(0) == null){ // if the token is null
@@ -238,4 +254,56 @@ public class FileThread extends Thread {
         }
     }
 
+    private boolean handshake(final ObjectInputStream input, final ObjectOutputStream output) {
+        try {
+            System.out.println(fsName);
+            // Send over group server's Public Key as RSAPublicKey so that user can verify it
+            RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName + ".public");
+            Envelope resKey = new Envelope("fs_pub_key");
+            resKey.addObject(fsPubKey);
+            output.writeObject(resKey);
+
+            // Handshake
+            Envelope signedRSA = (Envelope)input.readObject(); // user sent ECDH signed key
+            if(signedRSA.getMessage().equals("SignatureForHandshake")) {
+                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
+                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
+
+                Envelope res;
+                // Checks for if any are null
+                if(userRSApublickey == null || userPrivateECKeySig == null) {
+                    res = new Envelope("FAIL");
+                    res.addObject(null);
+                    output.writeObject(res);
+                } else {
+                    // TODO need to verify whether user sent signature was really signed by the user before doing:
+
+                    // Generate ECDH keypair
+                    KeyPair ECDHkeys = cs.genECDHKeyPair();
+                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
+                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+
+                    // Sign ECDH public key with RSA private key of file server
+                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName + ".public");
+                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
+                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+
+                    // Send back to user
+                    res = new Envelope("SignatureForHandshake");
+                    res.addObject(serverPrivateECDHKeySig);
+                    output.writeObject(res);
+
+
+                    return true; // TODO once handshake implemented make sure this goes to correct place
+                }
+            } else {
+                System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
+            }
+//            output.reset(); // TODO test if this causes issues
+        }  catch(Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+        return false;
+    }
 }

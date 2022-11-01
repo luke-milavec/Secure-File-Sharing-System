@@ -28,6 +28,7 @@ public abstract class Client {
           output = new ObjectOutputStream(sock.getOutputStream());
           input = new ObjectInputStream(sock.getInputStream());
 
+
           // Check to see if the server's public key is cached or not, if not get the key sent by server
             // display it and ask user to verify it out-of-bound. If it is cached don't display, instead compare it
             // to see if group server sent the same public key as the one that is cached.

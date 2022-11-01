@@ -9,10 +9,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.util.Scanner;
 
 public class FileServer extends Server {
 
     public static FileList fileList;
+    Scanner console = new Scanner(System.in);
 
     public FileServer(int _port) {
         super(_port, "omega");
@@ -45,9 +48,41 @@ public class FileServer extends Server {
             System.exit(-1);
         }
 
+        System.out.print("Enter the name of the file server to start or a new name to setup a new file server: ");
+        String fsName = console.next();
+        File pubKeyFile = new File(fsName + ".public");
+        if(!pubKeyFile.exists()) {
+            // Generate RSA keypair for the user and another for the group server
+            CryptoSec cs = new CryptoSec();
+            KeyPair fsKeyPair = cs.genRSAKeyPair();
+            cs.writeKeyPair(fsName, fsKeyPair);
+            System.out.println("An RSA Key Pair has been generated for " + fsName +
+                    " and stored in files '" + fsName +
+                    ".public' and '" + fsName + ".private' in the current directory.");
+            System.out.println();
+
+            // Write a hex version of the group server's public key to a new file, meant to be used for verification
+            // purposes
+            String pubHexString = cs.byteArrToHexStr(fsKeyPair.getPublic().getEncoded());
+            if (cs.writeStrToFile(fsName + "_pub_key_hex", pubHexString)) {
+                System.out.println("A hex version of the File Server, " + fsName + "'s public key has been written to"
+                        + fsName + "_pub_key_hex.txt in the current directory.");
+                System.out.println("This is meant to be given to trusted new users out-of-band as needed so they can" +
+                        " verify they are connecting to the right file server.");
+            } else {
+                System.out.println("There was an error writing hex version of the file server" +
+                        ", " + fsName + "'s public key to file.");
+            }
+            System.out.println();
+        } else {
+            System.out.println("Found File Server, " + fsName + "'s RSA KeyPair");
+        }
+
+
         File file = new File("shared_files");
         if (file.mkdir()) {
             System.out.println("Created new shared_files directory");
+
         } else if (file.exists()) {
             System.out.println("Found shared_files directory");
         } else {
@@ -69,7 +104,7 @@ public class FileServer extends Server {
 
             while(true) {
                 sock = serverSock.accept();
-                thread = new FileThread(sock);
+                thread = new FileThread(sock, fsName);
                 thread.start();
             }
         } catch(Exception e) {
