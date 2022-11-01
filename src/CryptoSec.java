@@ -309,4 +309,35 @@ public class CryptoSec {
         }
         return null;
     }
+
+    public String serializeToken(Token t){
+        String s  = t.getIssuer()+"|"+t.getSubject();
+        for(String m: t.getGroups()){
+            s += "|"+m;
+        }
+        return s;
+    }
+
+    public Token deserializeToken(String s){
+        String[] arr = s.split("|");
+        String issuer = arr[0];
+        String subject = arr[1];
+        List<String> groups = new List<String>();
+        for (int i=2;i<groups.size();i++){
+            groups.add(arr[i]);
+        }
+        return new Token(issuer,subject,groups);
+    }
+
+    public String serializeList(List<String> arr){
+        String s = "";
+        for(String i : arr){
+            s+= i+"|";
+        }
+        return s.substring(0,s.length()-1);
+    }
+
+    public List<String> deserializeString(String s){
+        return  Arrays.asList(s.split("|"));
+    }
 }
