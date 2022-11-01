@@ -6,7 +6,7 @@ import java.io.ObjectInputStream;
 
 public class GroupClient extends Client implements GroupClientInterface {
 
-    CyptoSec cs;
+    CryptoSec cs;
 
     public GroupClient() {
         cs = new CryptoSec();
