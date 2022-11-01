@@ -12,6 +12,8 @@ import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
+import java.util.Arrays;
+import java.util.List;
 
 /**Implement helper method to create RSA Signature given private key ← working on it (Taha)
 Implement helper method to verify RSA Signature given signature and public key 
