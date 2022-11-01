@@ -7,6 +7,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
@@ -305,5 +306,12 @@ public class FileThread extends Thread {
             e.printStackTrace(System.err);
         }
         return false;
+    }
+
+    private boolean tokenTimeValid(UserToken token) {
+        int expirySecs = 300; // 5 minutes for now
+        Instant t1 = token.getTimestamp();
+        Instant t2 = Instant.now();
+        return (t2.getEpochSecond() - t1.getEpochSecond()) <= expirySecs;
     }
 }
