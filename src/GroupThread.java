@@ -58,6 +58,7 @@ public class GroupThread extends Thread {
                     // Verifying signature      ?? is this correct way to do it ?? 
                     // docs don't mention they need public key sent in this method because of initVerify()
                     Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                    verifySig.initVerify(userRSApublickey);
                     // If false, this user did NOT sign the message contents
                     if(!verifySig.verify(UserECDHpubKeySigned)) {
                         res = new Envelope("FAIL");
@@ -72,7 +73,7 @@ public class GroupThread extends Thread {
                         // Sign ECDH public key with RSA private key of group server
                         RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs.public");
                         RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs.private");
-                        byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, serverRSApublickey, ECDHpubkey.getEncoded());
+                        byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 
                         // Send public key to user
                         res = new Envelope("SignatureForHandshake");

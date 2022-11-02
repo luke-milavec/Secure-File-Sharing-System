@@ -108,7 +108,7 @@ public abstract class Client {
               System.out.println("Could not find " + username + "'s RSA public key.");
           }
           // 2) Sign ECDH public key with RSA private key
-          byte[] UserECDHpubKeySigned = cs.rsaSign(userRSAprivatekey, userRSApublickey, ecKeyPair.getPublic().getEncoded());
+          byte[] UserECDHpubKeySigned = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
             // 3) Send to server you want to connect with
           Envelope connectRequest = new Envelope("SignatureForHandshake");
           connectRequest.addObject(username);
@@ -134,6 +134,7 @@ public abstract class Client {
                 }
                 // Must verify server signature
                 Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                verifySig.initVerify(gsPubKey);
                 if(!verifySig.verify(serverECDHKeySig)) {
                     System.err.println("ERROR: Signature from server cannot be verified");
                     return false;

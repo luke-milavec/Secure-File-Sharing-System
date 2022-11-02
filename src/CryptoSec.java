@@ -179,11 +179,10 @@ public class CryptoSec {
         return null;
     }
 
-    public byte[] rsaSign(RSAPrivateKey privateKey, RSAPublicKey publicKey, byte[] msg) {
+    public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
         try {
             Signature rsaSig = Signature.getInstance("SHA256withRSA", "BC");
             rsaSig.initSign(privateKey);
-            rsaSig.initVerify(publicKey);
             rsaSig.update(msg);
             return rsaSig.sign();
         } catch (NoSuchAlgorithmException e) {
