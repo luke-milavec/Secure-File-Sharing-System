@@ -31,7 +31,7 @@ public class FileClient extends Client implements FileClientInterface {
 
             if (serverKeys.exists()) {
                 // Compare key sent by server to the cached one
-                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage() + ".public");
+                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
                 if(cs.byteArrToHexStr(fsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedFSPubKey.getEncoded()))) {
                     System.out.println("The cached public key for this server matched the public key sent by " + server +
                             " at port " + port + ". Connecting...");
@@ -90,7 +90,7 @@ public class FileClient extends Client implements FileClientInterface {
             if (userRSAprivatekey == null) {
                 System.out.println("Could not find " + username + "'s RSA private key.");
             }
-            RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username + ".public");
+            RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username);
             if (userRSApublickey == null) {
                 System.out.println("Could not find " + username + "'s RSA public key.");
             }

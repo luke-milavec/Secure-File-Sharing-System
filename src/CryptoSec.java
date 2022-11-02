@@ -12,6 +12,7 @@ import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class CryptoSec {
     public RSAPublicKey readRSAPublicKey(String fileName) {
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PemReader pemReader = new PemReader(new FileReader(fileName));
+            PemReader pemReader = new PemReader(new FileReader(fileName + ".public"));
             byte[] pubBytes = pemReader.readPemObject().getContent();
             return (RSAPublicKey) keyFactory.generatePublic(new X509EncodedKeySpec(pubBytes));
 
@@ -354,8 +355,9 @@ public class CryptoSec {
         String[] arr = s.split("|");
         String issuer = arr[0];
         String subject = arr[1];
-        List<String> groups = new List<String>();
-        for (int i=2;i<groups.size();i++){
+//        List<String> groups = new List<String>();
+        List<String> groups = new ArrayList<>();
+        for (int i=2;i<arr.length;i++){
             groups.add(arr[i]);
         }
         return new Token(issuer,subject,groups);

@@ -34,7 +34,7 @@ public class GroupThread extends Thread {
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
 
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
-            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs.public");
+            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
             Envelope resKey = new Envelope("gs_pub_key");
             resKey.addObject(gsPubKey);
             output.writeObject(resKey);
@@ -71,8 +71,8 @@ public class GroupThread extends Thread {
                         PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
                         // Sign ECDH public key with RSA private key of group server
-                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs.public");
-                        RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs.private");
+                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs");
+                        RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs");
                         byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 
                         // Send public key to user

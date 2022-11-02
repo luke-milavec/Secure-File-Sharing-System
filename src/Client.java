@@ -44,7 +44,7 @@ public abstract class Client {
 
           if (serverKeys.exists()) {
               // Compare key sent by server to the cached one
-              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
               if(cs.byteArrToHexStr(gsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedGSPubKey.getEncoded()))) {
                   System.out.println("The cached public key for this server matched the public key sent by " + server +
                           " at port " + port + ". Connecting...");
@@ -99,11 +99,11 @@ public abstract class Client {
           KeyPair ecKeyPair = cs.genECDHKeyPair();
           //          System.out.println(ecKeyPair.getPublic().toString());
           //          System.out.println(ecKeyPair.getPrivate().toString());
-          RSAPrivateKey userRSAprivatekey = cs.readRSAPrivateKey(username + ".private");
+          RSAPrivateKey userRSAprivatekey = cs.readRSAPrivateKey(username);
           if (userRSAprivatekey == null) {
               System.out.println("Could not find " + username + "'s RSA private key.");
           }
-          RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username + ".public");
+          RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username);
           if (userRSApublickey == null) {
               System.out.println("Could not find " + username + "'s RSA public key.");
           }
