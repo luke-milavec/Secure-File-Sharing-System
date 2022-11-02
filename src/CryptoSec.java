@@ -179,10 +179,11 @@ public class CryptoSec {
         return null;
     }
 
-    public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
+    public byte[] rsaSign(RSAPrivateKey privateKey, RSAPublicKey publicKey, byte[] msg) {
         try {
             Signature rsaSig = Signature.getInstance("SHA256withRSA", "BC");
             rsaSig.initSign(privateKey);
+            rsaSig.initVerify(publicKey);
             rsaSig.update(msg);
             return rsaSig.sign();
         } catch (NoSuchAlgorithmException e) {
@@ -206,22 +207,52 @@ public class CryptoSec {
     *         publicKey - ECDH public key of other party provided by party calling this function
     * return - byte[] of shared secret
     */
-    public byte[] generateSharedSecret(RSAPrivateKey privateKey, RSAPublicKey publicKey) {
+    public byte[] generateSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
         try {
             KeyAgreement keyAgree = KeyAgreement.getInstance("ECDH", "BC");
             keyAgree.init(privateKey);
             keyAgree.doPhase(publicKey, true);
             byte[] sharedSecret = keyAgree.generateSecret();
-            // System.out.println("Shared secret: ", printHexBinary(sharedSecret));
+            // DEBUG: System.out.println("Shared secret: ", );
             return sharedSecret;
+        } catch(IllegalStateException e) {
+            System.err.println("Error: Illegal state");
+            e.printStackTrace();        
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("Error: No algorithm exists");
+            System.err.println("Error: No algorithm exists");
+            e.printStackTrace();
         } catch(InvalidKeyException e) {
-            System.out.println("Error: Invlid Key");
+            System.err.println("Error: Invlid Key");
+            e.printStackTrace();
         } catch(NoSuchProviderException e) {
-            System.out.println("Error: No such provider exists");
+            System.err.println("Error: No such provider exists");
+            e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Write shared secret Kab to file for user
+     * @param username
+     * @param sharedSecret
+     * @return true if PemWriter successfully writes to file. False if not.
+     */
+    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
+         try {
+            // First convert byte[] to SecretKey object
+            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
+            
+            String secretFileName = username + ".sharedsecret";
+            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
+            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
+            pemWriter.close();
+            return true;
+         } catch(IOException e) {
+            System.err.println("Error when writing shared secret to file.");
+            e.printStackTrace();
+            return false;
+         }
+
     }
 
     public Message encryptString(String s,  SecretKey k){
@@ -271,7 +302,7 @@ public class CryptoSec {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
             String toHash = new String(k.getEncoded());
-            toHash += "AES Integtrity";
+            toHash += "AES Integrity";
             byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
             SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
             

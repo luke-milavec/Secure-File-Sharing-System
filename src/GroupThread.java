@@ -8,6 +8,7 @@ import java.lang.Thread;
 import java.net.Socket;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.security.*;
 
@@ -44,34 +45,54 @@ public class GroupThread extends Thread {
             if(signedRSA.getMessage().equals("SignatureForHandshake")) {
                 String username = (String) signedRSA.getObjContents().get(0);
                 RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
-                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
+                byte[] UserECDHpubKeySigned = (byte[]) signedRSA.getObjContents().get(2);
 
+                // Initialize response envelope
                 Envelope res;
-                // Checks for if any are null
-                if(username == null || userRSApublickey == null || userPrivateECKeySig == null) {
+                // Checks for if any contents are null
+                if(username == null || userRSApublickey == null || UserECDHpubKeySigned == null) {
                     res = new Envelope("FAIL");
                     res.addObject(null);
                     output.writeObject(res);
                 } else {
-                    // TODO need to verify whether user sent signature was really signed by the user before doing:
+                    // Verifying signature      ?? is this correct way to do it ?? 
+                    // docs don't mention they need public key sent in this method because of initVerify()
+                    Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                    // If false, this user did NOT sign the message contents
+                    if(!verifySig.verify(UserECDHpubKeySigned)) {
+                        res = new Envelope("FAIL");
+                        res.addObject(null);
+                        output.writeObject(res);
+                    } else {
+                        // Generate ECDH keypair
+                        KeyPair ECDHkeys = cs.genECDHKeyPair();
+                        PublicKey ECDHpubkey = ECDHkeys.getPublic();
+                        PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
-                    // Generate ECDH keypair
-                    KeyPair ECDHkeys = cs.genECDHKeyPair();
-                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
-                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+                        // Sign ECDH public key with RSA private key of group server
+                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs.public");
+                        RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs.private");
+                        byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, serverRSApublickey, ECDHpubkey.getEncoded());
 
-                    // Sign ECDH public key with RSA private key of group server
-                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs.public");
-                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs");
-                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+                        // Send public key to user
+                        res = new Envelope("SignatureForHandshake");
 
-                    // Send back to user
-                    res = new Envelope("SignatureForHandshake");
+                        res.addObject(serverPrivateECDHKeySig);
+                        output.writeObject(res);
 
-//                  res.addObject("gs"); commented out because group server doesn't need to send a username to user per protocol
-//                  res.addObject(serverRSApublickey); commented out because user already has gs's public key and so gs doesn't need to send it according to the diagram
-                    res.addObject(serverPrivateECDHKeySig);
-                    output.writeObject(res);
+                        // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
+                        X509EncodedKeySpec userPubKeySpec = new X509EncodedKeySpec(UserECDHpubKeySigned);
+                        KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
+                        PublicKey userECDHPubKey = (PublicKey) keyFactory.generatePublic(userPubKeySpec);
+                        // Generate Kab, shared secret between user and server
+                        byte[] Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
+                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                        if(!cs.writeSecretToFile("gs", Kab)) {
+                            System.err.println("ERROR: writing secret to file failed on group thread.");
+                        } else {
+                            System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
+                        }
+                    }
 
                 }
             } else {
