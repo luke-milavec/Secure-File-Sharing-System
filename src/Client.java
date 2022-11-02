@@ -113,7 +113,7 @@ public abstract class Client {
           Envelope connectRequest = new Envelope("SignatureForHandshake");
           connectRequest.addObject(username);
           connectRequest.addObject(userRSApublickey); // So the server can verify the signature 
-          // ?? not sure if above is necessary cause docs don't mention they need public key cause of initVerify()
+          connectRequest.addObject(ecKeyPair.getPublic());
           connectRequest.addObject(UserECDHpubKeySigned);
           output.writeObject(connectRequest);
 
@@ -127,7 +127,8 @@ public abstract class Client {
           } else if(serverHandshake.getMessage().equals("SignatureForHandshake")) {
 
                 // Fetch content
-                byte [] serverECDHKeySig = (byte []) serverHandshake.getObjContents().get(0);
+                PublicKey serverECDHPubKey = (PublicKey) serverHandshake.getObjContents().get(0);
+                byte [] serverECDHKeySig = (byte []) serverHandshake.getObjContents().get(1);
                 if (serverECDHKeySig == null) {
                     System.err.println("ERROR: Signature from server is null");
                     return false;
@@ -135,17 +136,23 @@ public abstract class Client {
                 // Must verify server signature
                 Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
                 verifySig.initVerify(gsPubKey);
+                verifySig.update(serverECDHPubKey.getEncoded());
                 if(!verifySig.verify(serverECDHKeySig)) {
                     System.err.println("ERROR: Signature from server cannot be verified");
                     return false;
                 }
+
+                // Taha: There is no way this works since hash functions have pre-image resistance and
+                // are lossy operations, you cannot get back the ECDH public key from the signature
+                // Instead I had the server send it over in ptext instead
                 // Server signature is verified, obtain server's ECDH public key and step 5 key agreement can now occur
-                X509EncodedKeySpec serverPubKeySpec = new X509EncodedKeySpec(serverECDHKeySig);
-                KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
-                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
-                
+//                X509EncodedKeySpec serverPubKeySpec = new X509EncodedKeySpec(serverECDHKeySig);
+//                KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
+//                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
+
                 // Generate Kab, shared secret between user and server
                 byte[] Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
+              System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                 if(!cs.writeSecretToFile(username, Kab)) {
                     System.err.println("ERROR: writing secret to file failed on client side.");
