@@ -3,6 +3,8 @@
 import java.io.*;
 import java.net.Socket;
 import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
@@ -98,13 +100,46 @@ public class FileClient extends Client implements FileClientInterface {
             byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
             // 3) Send to server you want to connect with
             Envelope connectRequest = new Envelope("SignatureForHandshake");
-            connectRequest.addObject(username); // TODO confirm w/ Prof it is okay to send username & userPublic key unencrypted
+             // TODO confirm w/ Prof it is okay to send userPublic key unencrypted
             connectRequest.addObject(userRSApublickey); // So the server can verify the signature
+            connectRequest.addObject(ecKeyPair.getPublic());
             connectRequest.addObject(userPrivateECKeySig);
             output.writeObject(connectRequest);
 
-            // KATELYN (working on) - TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
-            // KATELYN (working on) - TODO complete rest of HandshakeA
+            /**
+             * Server handshake part
+             */
+            Envelope serverHandshake = (Envelope)input.readObject();
+            if(serverHandshake.getMessage().equals("FAIL")) {
+                System.err.println("ERROR: Handshake Failed on server end; \nEither content is null or signature cannot be verified.");
+                return false;
+            } else if(serverHandshake.getMessage().equals("SignatureForHandshake")) {
+
+                // Fetch content
+                PublicKey serverECDHPubKey = (PublicKey) serverHandshake.getObjContents().get(0);
+                byte [] serverECDHKeySig = (byte []) serverHandshake.getObjContents().get(1);
+                if (serverECDHKeySig == null) {
+                    System.err.println("ERROR: Signature from server is null");
+                    return false;
+                }
+                // Must verify server signature
+                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                verifySig.initVerify(fsPubKey);
+                verifySig.update(serverECDHPubKey.getEncoded());
+                if(!verifySig.verify(serverECDHKeySig)) {
+                    System.err.println("ERROR: Signature from server cannot be verified");
+                    return false;
+                }
+
+                // Generate Kab, shared secret between user and server
+                Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
+//                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
+                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+            } else {
+                // Message received was neither "SignatureForHandshake" nor "FAIL"
+                System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
+                return false;
+            }
 
             System.out.println("Connected to " + server + " on port " + port);
             return true;

@@ -5,6 +5,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
@@ -20,6 +21,8 @@ public class FileThread extends Thread {
     private final Socket socket;
     String fsName;
     CryptoSec cs;
+
+    private byte[] Kab;
 
     public FileThread(Socket _socket, String _fsName) {
         socket = _socket;
@@ -257,7 +260,7 @@ public class FileThread extends Thread {
 
     private boolean handshake(final ObjectInputStream input, final ObjectOutputStream output) {
         try {
-            System.out.println(fsName);
+//            System.out.println(fsName);
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
             RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
             Envelope resKey = new Envelope("fs_pub_key");
@@ -267,39 +270,87 @@ public class FileThread extends Thread {
             // Handshake
             Envelope signedRSA = (Envelope)input.readObject(); // user sent ECDH signed key
             if(signedRSA.getMessage().equals("SignatureForHandshake")) {
-                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
-                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
+                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(0);
+                PublicKey userECDHPubKey = (PublicKey) signedRSA.getObjContents().get(1);
+                byte[] UserECDHpubKeySigned = (byte[]) signedRSA.getObjContents().get(2);
 
+                // Initialize response envelope
                 Envelope res;
-                // Checks for if any are null
-                if(userRSApublickey == null || userPrivateECKeySig == null) {
+                // Checks for if any contents are null
+                if(userRSApublickey == null || userECDHPubKey == null || UserECDHpubKeySigned == null) {
                     res = new Envelope("FAIL");
                     res.addObject(null);
                     output.writeObject(res);
                 } else {
-                    // TODO need to verify whether user sent signature was really signed by the user before doing:
+                    Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                    verifySig.initVerify(userRSApublickey);
+                    verifySig.update(userECDHPubKey.getEncoded());
+                    // If false, this user did NOT sign the message contents
+                    if(!verifySig.verify(UserECDHpubKeySigned)) {
+                        res = new Envelope("FAIL");
+                        res.addObject(null);
+                        output.writeObject(res);
+                    } else {
+                        // Generate ECDH keypair
+                        KeyPair ECDHkeys = cs.genECDHKeyPair();
+                        PublicKey ECDHpubkey = ECDHkeys.getPublic();
+                        PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
-                    // Generate ECDH keypair
-                    KeyPair ECDHkeys = cs.genECDHKeyPair();
-                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
-                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+                        // Sign ECDH public key with RSA private key of file server
+                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
+                        RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
+                        byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 
-                    // Sign ECDH public key with RSA private key of file server
-                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
-                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
-                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+                        // Send public key to user
+                        res = new Envelope("SignatureForHandshake");
+                        res.addObject(ECDHpubkey); // added this so user gets access to server's ecdh pubkey since it is not possible for the user to derive it given just the signature
+                        res.addObject(serverPrivateECDHKeySig);
+                        output.writeObject(res);
 
-                    // Send back to user
-                    res = new Envelope("SignatureForHandshake");
-                    res.addObject(serverPrivateECDHKeySig);
-                    output.writeObject(res);
-
-
-                    return true; // TODO once handshake implemented make sure this goes to correct place
+                        // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
+                        // Generate Kab, shared secret between user and server
+                        Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
+//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
+                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                    }
                 }
             } else {
                 System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
             }
+//            if(signedRSA.getMessage().equals("SignatureForHandshake")) {
+//                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
+//                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
+//
+//                Envelope res;
+//                // Checks for if any are null
+//                if(userRSApublickey == null || userPrivateECKeySig == null) {
+//                    res = new Envelope("FAIL");
+//                    res.addObject(null);
+//                    output.writeObject(res);
+//                } else {
+//                    // TODO need to verify whether user sent signature was really signed by the user before doing:
+//
+//                    // Generate ECDH keypair
+//                    KeyPair ECDHkeys = cs.genECDHKeyPair();
+//                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
+//                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
+//
+//                    // Sign ECDH public key with RSA private key of file server
+//                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
+//                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
+//                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
+//
+//                    // Send back to user
+//                    res = new Envelope("SignatureForHandshake");
+//                    res.addObject(serverPrivateECDHKeySig);
+//                    output.writeObject(res);
+//
+//
+//                    return true; // TODO once handshake implemented make sure this goes to correct place
+//                }
+//            } else {
+//                System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
+//            }
 //            output.reset(); // TODO test if this causes issues
         }  catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
