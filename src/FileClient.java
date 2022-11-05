@@ -135,6 +135,7 @@ public class FileClient extends Client implements FileClientInterface {
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+
             } else {
                 // Message received was neither "SignatureForHandshake" nor "FAIL"
                 System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");

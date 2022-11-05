@@ -290,6 +290,7 @@ public class FileThread extends Thread {
                         res = new Envelope("FAIL");
                         res.addObject(null);
                         output.writeObject(res);
+                        return false;
                     } else {
                         // Generate ECDH keypair
                         KeyPair ECDHkeys = cs.genECDHKeyPair();
@@ -312,46 +313,13 @@ public class FileThread extends Thread {
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                        output.reset(); // TODO may cause issue
+                        return true;
                     }
                 }
             } else {
                 System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
             }
-//            if(signedRSA.getMessage().equals("SignatureForHandshake")) {
-//                RSAPublicKey userRSApublickey = (RSAPublicKey) signedRSA.getObjContents().get(1);
-//                byte[] userPrivateECKeySig = (byte[]) signedRSA.getObjContents().get(2);
-//
-//                Envelope res;
-//                // Checks for if any are null
-//                if(userRSApublickey == null || userPrivateECKeySig == null) {
-//                    res = new Envelope("FAIL");
-//                    res.addObject(null);
-//                    output.writeObject(res);
-//                } else {
-//                    // TODO need to verify whether user sent signature was really signed by the user before doing:
-//
-//                    // Generate ECDH keypair
-//                    KeyPair ECDHkeys = cs.genECDHKeyPair();
-//                    PublicKey ECDHpubkey = ECDHkeys.getPublic();
-//                    PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
-//
-//                    // Sign ECDH public key with RSA private key of file server
-//                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
-//                    RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
-//                    byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
-//
-//                    // Send back to user
-//                    res = new Envelope("SignatureForHandshake");
-//                    res.addObject(serverPrivateECDHKeySig);
-//                    output.writeObject(res);
-//
-//
-//                    return true; // TODO once handshake implemented make sure this goes to correct place
-//                }
-//            } else {
-//                System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
-//            }
-//            output.reset(); // TODO test if this causes issues
         }  catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
