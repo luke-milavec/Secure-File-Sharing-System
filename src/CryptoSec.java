@@ -3,6 +3,7 @@ import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
@@ -323,6 +324,28 @@ public class CryptoSec {
         return null;
     }
 
+    /**
+     * Returns a 16 byte IV given key by deriving a new key using SHA-256 hash
+     * with a constant.
+    **/
+    private byte[] genIV(byte[] Kab) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String toHash = new String(Kab);
+            toHash += "IV Generator";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            int ivLength = 16;
+            byte[] iv = new byte[ivLength];
+            for (int i = 0; i < ivLength; i++) {
+                iv[i] = hash[i];
+            }
+            return iv;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private SecretKey getKe(byte[] Kab) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -357,7 +380,8 @@ public class CryptoSec {
             sha256_HMAC.init(ki);
             String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            c.init(Cipher.ENCRYPT_MODE,ke);
+            IvParameterSpec iv = new IvParameterSpec(genIV(k));
+            c.init(Cipher.ENCRYPT_MODE, ke, iv);
             String enc = byteArrToHexStr(c.doFinal(s.getBytes()));
             return new Message(enc,hmac);
         } catch (InvalidKeyException e) {
@@ -372,6 +396,8 @@ public class CryptoSec {
             e.printStackTrace();
         } catch (BadPaddingException e){
             e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+           e.printStackTrace();
         }
         return null;
     }
@@ -398,7 +424,9 @@ public class CryptoSec {
             sha256_HMAC.init(ki);
 
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            c.init(Cipher.DECRYPT_MODE,ke);
+            IvParameterSpec iv = new IvParameterSpec(genIV(k));
+            c.init(Cipher.DECRYPT_MODE,ke, iv);
+
             String s = byteArrToHexStr(c.doFinal(m.enc.getBytes()));
 
             String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
@@ -420,6 +448,8 @@ public class CryptoSec {
             e.printStackTrace();
         } catch (BadPaddingException e){
             e.printStackTrace();
+        } catch (InvalidAlgorithmParameterException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }
