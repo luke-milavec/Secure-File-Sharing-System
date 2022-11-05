@@ -259,7 +259,7 @@ public class FileThread extends Thread {
         try {
             System.out.println(fsName);
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
-            RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName + ".public");
+            RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
             Envelope resKey = new Envelope("fs_pub_key");
             resKey.addObject(fsPubKey);
             output.writeObject(resKey);
@@ -285,7 +285,7 @@ public class FileThread extends Thread {
                     PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
                     // Sign ECDH public key with RSA private key of file server
-                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName + ".public");
+                    RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
                     RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
                     byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 

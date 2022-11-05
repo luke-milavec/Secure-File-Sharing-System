@@ -10,6 +10,9 @@ import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Scanner;
+import java.security.*;
+import java.security.spec.X509EncodedKeySpec;
+
 
 public abstract class Client {
 
@@ -36,12 +39,12 @@ public abstract class Client {
             // the group server could not be verified.
           CryptoSec cs = new CryptoSec();
           Envelope pubKeyMsg = (Envelope)input.readObject();
-          RSAPublicKey gsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
+          RSAPublicKey gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
           File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
           if (serverKeys.exists()) {
               // Compare key sent by server to the cached one
-              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
               if(cs.byteArrToHexStr(gsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedGSPubKey.getEncoded()))) {
                   System.out.println("The cached public key for this server matched the public key sent by " + server +
                           " at port " + port + ". Connecting...");
@@ -100,21 +103,70 @@ public abstract class Client {
           if (userRSAprivatekey == null) {
               System.out.println("Could not find " + username + "'s RSA private key.");
           }
-          RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username + ".public");
+          RSAPublicKey userRSApublickey = cs.readRSAPublicKey(username);
           if (userRSApublickey == null) {
               System.out.println("Could not find " + username + "'s RSA public key.");
           }
           // 2) Sign ECDH public key with RSA private key
-          byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
+          byte[] UserECDHpubKeySigned = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
             // 3) Send to server you want to connect with
           Envelope connectRequest = new Envelope("SignatureForHandshake");
-          connectRequest.addObject(username); // TODO confirm w/ Prof it is okay to send username & userPublic key unencrypted
-          connectRequest.addObject(userRSApublickey); // So the server can verify the signature
-          connectRequest.addObject(userPrivateECKeySig);
+          connectRequest.addObject(username);
+          connectRequest.addObject(userRSApublickey); // So the server can verify the signature 
+          connectRequest.addObject(ecKeyPair.getPublic());
+          connectRequest.addObject(UserECDHpubKeySigned);
           output.writeObject(connectRequest);
 
-          // KATELYN (working on) - TODO Get signature from groupthread, verify it, use it to produce a shared secret Kab via key agreement
-            // KATELYN (working on) - TODO complete rest of HandshakeA
+          /**
+           * Server handshake part
+           */
+          Envelope serverHandshake = (Envelope)input.readObject();
+          if(serverHandshake.getMessage().equals("FAIL")) {
+            System.err.println("ERROR: Handshake Failed on server end; \nEither content is null or signature cannot be verified.");
+            return false;
+          } else if(serverHandshake.getMessage().equals("SignatureForHandshake")) {
+
+                // Fetch content
+                PublicKey serverECDHPubKey = (PublicKey) serverHandshake.getObjContents().get(0);
+                byte [] serverECDHKeySig = (byte []) serverHandshake.getObjContents().get(1);
+                if (serverECDHKeySig == null) {
+                    System.err.println("ERROR: Signature from server is null");
+                    return false;
+                }
+                // Must verify server signature
+                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                verifySig.initVerify(gsPubKey);
+                verifySig.update(serverECDHPubKey.getEncoded());
+                if(!verifySig.verify(serverECDHKeySig)) {
+                    System.err.println("ERROR: Signature from server cannot be verified");
+                    return false;
+                }
+
+                // Taha: There is no way this works since hash functions have pre-image resistance and
+                // are lossy operations, you cannot get back the ECDH public key from the signature
+                // Instead I had the server send it over in ptext instead
+                // Server signature is verified, obtain server's ECDH public key and step 5 key agreement can now occur
+//                X509EncodedKeySpec serverPubKeySpec = new X509EncodedKeySpec(serverECDHKeySig);
+//                KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
+//                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
+
+                // Generate Kab, shared secret between user and server
+                byte[] Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
+//                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
+                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                if(!cs.writeSecretToFile(username, Kab)) {
+                    System.err.println("ERROR: writing secret to file failed on client side.");
+                    return false;
+                } else {
+                    System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
+                }
+
+          } else {
+            // Message received was neither "SignatureForHandshake" nor "FAIL"
+            System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
+            return false;
+          }
+          
 
           System.out.println("Connected to " + server + " on port " + port);
           return true;
