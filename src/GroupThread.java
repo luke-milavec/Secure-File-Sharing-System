@@ -1,6 +1,7 @@
 /* This thread does all the work. It communicates with the client through Envelopes.
  *
  */
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -17,6 +18,8 @@ import java.security.*;
 public class GroupThread extends Thread {
     private final Socket socket;
     private GroupServer my_gs;
+
+    private byte[] Kab;
 
     public GroupThread(Socket _socket, GroupServer _gs) {
         socket = _socket;
@@ -94,7 +97,7 @@ public class GroupThread extends Thread {
 //                        KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
 //                        PublicKey userECDHPubKey = (PublicKey) keyFactory.generatePublic(userPubKeySpec);
                         // Generate Kab, shared secret between user and server
-                        byte[] Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
+                        Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                         if(!cs.writeSecretToFile("gs", Kab)) {
@@ -115,7 +118,12 @@ public class GroupThread extends Thread {
 
             do {
                 output.reset();
-                Envelope message = (Envelope)input.readObject();
+                Message msg = (Message) input.readObject();
+//                Envelope message = (Envelope)input.readObject();
+
+               Envelope message = cs.decryptMessage(msg, Kab);
+
+
                 System.out.println("Request received: " + message.getMessage());
                 Envelope response;
 
@@ -130,6 +138,9 @@ public class GroupThread extends Thread {
                         output.writeObject(response);
                     } else {
                         UserToken yourToken = createToken(username); //Create a token
+                        String serTok = cs.serializeToken(yourToken);
+                        Message enTok = cs.encryptString(serTok, Kab);
+
                         //Respond to the client. On error, the client will receive a null token
                         response = new Envelope("OK");
                         response.addObject(yourToken);

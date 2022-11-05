@@ -56,7 +56,6 @@ public class ClientTerminalApp {
                     } else if (!connect(command[1], command[2], command[3], username)) {
                             System.out.println("Connection failed: " + commandLine);
                     }
-
                      break;
                 case "disconnect":
                     gClient.disconnect();

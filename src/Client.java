@@ -2,6 +2,7 @@ import org.bouncycastle.crypto.io.SignerOutputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.SealedObject;
+import javax.crypto.SecretKey;
 import java.io.File;
 import java.net.Socket;
 import java.io.ObjectInputStream;
@@ -22,6 +23,8 @@ public abstract class Client {
     protected Socket sock;
     protected ObjectOutputStream output;
     protected ObjectInputStream input;
+
+    protected byte[] Kab;
 
     public boolean connect(final String server, final int port, String username) {
         System.out.println("attempting to connect");
@@ -151,9 +154,10 @@ public abstract class Client {
 //                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
 
                 // Generate Kab, shared secret between user and server
-                byte[] Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
+                Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+              // TODO don't write shared secret to file
                 if(!cs.writeSecretToFile(username, Kab)) {
                     System.err.println("ERROR: writing secret to file failed on client side.");
                     return false;
@@ -194,6 +198,7 @@ public abstract class Client {
                 output.writeObject(message);
                 sock.close();
                 sock = null;
+                Kab = null;
             } catch(Exception e) {
                 System.err.println("Error: " + e.getMessage());
                 e.printStackTrace(System.err);

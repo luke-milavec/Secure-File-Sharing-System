@@ -255,17 +255,97 @@ public class CryptoSec {
 
     }
 
-    public Message encryptString(String s,  SecretKey k){
+    public byte[] serializeObject(Object obj) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream serialize = new ObjectOutputStream(bos);
+            serialize.writeObject(obj);
+            serialize.flush();
+            return bos.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public Envelope decryptMessage(Message msg, byte[] Kab) {
+        byte[] orgBytes = decryptString(msg, Kab).getBytes();
+        ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+        try {
+            ObjectInput in = new ObjectInputStream(bis);
+            return (Envelope) in.readObject();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public Message encryptEnvelope(Envelope env, byte[] Kab) {
+        try {
+            byte[] serializedEnv = serializeObject(env);
+            if (serializedEnv != null) {
+               return encryptString(new String(serializedEnv), Kab);
+//                SecretKey ki = getKi(Kab);
+//                SecretKey ke = getKe(Kab);
+//                if (ki != null && ke != null) {
+//                    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+//                    sha256_HMAC.init(ki);
+//                    String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(serializedEnv));
+//                    Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
+//                    c.init(Cipher.ENCRYPT_MODE,ke);
+//
+//                    String en = c.doFinal(env);
+//                } else {
+//                    System.out.println("Error deriving ki or ke");
+//                }
+            } else {
+                System.out.println("Error serializing");
+            }
+//            String enc = byteArrToHexStr(c.doFinal(s.getBytes()));
+
+        } catch (Exception e) {
+
+        }
+        return null;
+    }
+
+    private SecretKey getKi(byte[] Kab) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String toHash = new String(Kab);
+            toHash += "AES Integtrity";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            return new SecretKeySpec(hash, 0, hash.length, "AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private SecretKey getKe(byte[] Kab) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String toHash = new String(Kab);
+            toHash += "AES Confidentiality";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            return new SecretKeySpec(hash, 0, hash.length, "AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public Message encryptString(String s,  byte[] k){
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-            String toHash = new String(k.getEncoded());
+            String toHash = new String(k);
             toHash += "AES Integtrity";
             byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
             SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
             
-            toHash = new String(k.getEncoded());
+            toHash = new String(k);
             toHash += "AES Confidentiality";
             hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
             SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
@@ -296,17 +376,17 @@ public class CryptoSec {
         return null;
     }
 
-    public String decryptString(Message m, SecretKey k){
+    public String decryptString(Message m, byte[] k){
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-            String toHash = new String(k.getEncoded());
+            String toHash = new String(k);
             toHash += "AES Integrity";
             byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
             SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
             
-            toHash = new String(k.getEncoded());
+            toHash = new String(k);
             toHash += "AES Confidentiality";
             hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
             SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
@@ -316,10 +396,11 @@ public class CryptoSec {
             String sha256hex = byteArrToHexStr(hash);
 
             sha256_HMAC.init(ki);
-            
+
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             c.init(Cipher.DECRYPT_MODE,ke);
             String s = byteArrToHexStr(c.doFinal(m.enc.getBytes()));
+
             String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
             if (hmac.equals(m.hmac)){
                 return s;
@@ -343,7 +424,7 @@ public class CryptoSec {
         return null;
     }
 
-    public String serializeToken(Token t){
+    public String serializeToken(UserToken t){
         String s  = t.getIssuer()+"|"+t.getSubject();
         for(String m: t.getGroups()){
             s += "|"+m;
