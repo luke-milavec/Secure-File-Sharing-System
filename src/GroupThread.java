@@ -89,13 +89,13 @@ public class GroupThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Taha: There is no way the next 3 lines work since hash functions have pre-image resistance and
                         // are lossy operations, you cannot get back the ECDH public key from the signature
-                        // Instead I had the user send it over instead
+                        // Instead I had the user send it over
 //                        X509EncodedKeySpec userPubKeySpec = new X509EncodedKeySpec(UserECDHpubKeySigned);
 //                        KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
 //                        PublicKey userECDHPubKey = (PublicKey) keyFactory.generatePublic(userPubKeySpec);
                         // Generate Kab, shared secret between user and server
                         byte[] Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
+//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                         if(!cs.writeSecretToFile("gs", Kab)) {
                             System.err.println("ERROR: writing secret to file failed on group thread.");

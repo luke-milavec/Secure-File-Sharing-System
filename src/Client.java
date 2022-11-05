@@ -152,7 +152,7 @@ public abstract class Client {
 
                 // Generate Kab, shared secret between user and server
                 byte[] Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
-              System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
+//                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                 if(!cs.writeSecretToFile(username, Kab)) {
                     System.err.println("ERROR: writing secret to file failed on client side.");
