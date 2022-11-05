@@ -28,9 +28,10 @@ public class GroupClient extends Client implements GroupClientInterface {
 //            output.writeObject(message);
 
             //Get the response from the server
-            encryptedMsg = (Message) input.readObject();
-            response = cs.decryptMessage(encryptedMsg, Kab);
-//            response = (Envelope)input.readObject();
+            // TODO uncomment following 2 lines
+//            encryptedMsg = (Message) input.readObject();
+//            response = cs.decryptMessage(encryptedMsg, Kab);
+            response = (Envelope)input.readObject();
 
             //Successful response
             if(response.getMessage().equals("OK")) {
