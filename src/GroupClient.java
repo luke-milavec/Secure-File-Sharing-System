@@ -22,6 +22,8 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
 
             Message encryptedMsg = cs.encryptEnvelope(message, Kab);
+            System.out.println(cs.byteArrToHexStr(encryptedMsg.enc));
+            System.out.println(cs.byteArrToHexStr(encryptedMsg.hmac));
             output.writeObject(encryptedMsg);
 //            output.writeObject(message);
 

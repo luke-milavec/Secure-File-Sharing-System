@@ -120,9 +120,12 @@ public class GroupThread extends Thread {
                 output.reset();
                 Message msg = (Message) input.readObject();
 //                Envelope message = (Envelope)input.readObject();
-
+//                System.out.println(cs.byteArrToHexStr(msg.enc));
+//                System.out.println(cs.byteArrToHexStr(msg.hmac));
                Envelope message = cs.decryptMessage(msg, Kab);
+               if(message != null) {
 
+               }
 
                 System.out.println("Request received: " + message.getMessage());
                 Envelope response;
@@ -139,7 +142,7 @@ public class GroupThread extends Thread {
                     } else {
                         UserToken yourToken = createToken(username); //Create a token
                         String serTok = cs.serializeToken(yourToken);
-//                        Message enTok = cs.encryptByteArr(serTok, Kab);
+                        Message enTok = cs.encryptByteArr(serTok.getBytes(), Kab);
 
                         //Respond to the client. On error, the client will receive a null token
                         response = new Envelope("OK");

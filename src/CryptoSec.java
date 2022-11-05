@@ -298,9 +298,12 @@ public class CryptoSec {
     private SecretKey getKi(byte[] Kab) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String toHash = new String(Kab);
-            toHash += "AES Integtrity";
-            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            byte[] byteIConst = "AES Integrity".getBytes();
+            byte[] toHash = new byte[Kab.length + byteIConst.length];
+            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
+            System.arraycopy(byteIConst, 0, toHash, Kab.length, byteIConst.length);
+            byte[] hash = digest.digest(toHash);
+
             return new SecretKeySpec(hash, 0, hash.length, "AES");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -332,10 +335,13 @@ public class CryptoSec {
 
     private SecretKey getKe(byte[] Kab) {
         try {
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String toHash = new String(Kab);
-            toHash += "AES Confidentiality";
-            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            byte[] byteIConst = "AES Encryption".getBytes();
+            byte[] toHash = new byte[Kab.length + byteIConst.length];
+            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
+            System.arraycopy(byteIConst, 0, toHash, Kab.length, byteIConst.length);
+            byte[] hash = digest.digest(toHash);
             return new SecretKeySpec(hash, 0, hash.length, "AES");
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -344,24 +350,21 @@ public class CryptoSec {
     }
     public Message encryptByteArr(byte[] msg,  byte[] k){
         try {
+//            System.out.println("kab encrypt");
+//            System.out.println(byteArrToHexStr(k));
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-            String toHash = new String(k);
-            toHash += "AES Integtrity";
-            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-            SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
-            
-            toHash = new String(k);
-            toHash += "AES Confidentiality";
-            hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-            SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
+            SecretKey ki = getKi(k);
+//            System.out.println("ki encrypt");
+//            System.out.println(byteArrToHexStr(ki.getEncoded()));
+
+            SecretKey ke = getKe(k);
+//            System.out.println("ke encrypt");
+//            System.out.println(byteArrToHexStr(ke.getEncoded()));
 
             sha256_HMAC.init(ki);
 
-            String sha256hex = byteArrToHexStr(hash);
-
-            sha256_HMAC.init(ki);
             byte[] hmac =  sha256_HMAC.doFinal(msg);
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
@@ -369,7 +372,7 @@ public class CryptoSec {
                 IvParameterSpec iv = new IvParameterSpec(ivBytes);
                 c.init(Cipher.ENCRYPT_MODE, ke, iv);
                 byte[] enc = c.doFinal(msg);
-                return new Message(enc,hmac);
+                return new Message(hmac, enc);
             }
         } catch (InvalidKeyException e) {
             e.printStackTrace();
@@ -389,29 +392,32 @@ public class CryptoSec {
 
     public byte[] decryptString(Message m, byte[] k){
         try {
-            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+//            System.out.println("kab decrypt");
+//            System.out.println(byteArrToHexStr(k));
+
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
-            String toHash = new String(k);
-            toHash += "AES Integrity";
-            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-            SecretKey ki = new SecretKeySpec(hash, 0, hash.length, "AES");
-            
-            toHash = new String(k);
-            toHash += "AES Confidentiality";
-            hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-            SecretKey ke = new SecretKeySpec(hash, 0, hash.length, "AES");
+            SecretKey ki = getKi(k);
+//            System.out.println("ki decrypt");
+//            System.out.println(byteArrToHexStr(ki.getEncoded()));
 
+            SecretKey ke = getKe(k);
+//            System.out.println("ke decrypt");
+//            System.out.println(byteArrToHexStr(ke.getEncoded()));
+
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(ki);
 
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            byte[] ivBytes = genIV(k);
+            byte[] ivBytes = genIV(k); // generate an iv based on Kab
             if (ivBytes != null) {
                 IvParameterSpec iv = new IvParameterSpec(ivBytes);
                 c.init(Cipher.DECRYPT_MODE,ke, iv);
                 byte[] s = c.doFinal(m.enc);
 
                 byte[] hmac =  sha256_HMAC.doFinal(s);
+                System.out.println("new hmac");
+                System.out.println(byteArrToHexStr(hmac));
                 if (Arrays.equals(hmac, m.hmac)){
                     return s;
                 } else {
