@@ -134,16 +134,17 @@ public class GroupThread extends Thread {
                            // TODO get token serialization working coverting it to a string in
                            // serialize token and then encrypting/decrypting
                            // doesn't work right now because its lossy
-
                            String serTok = cs.serializeToken(yourToken);
                            Message enTok = cs.encryptByteArr(serTok.getBytes(), Kab);
 
                            //Respond to the client. On error, the client will receive a null token
                            response = new Envelope("OK");
-//                           response.addObject(yourToken);
-//                           output.writeObject(response);
-                           response.addObject(enTok);
-                           output.writeObject(cs.encryptEnvelope(response, Kab));
+                           response.addObject(yourToken);
+                           output.writeObject(response);
+                           // TODO encrypt envelope before sending with the following two lines
+                           // comment prev 3 lines
+//                           response.addObject(enTok);
+//                           output.writeObject(cs.encryptEnvelope(response, Kab));
                        }
                    } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
                        if(message.getObjContents().size() < 2) {

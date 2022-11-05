@@ -8,12 +8,7 @@
  *       groups that are created in the system
  */
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyPair;
@@ -46,6 +41,13 @@ public class GroupServer extends Server {
             FileInputStream fis = new FileInputStream(userFile);
             userStream = new ObjectInputStream(fis);
             userList = (UserList)userStream.readObject();
+
+            // TODO figure out this weirdest bug: it works if you do this twice else userList is null
+            FileInputStream fileIn = new FileInputStream(userFile);
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            userList = (UserList) objectIn.readObject();
+//            System.out.println(userList.getUserGroups("admin").get(0));
+
         } catch(FileNotFoundException e) {
             System.out.println("UserList File Does Not Exist. Creating UserList...");
             System.out.println("No users currently exist. Your account will be the administrator.");
@@ -156,6 +158,11 @@ class ShutDownListener extends Thread {
         try {
             outStream = new ObjectOutputStream(new FileOutputStream("UserList.bin"));
             outStream.writeObject(my_gs.userList);
+            // this works so it is written, problem is later
+//            FileInputStream fis = new FileInputStream("UserList.bin");
+//            ObjectInputStream userStream = new ObjectInputStream(fis);
+//            System.out.println("Hello");
+//            System.out.println(((UserList)userStream.readObject()).checkUser("admin"));
 
             outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
             outStream.writeObject(my_gs.groupList);
