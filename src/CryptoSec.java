@@ -9,7 +9,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
@@ -234,8 +233,8 @@ public class CryptoSec {
 
     /**
      * Write shared secret Kab to file for user
-     * @param username
-     * @param sharedSecret
+     * @param username  the username associated with the key
+     * @param sharedSecret shared secret derived in handshake
      * @return true if PemWriter successfully writes to file. False if not.
      */
     public boolean writeSecretToFile(String username, byte[] sharedSecret) {
@@ -256,6 +255,13 @@ public class CryptoSec {
 
     }
 
+
+    /**
+     * Given an object that implements Serializable, serializes it
+     * into a byte array which it returns
+     * @param obj this is any object that implements Serializable
+     * @return byte[] containing the serialized object
+     * **/
     public byte[] serializeObject(Object obj) {
         try {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -270,8 +276,17 @@ public class CryptoSec {
     }
 
 
+    /**
+     * Given shared secret Kab and a message with encrypted contents,
+     * verifies the HMAC, decrypts the contents, deserializes contents
+     * back into an envelope and returns it.
+     * Returns null if HMAC verification fails
+     * @param msg  encrypted Message containing encrypted envelope & HMAC
+     * @param Kab shared secret
+     * @return Envelope
+     **/
     public Envelope decryptMessage(Message msg, byte[] Kab) {
-        byte[] orgBytes = decryptString(msg, Kab);
+        byte[] orgBytes = decryptString(msg, Kab); // get decrypted envelope bytes
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
             try {
@@ -283,18 +298,54 @@ public class CryptoSec {
         }
         return null;
     }
-    public Message encryptEnvelope(Envelope env, byte[] Kab) {
 
+    /**
+     * Given an envelope, serializes, encrypts, generates HMAC,
+     * and returns a Message with the encrypted envelope and
+     * a HMAC of the envelope
+     * @param env Envelope to be encrypted
+     * @param Kab shared secret used to derive ki and ke
+     * @return Message (containing enc and hmac)
+     **/
+    public Message encryptEnvelope(Envelope env, byte[] Kab) {
         byte[] serializedEnv = serializeObject(env);
         if (serializedEnv != null) {
             return encryptByteArr(serializedEnv, Kab);
-
             }else {
             System.out.println("Error serializing");
         }
         return null;
     }
 
+
+    /**
+     * Returns a 16 byte IV given key by deriving a new key using SHA-256 hash
+     * with a constant.
+     * @param Kab shared secret
+     * @return byte[] iv
+    **/
+    private byte[] genIV(byte[] Kab) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String toHash = new String(Kab);
+            toHash += "IV Generator";
+            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
+            int ivLength = 16;
+            byte[] iv = new byte[ivLength];
+            System.arraycopy(hash, 0, iv, 0, ivLength);
+            return iv;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * Returns ki, a 256-bit key, derived from Kab (shared secret)
+     * to be used as an integrity key
+     * @param Kab shared secret used to derive ki
+     * @return SecretKey ki
+     * **/
     private SecretKey getKi(byte[] Kab) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -311,28 +362,12 @@ public class CryptoSec {
         return null;
     }
 
-    /**
-     * Returns a 16 byte IV given key by deriving a new key using SHA-256 hash
-     * with a constant.
-    **/
-    private byte[] genIV(byte[] Kab) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String toHash = new String(Kab);
-            toHash += "IV Generator";
-            byte[] hash = digest.digest(toHash.getBytes(StandardCharsets.UTF_8));
-            int ivLength = 16;
-            byte[] iv = new byte[ivLength];
-            for (int i = 0; i < ivLength; i++) {
-                iv[i] = hash[i];
-            }
-            return iv;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
 
+    /**
+     * Returns ke, a 256 bit encryption key, derived from Kab (shared secret)
+     * @param Kab shared secret used to derive ke
+     * @return SecretKey ke
+     * **/
     private SecretKey getKe(byte[] Kab) {
         try {
 
@@ -348,6 +383,15 @@ public class CryptoSec {
         }
         return null;
     }
+
+    /**
+     * Given a byte[] message and a shared secret Kab, encrypts
+     * the message and generates a HMAC for it, returning both
+     * as a Message
+     * @param msg The message in byte[] form to be encrypted
+     * @return k shared secret Kab used to derive keys to encrypt
+     *         and generate the HMAC
+     * **/
     public Message encryptByteArr(byte[] msg,  byte[] k){
         try {
 //            System.out.println("kab encrypt");
@@ -374,9 +418,7 @@ public class CryptoSec {
                 byte[] enc = c.doFinal(msg);
                 return new Message(hmac, enc);
             }
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e){
+        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         } catch (NoSuchPaddingException e){
             e.printStackTrace();
@@ -416,8 +458,8 @@ public class CryptoSec {
                 byte[] s = c.doFinal(m.enc);
 
                 byte[] hmac =  sha256_HMAC.doFinal(s);
-                System.out.println("new hmac");
-                System.out.println(byteArrToHexStr(hmac));
+//                System.out.println("new hmac");
+//                System.out.println(byteArrToHexStr(hmac));
                 if (Arrays.equals(hmac, m.hmac)){
                     return s;
                 } else {
@@ -426,15 +468,8 @@ public class CryptoSec {
                 }
             }
 
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e){
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e){
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e){
-            e.printStackTrace();
-        } catch (BadPaddingException e){
+        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
+                 BadPaddingException e) {
             e.printStackTrace();
         } catch (InvalidAlgorithmParameterException e) {
             throw new RuntimeException(e);
@@ -443,11 +478,11 @@ public class CryptoSec {
     }
 
     public String serializeToken(UserToken t){
-        String s  = t.getIssuer()+"|"+t.getSubject();
+        StringBuilder s  = new StringBuilder(t.getIssuer() + "|" + t.getSubject());
         for(String m: t.getGroups()){
-            s += "|"+m;
+            s.append("|").append(m);
         }
-        return s;
+        return s.toString();
     }
 
     public Token deserializeToken(String s){

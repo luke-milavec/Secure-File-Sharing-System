@@ -1,8 +1,3 @@
-import org.bouncycastle.crypto.io.SignerOutputStream;
-
-import javax.crypto.Cipher;
-import javax.crypto.SealedObject;
-import javax.crypto.SecretKey;
 import java.io.File;
 import java.net.Socket;
 import java.io.ObjectInputStream;
@@ -12,7 +7,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Scanner;
 import java.security.*;
-import java.security.spec.X509EncodedKeySpec;
 
 
 public abstract class Client {

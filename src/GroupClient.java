@@ -22,13 +22,15 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
 
             Message encryptedMsg = cs.encryptEnvelope(message, Kab);
-            System.out.println(cs.byteArrToHexStr(encryptedMsg.enc));
-            System.out.println(cs.byteArrToHexStr(encryptedMsg.hmac));
+//            System.out.println(cs.byteArrToHexStr(encryptedMsg.enc));
+//            System.out.println(cs.byteArrToHexStr(encryptedMsg.hmac));
             output.writeObject(encryptedMsg);
 //            output.writeObject(message);
 
             //Get the response from the server
-            response = (Envelope)input.readObject();
+            encryptedMsg = (Message) input.readObject();
+            response = cs.decryptMessage(encryptedMsg, Kab);
+//            response = (Envelope)input.readObject();
 
             //Successful response
             if(response.getMessage().equals("OK")) {
@@ -60,9 +62,15 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CUSER");
             message.addObject(username); //Add user name string
             message.addObject(token); //Add the requester's token
+
+//            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
+
             output.writeObject(message);
+//            output.writeObject(encryptedMessage);
 
             response = (Envelope)input.readObject();
+
+
 
             //If server indicates success, return true
             if(response.getMessage().equals("OK")) {
