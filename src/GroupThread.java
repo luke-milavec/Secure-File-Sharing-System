@@ -139,7 +139,7 @@ public class GroupThread extends Thread {
                     } else {
                         UserToken yourToken = createToken(username); //Create a token
                         String serTok = cs.serializeToken(yourToken);
-                        Message enTok = cs.encryptString(serTok, Kab);
+//                        Message enTok = cs.encryptByteArr(serTok, Kab);
 
                         //Respond to the client. On error, the client will receive a null token
                         response = new Envelope("OK");

@@ -271,42 +271,26 @@ public class CryptoSec {
 
 
     public Envelope decryptMessage(Message msg, byte[] Kab) {
-        byte[] orgBytes = decryptString(msg, Kab).getBytes();
-        ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
-        try {
-            ObjectInput in = new ObjectInputStream(bis);
-            return (Envelope) in.readObject();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        byte[] orgBytes = decryptString(msg, Kab);
+        if (orgBytes != null) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+            try {
+                ObjectInput in = new ObjectInputStream(bis);
+                return (Envelope) in.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return null;
     }
     public Message encryptEnvelope(Envelope env, byte[] Kab) {
-        try {
-            byte[] serializedEnv = serializeObject(env);
-            if (serializedEnv != null) {
-               return encryptString(new String(serializedEnv), Kab);
-//                SecretKey ki = getKi(Kab);
-//                SecretKey ke = getKe(Kab);
-//                if (ki != null && ke != null) {
-//                    Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-//                    sha256_HMAC.init(ki);
-//                    String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(serializedEnv));
-//                    Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-//                    c.init(Cipher.ENCRYPT_MODE,ke);
-//
-//                    String en = c.doFinal(env);
-//                } else {
-//                    System.out.println("Error deriving ki or ke");
-//                }
-            } else {
-                System.out.println("Error serializing");
-            }
-//            String enc = byteArrToHexStr(c.doFinal(s.getBytes()));
 
-        } catch (Exception e) {
+        byte[] serializedEnv = serializeObject(env);
+        if (serializedEnv != null) {
+            return encryptByteArr(serializedEnv, Kab);
 
+            }else {
+            System.out.println("Error serializing");
         }
         return null;
     }
@@ -358,7 +342,7 @@ public class CryptoSec {
         }
         return null;
     }
-    public Message encryptString(String s,  byte[] k){
+    public Message encryptByteArr(byte[] msg,  byte[] k){
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -378,17 +362,18 @@ public class CryptoSec {
             String sha256hex = byteArrToHexStr(hash);
 
             sha256_HMAC.init(ki);
-            String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
+            byte[] hmac =  sha256_HMAC.doFinal(msg);
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            IvParameterSpec iv = new IvParameterSpec(genIV(k));
-            c.init(Cipher.ENCRYPT_MODE, ke, iv);
-            String enc = byteArrToHexStr(c.doFinal(s.getBytes()));
-            return new Message(enc,hmac);
+            byte[] ivBytes = genIV(k);
+            if (ivBytes != null) {
+                IvParameterSpec iv = new IvParameterSpec(ivBytes);
+                c.init(Cipher.ENCRYPT_MODE, ke, iv);
+                byte[] enc = c.doFinal(msg);
+                return new Message(enc,hmac);
+            }
         } catch (InvalidKeyException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e){
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e){
             e.printStackTrace();
         } catch (NoSuchPaddingException e){
             e.printStackTrace();
@@ -402,7 +387,7 @@ public class CryptoSec {
         return null;
     }
 
-    public String decryptString(Message m, byte[] k){
+    public byte[] decryptString(Message m, byte[] k){
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -419,28 +404,25 @@ public class CryptoSec {
 
             sha256_HMAC.init(ki);
 
-            String sha256hex = byteArrToHexStr(hash);
-
-            sha256_HMAC.init(ki);
-
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            IvParameterSpec iv = new IvParameterSpec(genIV(k));
-            c.init(Cipher.DECRYPT_MODE,ke, iv);
+            byte[] ivBytes = genIV(k);
+            if (ivBytes != null) {
+                IvParameterSpec iv = new IvParameterSpec(ivBytes);
+                c.init(Cipher.DECRYPT_MODE,ke, iv);
+                byte[] s = c.doFinal(m.enc);
 
-            String s = byteArrToHexStr(c.doFinal(m.enc.getBytes()));
-
-            String hmac =  byteArrToHexStr(sha256_HMAC.doFinal(s.getBytes("UTF-8")));
-            if (hmac.equals(m.hmac)){
-                return s;
-            } else {
-                System.out.println("INTEGRITY VIOLATION: Error with HMAC");
-                return s;
+                byte[] hmac =  sha256_HMAC.doFinal(s);
+                if (Arrays.equals(hmac, m.hmac)){
+                    return s;
+                } else {
+                    System.out.println("INTEGRITY VIOLATION: Error with HMAC");
+                    return null;
+                }
             }
+
         } catch (InvalidKeyException e) {
             e.printStackTrace();
         } catch (NoSuchAlgorithmException e){
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e){
             e.printStackTrace();
         } catch (NoSuchPaddingException e){
             e.printStackTrace();

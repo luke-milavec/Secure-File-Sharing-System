@@ -4,10 +4,10 @@ public class Message implements Serializable {
 
     // Taken from envelope, does it matter?
     private static final long serialVersionUID = -7726335089122193104L;
-    public String hmac;
-    public String enc;
+    public byte[] hmac;
+    public byte[] enc;
     
-    public Message(String h, String e){
+    public Message(byte[] h, byte[] e){
         hmac = h;
         enc = e;
     }
