@@ -37,6 +37,7 @@ public class FileThread extends Thread {
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             Envelope response;
+            Message encryptedMsg;
 
             // conduct Handshake A
             if (!handshake(input, output)) {
@@ -47,7 +48,9 @@ public class FileThread extends Thread {
             }
 
             do {
-                Envelope e = (Envelope)input.readObject();
+                output.reset();
+                Message msg = (Message)input.readObject();
+                Envelope e = cs.decryptMessage(msg, Kab);
                 System.out.println("Request received: " + e.getMessage());
                 // Handler to list files that this user is allowed to see
                 if(e.getMessage().equals("LFILES")) {
@@ -71,7 +74,8 @@ public class FileThread extends Thread {
                         response = new Envelope("OK");
                         response.addObject(fileRetList);
                     }
-                    output.writeObject(response);
+                    encryptedMsg = cs.encryptEnvelope(response, Kab);
+                    output.writeObject(encryptedMsg);
                 }
                 if(e.getMessage().equals("UPLOADF")) {
 
@@ -104,13 +108,15 @@ public class FileThread extends Thread {
                                 System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
 
                                 response = new Envelope("READY"); //Success
-                                output.writeObject(response);
+                                encryptedMsg = cs.encryptEnvelope(response, Kab);
+                                output.writeObject(encryptedMsg);
 
                                 e = (Envelope)input.readObject();
                                 while (e.getMessage().compareTo("CHUNK")==0) {
                                     fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
                                     response = new Envelope("READY"); //Success
-                                    output.writeObject(response);
+                                    encryptedMsg = cs.encryptEnvelope(response, Kab);
+                                    output.writeObject(encryptedMsg);
                                     e = (Envelope)input.readObject();
                                 }
 
@@ -127,7 +133,8 @@ public class FileThread extends Thread {
                         }
                     }
 
-                    output.writeObject(response);
+                    encryptedMsg = cs.encryptEnvelope(response, Kab);
+                    output.writeObject(encryptedMsg);
                 } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
 
                     String remotePath = (String)e.getObjContents().get(0);
