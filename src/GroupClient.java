@@ -65,16 +65,15 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to create a user
             message = new Envelope("CUSER");
             message.addObject(username); //Add user name string
-            message.addObject(token); //Add the requester's token
+            Message enTok = cs.encryptToken(token, username, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
 
-//            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
+//            output.writeObject(message);
+            output.writeObject(encryptedMessage);
 
-            output.writeObject(message);
-//            output.writeObject(encryptedMessage);
-
-            response = (Envelope)input.readObject();
-
-
+//            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return true
             if(response.getMessage().equals("OK")) {

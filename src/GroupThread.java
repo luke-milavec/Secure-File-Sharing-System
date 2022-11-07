@@ -88,12 +88,6 @@ public class GroupThread extends Thread {
                         output.writeObject(res);
 
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
-                        // Taha: There is no way the next 3 lines work since hash functions have pre-image resistance and
-                        // are lossy operations, you cannot get back the ECDH public key from the signature
-                        // Instead I had the user send it over
-//                        X509EncodedKeySpec userPubKeySpec = new X509EncodedKeySpec(UserECDHpubKeySigned);
-//                        KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
-//                        PublicKey userECDHPubKey = (PublicKey) keyFactory.generatePublic(userPubKeySpec);
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
@@ -125,8 +119,8 @@ public class GroupThread extends Thread {
                            output.writeObject(cs.encryptEnvelope(response, Kab));
                        } else {
                            UserToken yourToken = createToken(username); //Create a token
-                           System.out.println("server token bytes:");
-                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
+//                           System.out.println("server token bytes:");
+//                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
                            Message enTok = cs.encryptToken(yourToken, username, Kab);
 
                            //Respond to the client. On error, the client will receive a null token
@@ -138,15 +132,15 @@ public class GroupThread extends Thread {
                        }
                    } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
                        if(message.getObjContents().size() < 2) {
+                           System.out.println("In here");
                            response = new Envelope("FAIL");
                        } else {
                            response = new Envelope("FAIL");
-
                            if(message.getObjContents().get(0) != null) {
                                if(message.getObjContents().get(1) != null) {
                                    String username = (String)message.getObjContents().get(0); //Extract the username
-                                   UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
-
+//                                   UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+                                     UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
                                    if(createUser(username, yourToken)) {
                                        response = new Envelope("OK"); //Success
                                    }
@@ -154,7 +148,7 @@ public class GroupThread extends Thread {
                            }
                        }
 
-                       output.writeObject(response);
+                       output.writeObject(cs.encryptEnvelope(response, Kab));
                    } else if(message.getMessage().equals("DUSER")) { //Client wants to delete a user
 
                        if(message.getObjContents().size() < 2) {
@@ -312,7 +306,7 @@ public class GroupThread extends Thread {
     //Method to create a user
     private boolean createUser(String username, UserToken yourToken) {
         String requester = yourToken.getSubject();
-
+        System.out.println("in create user");
         //Check if requester exists
         if(my_gs.userList.checkUser(requester)) {
             //Get the user's groups

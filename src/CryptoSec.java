@@ -326,8 +326,8 @@ public class CryptoSec {
                 SignedToken signedToken = (SignedToken) in.readObject();
                 Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
                 verifySig.initVerify(gsPubKey);
-                System.out.println("token crypto sec decryption: ");
-                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
+//                System.out.println("token crypto sec decryption: ");
+//                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
                 verifySig.update(signedToken.getTokenBytes());
                 if(!verifySig.verify(signedToken.getTokenSignature())) {
                     System.out.println("Token could not be verified as signature did not match.");

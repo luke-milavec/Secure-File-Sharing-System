@@ -86,6 +86,9 @@ public class ClientTerminalApp {
                                             System.out.println("Failed to create user.");
                                         } else {
                                             System.out.println("User " + command[1] + " created.");
+                                            System.out.println("Please provide user with the group server's public " +
+                                                    "key. The user will not be able to verify that they are connected" +
+                                                    " to the legitimate group server otherwise.");
                                         }
                                     }               
                                 } else {
