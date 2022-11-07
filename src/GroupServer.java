@@ -48,6 +48,7 @@ public class GroupServer extends Server {
             userList = (UserList) objectIn.readObject();
 //            System.out.println(userList.getUserGroups("admin").get(0));
 
+
         } catch(FileNotFoundException e) {
             System.out.println("UserList File Does Not Exist. Creating UserList...");
             System.out.println("No users currently exist. Your account will be the administrator.");

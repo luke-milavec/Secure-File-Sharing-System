@@ -116,30 +116,25 @@ public class GroupThread extends Thread {
                    System.out.println("Request received: " + message.getMessage());
                    Envelope response;
 
-
                    if(message.getMessage().equals("GET")) { //Client wants a token
                        String username = (String)message.getObjContents().get(0); //Get the username
-
+                       System.out.println(username + " requested a token");
                        if(username == null) {
                            response = new Envelope("FAIL");
                            response.addObject(null);
-                           output.writeObject(response);
+                           output.writeObject(cs.encryptEnvelope(response, Kab));
                        } else {
                            UserToken yourToken = createToken(username); //Create a token
-                           // TODO get token serialization working coverting it to a string in
-                           // serialize token and then encrypting/decrypting
-                           // doesn't work right now because its lossy
-                           String serTok = cs.serializeToken(yourToken);
-                           Message enTok = cs.encryptByteArr(serTok.getBytes(), Kab);
+                           System.out.println("server token bytes:");
+                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
+                           Message enTok = cs.encryptToken(yourToken, username, Kab);
 
                            //Respond to the client. On error, the client will receive a null token
                            response = new Envelope("OK");
-                           response.addObject(yourToken);
-                           output.writeObject(response);
-                           // TODO encrypt envelope before sending with the following two lines
-                           // comment prev 3 lines
-//                           response.addObject(enTok);
-//                           output.writeObject(cs.encryptEnvelope(response, Kab));
+//                           response.addObject(yourToken);
+                           response.addObject(enTok);
+//                           output.writeObject(response);
+                           output.writeObject(cs.encryptEnvelope(response, Kab));
                        }
                    } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
                        if(message.getObjContents().size() < 2) {

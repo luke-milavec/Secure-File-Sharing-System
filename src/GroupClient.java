@@ -1,5 +1,6 @@
 /* Implements the GroupClient Interface */
 
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.ObjectInputStream;
@@ -29,9 +30,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             //Get the response from the server
             // TODO uncomment following 2 lines
-//            encryptedMsg = (Message) input.readObject();
-//            response = cs.decryptMessage(encryptedMsg, Kab);
-            response = (Envelope)input.readObject();
+            encryptedMsg = (Message) input.readObject();
+            response = cs.decryptEnvelopeMessage(encryptedMsg, Kab);
+//            response = (Envelope)input.readObject();
 
             //Successful response
             if(response.getMessage().equals("OK")) {
@@ -42,7 +43,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 
 
                 if(temp.size() == 1) {
-                    token = (UserToken)temp.get(0);
+//                    token = (UserToken)temp.get(0);
+//                    System.out.println(cs.byteArrToHexStr(gsPubKey.getEncoded()));
+                    token = cs.decryptTokenMessage((Message) temp.get(0), Kab, gsPubKey);
                     return token;
                 }
             }

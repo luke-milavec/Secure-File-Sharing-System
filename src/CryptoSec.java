@@ -317,7 +317,7 @@ public class CryptoSec {
         return null;
     }
 
-    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey publicKey) {
+    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey gsPubKey) {
         byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
@@ -325,13 +325,15 @@ public class CryptoSec {
                 ObjectInput in = new ObjectInputStream(bis);
                 SignedToken signedToken = (SignedToken) in.readObject();
                 Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
-                verifySig.initVerify(publicKey);
+                verifySig.initVerify(gsPubKey);
+                System.out.println("token crypto sec decryption: ");
+                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
                 verifySig.update(signedToken.getTokenBytes());
                 if(!verifySig.verify(signedToken.getTokenSignature())) {
                     System.out.println("Token could not be verified as signature did not match.");
                     return null;
                 }
-                bis = new ByteArrayInputStream(orgBytes);
+                bis = new ByteArrayInputStream(signedToken.getTokenBytes());
                 in = new ObjectInputStream(bis);
                 return (UserToken) in.readObject();
             } catch (IOException | ClassNotFoundException e) {
@@ -352,7 +354,7 @@ public class CryptoSec {
 
     public Message encryptToken(UserToken token, String username, byte[] Kab) {
         try {
-            RSAPrivateKey privateKey = readRSAPrivateKey(username);
+            RSAPrivateKey privateKey = readRSAPrivateKey("gs");
             if (privateKey != null) {
                 byte[] tokenBytes = serializeObject(token);
                 byte[] tokenSigned = rsaSign(privateKey, tokenBytes);
@@ -368,7 +370,7 @@ public class CryptoSec {
                     System.out.println("Could not sign token in encrypt token.");
                 }
             } else {
-                System.out.println("Private key for " + username + " could not be found while encrypting token");
+                System.out.println("Private key for the group server could not be found while encrypting token");
             }
 
         } catch (Exception e) {

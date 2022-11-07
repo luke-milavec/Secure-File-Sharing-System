@@ -20,6 +20,8 @@ public abstract class Client {
 
     protected byte[] Kab;
 
+    protected RSAPublicKey gsPubKey;
+
     public boolean connect(final String server, final int port, String username) {
         System.out.println("attempting to connect");
 
@@ -36,7 +38,7 @@ public abstract class Client {
             // the group server could not be verified.
           CryptoSec cs = new CryptoSec();
           Envelope pubKeyMsg = (Envelope)input.readObject();
-          RSAPublicKey gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
+          gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
           File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
           if (serverKeys.exists()) {
