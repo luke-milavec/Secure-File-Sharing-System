@@ -57,19 +57,23 @@ public class FileThread extends Thread {
                         response = new Envelope("FAIL-BADTOKEN");
                     } else {
                         UserToken token = (UserToken) e.getObjContents().get(0); // extract token
-                        List<String> allowedGroups = token.getGroups();
-                        List<ShareFile> serverFileList = FileServer.fileList.getFiles();
+                        if(tokenTimeValid(token)){
+                            List<String> allowedGroups = token.getGroups();
+                            List<ShareFile> serverFileList = FileServer.fileList.getFiles();
 
-                        List<String> fileRetList = new ArrayList<>(); // list to return
+                            List<String> fileRetList = new ArrayList<>(); // list to return
 
-                        for (ShareFile sf : serverFileList) {
-                           if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
-                              fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
-                           }
+                            for (ShareFile sf : serverFileList) {
+                            if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
+                                fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
+                            }
+                            }
+                            System.out.println("Sending list of files");
+                            response = new Envelope("OK");
+                            response.addObject(fileRetList);
+                        } else {
+                            response = new Envelope("FAIL-EXPIREDTOKEN");
                         }
-                        System.out.println("Sending list of files");
-                        response = new Envelope("OK");
-                        response.addObject(fileRetList);
                     }
                     output.writeObject(response);
                 }
@@ -90,8 +94,9 @@ public class FileThread extends Thread {
                             String remotePath = (String)e.getObjContents().get(0);
                             String group = (String)e.getObjContents().get(1);
                             UserToken yourToken = (UserToken)e.getObjContents().get(2); //Extract token
-
-                            if (FileServer.fileList.checkFile(remotePath)) {
+                            if(!tokenTimeValid(yourToken)){
+                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                            } else if (FileServer.fileList.checkFile(remotePath)) {
                                 System.out.printf("Error: file already exists at %s\n", remotePath);
                                 response = new Envelope("FAIL-FILEEXISTS"); //Success
                             } else if (!yourToken.getGroups().contains(group)) {
@@ -133,7 +138,9 @@ public class FileThread extends Thread {
                     String remotePath = (String)e.getObjContents().get(0);
                     Token t = (Token)e.getObjContents().get(1);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-                    if (sf == null) {
+                    if(!tokenTimeValid(t)){
+                        response = new Envelope("FAIL-EXPIREDTOKEN");
+                    }else if (sf == null) {
                         System.out.printf("Error: File %s doesn't exist\n", remotePath);
                         e = new Envelope("ERROR_FILEMISSING");
                         output.writeObject(e);
@@ -213,7 +220,9 @@ public class FileThread extends Thread {
                     String remotePath = (String)e.getObjContents().get(0);
                     Token t = (Token)e.getObjContents().get(1);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-                    if (sf == null) {
+                    if(!tokenTimeValid(t)){
+                        response = new Envelope("FAIL-EXPIREDTOKEN");
+                    }else if (sf == null) {
                         System.out.printf("Error: File %s doesn't exist\n", remotePath);
                         e = new Envelope("ERROR_DOESNTEXIST");
                     } else if (!t.getGroups().contains(sf.getGroup())) {
