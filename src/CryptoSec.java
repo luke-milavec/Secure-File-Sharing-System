@@ -231,29 +231,29 @@ public class CryptoSec {
         return null;
     }
 
-    /**
-     * Write shared secret Kab to file for user
-     * @param username  the username associated with the key
-     * @param sharedSecret shared secret derived in handshake
-     * @return true if PemWriter successfully writes to file. False if not.
-     */
-    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
-         try {
-            // First convert byte[] to SecretKey object
-            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
-            
-            String secretFileName = username + ".sharedsecret";
-            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
-            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
-            pemWriter.close();
-            return true;
-         } catch(IOException e) {
-            System.err.println("Error when writing shared secret to file.");
-            e.printStackTrace();
-            return false;
-         }
-
-    }
+//    /**
+//     * Write shared secret Kab to file for user
+//     * @param username  the username associated with the key
+//     * @param sharedSecret shared secret derived in handshake
+//     * @return true if PemWriter successfully writes to file. False if not.
+//     */
+//    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
+//         try {
+//            // First convert byte[] to SecretKey object
+//            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
+//
+//            String secretFileName = username + ".sharedsecret";
+//            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
+//            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
+//            pemWriter.close();
+//            return true;
+//         } catch(IOException e) {
+//            System.err.println("Error when writing shared secret to file.");
+//            e.printStackTrace();
+//            return false;
+//         }
+//
+//    }
 
 
     /**
@@ -285,7 +285,7 @@ public class CryptoSec {
      * @param Kab shared secret
      * @return Envelope
      **/
-    public Envelope decryptMessage(Message msg, byte[] Kab) {
+    public Envelope decryptEnvelopeMessage(Message msg, byte[] Kab) {
         byte[] orgBytes = decryptString(msg, Kab); // get decrypted envelope bytes
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
@@ -316,6 +316,39 @@ public class CryptoSec {
         }
         return null;
     }
+
+    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey publicKey) {
+        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+        if (orgBytes != null) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+            try {
+                ObjectInput in = new ObjectInputStream(bis);
+                SignedToken signedToken = (SignedToken) in.readObject();
+                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                verifySig.initVerify(publicKey);
+                verifySig.update(signedToken.getTokenBytes());
+                if(!verifySig.verify(signedToken.getTokenSignature())) {
+                    System.out.println("Token could not be verified as signature did not match.");
+                    return null;
+                }
+                bis = new ByteArrayInputStream(orgBytes);
+                in = new ObjectInputStream(bis);
+                return (UserToken) in.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (SignatureException e) {
+                e.printStackTrace();
+            } catch (NoSuchProviderException e) {
+                e.printStackTrace();
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
 
     public Message encryptToken(UserToken token, String username, byte[] Kab) {
         try {

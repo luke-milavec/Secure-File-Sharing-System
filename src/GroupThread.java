@@ -98,11 +98,6 @@ public class GroupThread extends Thread {
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
-                        if(!cs.writeSecretToFile("gs", Kab)) {
-                            System.err.println("ERROR: writing secret to file failed on group thread.");
-                        } else {
-                            System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
-                        }
                     }
 
                 }
@@ -116,7 +111,7 @@ public class GroupThread extends Thread {
 //                Envelope message = (Envelope)input.readObject();
 //                System.out.println(cs.byteArrToHexStr(msg.enc));
 //                System.out.println(cs.byteArrToHexStr(msg.hmac));
-               Envelope message = cs.decryptMessage(msg, Kab);
+               Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
                if(message != null) {
                    System.out.println("Request received: " + message.getMessage());
                    Envelope response;
