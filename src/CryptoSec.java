@@ -317,6 +317,33 @@ public class CryptoSec {
         return null;
     }
 
+    public Message encryptToken(UserToken token, String username, byte[] Kab) {
+        try {
+            RSAPrivateKey privateKey = readRSAPrivateKey(username);
+            if (privateKey != null) {
+                byte[] tokenBytes = serializeObject(token);
+                byte[] tokenSigned = rsaSign(privateKey, tokenBytes);
+                if (tokenSigned != null) {
+                    SignedToken tokenPackage = new SignedToken(tokenBytes, tokenSigned);
+                    byte[] tokenPackageBytes = serializeObject(tokenPackage);
+                    if (tokenPackageBytes != null) {
+                        return encryptByteArr(tokenPackageBytes, Kab);
+                    } else {
+                        System.out.println("Could not serialize token while encrypting it.");
+                    }
+                } else {
+                    System.out.println("Could not sign token in encrypt token.");
+                }
+            } else {
+                System.out.println("Private key for " + username + " could not be found while encrypting token");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     /**
      * Returns a 16 byte IV given key by deriving a new key using SHA-256 hash
