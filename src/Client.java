@@ -152,12 +152,12 @@ public abstract class Client {
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
               // TODO don't write shared secret to file
-                // if(!cs.writeSecretToFile(username, Kab)) {
-                //     System.err.println("ERROR: writing secret to file failed on client side.");
-                //     return false;
-                // } else {
-                //     System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
-                // }
+                if(!cs.writeSecretToFile(username, Kab)) {
+                    System.err.println("ERROR: writing secret to file failed on client side.");
+                    return false;
+                } else {
+                    System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
+                }
 
           } else {
             // Message received was neither "SignatureForHandshake" nor "FAIL"

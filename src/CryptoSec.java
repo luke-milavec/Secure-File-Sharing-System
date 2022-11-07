@@ -237,23 +237,23 @@ public class CryptoSec {
      * @param sharedSecret shared secret derived in handshake
      * @return true if PemWriter successfully writes to file. False if not.
      */
-    // public boolean writeSecretToFile(String username, byte[] sharedSecret) {
-    //      try {
-    //         // First convert byte[] to SecretKey object
-    //         SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
+    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
+         try {
+            // First convert byte[] to SecretKey object
+            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
             
-    //         String secretFileName = username + ".sharedsecret";
-    //         PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
-    //         pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
-    //         pemWriter.close();
-    //         return true;
-    //      } catch(IOException e) {
-    //         System.err.println("Error when writing shared secret to file.");
-    //         e.printStackTrace();
-    //         return false;
-    //      }
+            String secretFileName = username + ".sharedsecret";
+            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
+            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
+            pemWriter.close();
+            return true;
+         } catch(IOException e) {
+            System.err.println("Error when writing shared secret to file.");
+            e.printStackTrace();
+            return false;
+         }
 
-    // }
+    }
 
 
     /**

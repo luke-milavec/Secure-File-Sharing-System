@@ -11,9 +11,6 @@ import java.util.List;
 import java.util.Scanner;
 
 public class FileClient extends Client implements FileClientInterface {
-    CryptoSec cs;
-    private byte[] Kab;
-    Message encryptedMsg;
 
     @Override
     public boolean connect(String server, int port, String username) {
@@ -29,8 +26,8 @@ public class FileClient extends Client implements FileClientInterface {
             // to see if the file server sent the same public key as the one that is cached.
             // If it is, continue with connection else disconnect and display a message saying that
             // the file server could not be verified.
-            cs = new CryptoSec();
-            Envelope pubKeyMsg = (Envelope) input.readObject();
+            CryptoSec cs = new CryptoSec();
+            Envelope pubKeyMsg = (Envelope)input.readObject();
             RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
             File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
@@ -166,10 +163,8 @@ public class FileClient extends Client implements FileClientInterface {
         env.addObject(remotePath);
         env.addObject(token);
         try {
-            encryptedMsg = cs.encryptEnvelope(env, Kab);
-            output.writeObject(encryptedMsg);
-            Message msg = (Message) input.readObject();
-            env = cs.decryptMessage(msg, Kab);
+            output.writeObject(env);
+            env = (Envelope)input.readObject();
 
             if (env.getMessage().compareTo("OK")==0) {
                 System.out.printf("File %s deleted successfully\n", filename);
@@ -202,20 +197,16 @@ public class FileClient extends Client implements FileClientInterface {
                 Envelope env = new Envelope("DOWNLOADF"); //Success
                 env.addObject(sourceFile);
                 env.addObject(token);
-                encryptedMsg = cs.encryptEnvelope(env, Kab);
-                output.writeObject(encryptedMsg);
+                output.writeObject(env);
 
-                Message msg = (Message) input.readObject();
-                env = cs.decryptMessage(msg, Kab);
+                env = (Envelope)input.readObject();
 
                 while (env.getMessage().compareTo("CHUNK")==0) {
                     fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
-                    encryptedMsg = cs.encryptEnvelope(env, Kab);
-                    output.writeObject(encryptedMsg);
-                    msg = (Message) input.readObject();
-                    env = cs.decryptMessage(msg, Kab);
+                    output.writeObject(env);
+                    env = (Envelope)input.readObject();
                 }
                 fos.close();
 
@@ -223,8 +214,7 @@ public class FileClient extends Client implements FileClientInterface {
                     fos.close();
                     System.out.printf("\nTransfer successful file %s\n", sourceFile);
                     env = new Envelope("OK"); //Success
-                    encryptedMsg = cs.encryptEnvelope(env, Kab);
-                    output.writeObject(encryptedMsg);
+                    output.writeObject(env);
                 } else {
                     System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
                     file.delete();
@@ -257,11 +247,9 @@ public class FileClient extends Client implements FileClientInterface {
             //Tell the server to return the member list
             message = new Envelope("LFILES");
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(e, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
-            Message msg = (Message) input.readObject();
-            e = cs.decryptMessage(msg, Kab);
+            e = (Envelope)input.readObject();
 
             //If server indicates success, return the member list
             if(e.getMessage().equals("OK")) {
@@ -292,14 +280,12 @@ public class FileClient extends Client implements FileClientInterface {
             message.addObject(destFile);
             message.addObject(group);
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(env, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
 
             FileInputStream fis = new FileInputStream(sourceFile);
 
-            Message msg = (Message) input.readObject();
-            env = cs.decryptMessage(msg, Kab);
+            env = (Envelope)input.readObject();
 
             //If server indicates success, return the member list
             if(env.getMessage().equals("READY")) {
@@ -330,12 +316,10 @@ public class FileClient extends Client implements FileClientInterface {
                 message.addObject(buf);
                 message.addObject(Integer.valueOf(n));
 
-                encryptedMsg = cs.encryptEnvelope(env, Kab);
-                output.writeObject(encryptedMsg);
+                output.writeObject(message);
 
 
-                msg = (Message) input.readObject();
-                env = cs.decryptMessage(msg, Kab);
+                env = (Envelope)input.readObject();
 
 
             } while (fis.available()>0);
@@ -344,11 +328,9 @@ public class FileClient extends Client implements FileClientInterface {
             if(env.getMessage().compareTo("READY")==0) {
 
                 message = new Envelope("EOF");
-                encryptedMsg = cs.encryptEnvelope(env, Kab);
-                output.writeObject(encryptedMsg);
+                output.writeObject(message);
 
-                msg = (Message) input.readObject();
-                env = cs.decryptMessage(msg, Kab);
+                env = (Envelope)input.readObject();
                 if(env.getMessage().compareTo("OK")==0) {
                     System.out.printf("\nFile data upload successful\n");
                 } else {

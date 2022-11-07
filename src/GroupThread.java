@@ -98,11 +98,11 @@ public class GroupThread extends Thread {
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
-                        // if(!cs.writeSecretToFile("gs", Kab)) {
-                        //     System.err.println("ERROR: writing secret to file failed on group thread.");
-                        // } else {
-                        //     System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
-                        // }
+                        if(!cs.writeSecretToFile("gs", Kab)) {
+                            System.err.println("ERROR: writing secret to file failed on group thread.");
+                        } else {
+                            System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
+                        }
                     }
 
                 }
@@ -112,7 +112,7 @@ public class GroupThread extends Thread {
 
             do {
                 output.reset();
-                Message msg = (Message)input.readObject();
+                Message msg = (Message) input.readObject();
 //                Envelope message = (Envelope)input.readObject();
 //                System.out.println(cs.byteArrToHexStr(msg.enc));
 //                System.out.println(cs.byteArrToHexStr(msg.hmac));
@@ -120,7 +120,6 @@ public class GroupThread extends Thread {
                if(message != null) {
                    System.out.println("Request received: " + message.getMessage());
                    Envelope response;
-                   Message encryptedMsg;
 
 
                    if(message.getMessage().equals("GET")) { //Client wants a token
@@ -129,8 +128,7 @@ public class GroupThread extends Thread {
                        if(username == null) {
                            response = new Envelope("FAIL");
                            response.addObject(null);
-                           encryptedMsg = cs.encryptEnvelope(response, Kab);
-                           output.writeObject(encryptedMsg);
+                           output.writeObject(response);
                        } else {
                            UserToken yourToken = createToken(username); //Create a token
                            // TODO get token serialization working coverting it to a string in
@@ -142,8 +140,7 @@ public class GroupThread extends Thread {
                            //Respond to the client. On error, the client will receive a null token
                            response = new Envelope("OK");
                            response.addObject(yourToken);
-                           encryptedMsg = cs.encryptEnvelope(response, Kab);
-                           output.writeObject(encryptedMsg);
+                           output.writeObject(response);
                            // TODO encrypt envelope before sending with the following two lines
                            // comment prev 3 lines
 //                           response.addObject(enTok);
@@ -162,13 +159,12 @@ public class GroupThread extends Thread {
 
                                    if(createUser(username, yourToken)) {
                                        response = new Envelope("OK"); //Success
-                                        
                                    }
                                }
                            }
                        }
-                    encryptedMsg = cs.encryptEnvelope(response, Kab);
-                    output.writeObject(encryptedMsg);
+
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("DUSER")) { //Client wants to delete a user
 
                        if(message.getObjContents().size() < 2) {
@@ -188,8 +184,7 @@ public class GroupThread extends Thread {
                            }
                        }
 
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                       output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
                        /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
@@ -207,8 +202,7 @@ public class GroupThread extends Thread {
                                }
                            }
                        }
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                       output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("DGROUP")) { //Client wants to delete a group
                        /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
@@ -226,8 +220,7 @@ public class GroupThread extends Thread {
                                }
                            }
                        }
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                        output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
                        response = new Envelope("FAIL");
                        if(message.getObjContents().size() < 2) {
@@ -248,8 +241,7 @@ public class GroupThread extends Thread {
                                }
                            }
                        }
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                        output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
                        /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
@@ -270,8 +262,7 @@ public class GroupThread extends Thread {
                                }
                            }
                        }
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                           output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
                        /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
@@ -292,15 +283,13 @@ public class GroupThread extends Thread {
                                }
                            }
                        }
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                           output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    } else if(message.getMessage().equals("DISCONNECT")) { //Client wants to disconnect
                        socket.close(); //Close the socket
                        proceed = false; //End this communication loop
                    } else {
                        response = new Envelope("FAIL"); //Server does not understand client request
-                       encryptedMsg = cs.encryptEnvelope(response, Kab);
-                       output.writeObject(encryptedMsg);
+                       output.writeObject(response);
                    }
                } else {
                    System.out.println("Failed since message from client was null after decryption");

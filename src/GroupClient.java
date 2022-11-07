@@ -7,7 +7,6 @@ import java.io.ObjectInputStream;
 public class GroupClient extends Client implements GroupClientInterface {
 
     CryptoSec cs;
-    Message encryptedMsg;
 
     public GroupClient() {
         cs = new CryptoSec();
@@ -30,7 +29,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             //Get the response from the server
             // TODO uncomment following 2 lines
-//            encryptedMsg = input.readObject();
+//            encryptedMsg = (Message) input.readObject();
 //            response = cs.decryptMessage(encryptedMsg, Kab);
             response = (Envelope)input.readObject();
 
@@ -67,8 +66,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 
 //            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
 
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 //            output.writeObject(encryptedMessage);
 
             response = (Envelope)input.readObject();
@@ -96,8 +94,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DUSER");
             message.addObject(username); //Add user name
             message.addObject(token);  //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
 
@@ -122,8 +119,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
             message.addObject(token); //Add the requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
 
@@ -147,8 +143,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
             //If server indicates success, return true
@@ -172,8 +167,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
 
@@ -199,8 +193,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
             //If server indicates success, return true
@@ -224,8 +217,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token); //Add requester's token
-            encryptedMsg = cs.encryptEnvelope(message, Kab);
-            output.writeObject(encryptedMsg);
+            output.writeObject(message);
 
             response = (Envelope)input.readObject();
             //If server indicates success, return true
