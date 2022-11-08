@@ -352,7 +352,7 @@ public class CryptoSec {
     }
 
 
-    public Message encryptToken(UserToken token, String username, byte[] Kab) {
+    public Message encryptToken(UserToken token, byte[] Kab) {
         try {
             RSAPrivateKey privateKey = readRSAPrivateKey("gs");
             if (privateKey != null) {

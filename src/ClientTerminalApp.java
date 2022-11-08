@@ -77,7 +77,6 @@ public class ClientTerminalApp {
                 case "cuser":
                     if(gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: cuser <username>");
@@ -94,9 +93,6 @@ public class ClientTerminalApp {
                                 } else {
                                     System.out.println("Token required to create username.");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
@@ -105,7 +101,6 @@ public class ClientTerminalApp {
                 case "duser": 
                     if (gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: duser <username>");
@@ -119,9 +114,6 @@ public class ClientTerminalApp {
                                 } else {
                                     System.out.println("Token required to create new user. Please get a token first using gettoken");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
