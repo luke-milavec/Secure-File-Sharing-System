@@ -1,11 +1,9 @@
-import java.io.Serial;
 import java.time.Instant;
 import java.util.List;
 
 public class Token implements java.io.Serializable, UserToken{
 
     // Copy of another version id for now, maybe change later?
-    @Serial
     private static final long serialVersionUID = -6699986336399821598L;
 
     private final String issuer;
