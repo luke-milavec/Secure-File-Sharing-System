@@ -146,7 +146,7 @@ public class FileThread extends Thread {
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         System.out.println("Error: Token Expired");
-                        response = new Envelope("FAIL-EXPIREDTOKEN");
+                        e = new Envelope("FAIL-EXPIREDTOKEN");
                         output.writeObject(cs.encryptEnvelope(e, Kab));
                     }else if (sf == null) {
                         System.out.printf("Error: File %s doesn't exist\n", remotePath);
@@ -231,7 +231,7 @@ public class FileThread extends Thread {
                     UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
-                        response = new Envelope("FAIL-EXPIREDTOKEN");
+                        e = new Envelope("FAIL-EXPIREDTOKEN");
                     }else if (sf == null) {
                         System.out.printf("Error: File %s doesn't exist\n", remotePath);
                         e = new Envelope("ERROR_DOESNTEXIST");
@@ -241,8 +241,6 @@ public class FileThread extends Thread {
                     } else {
 
                         try {
-
-
                             File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
 
                             if (!f.exists()) {

@@ -169,13 +169,13 @@ public class FileClient extends Client implements FileClientInterface {
 
             if (env.getMessage().compareTo("OK")==0) {
                 System.out.printf("File %s deleted successfully\n", filename);
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             } else {
                 System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
                 return false;
             }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        } catch (ClassNotFoundException e1) {
+        } catch (IOException | ClassNotFoundException e1) {
             e1.printStackTrace();
         }
 
@@ -190,8 +190,6 @@ public class FileClient extends Client implements FileClientInterface {
 
         File file = new File(destFile);
         try {
-
-
             if (!file.exists()) {
                 file.createNewFile();
                 FileOutputStream fos = new FileOutputStream(file);
@@ -217,6 +215,8 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.printf("\nTransfer successful file %s\n", sourceFile);
                     env = new Envelope("OK"); //Success
                     output.writeObject(cs.encryptEnvelope(env, Kab));
+                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                    System.out.println("Token Expired. Please re-acquire token first.");
                 } else {
                     System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
                     file.delete();
@@ -257,6 +257,8 @@ public class FileClient extends Client implements FileClientInterface {
             //If server indicates success, return the member list
             if(e.getMessage().equals("OK")) {
                 return (List<String>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+            } else if (e.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             }
 
             return null;
@@ -287,17 +289,16 @@ public class FileClient extends Client implements FileClientInterface {
             message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             output.writeObject(cs.encryptEnvelope(message, Kab));
 
-
             FileInputStream fis = new FileInputStream(sourceFile);
-
             env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(env.getMessage().equals("READY")) {
                 System.out.printf("Meta data upload successful\n");
 
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             } else {
-
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }
@@ -322,8 +323,6 @@ public class FileClient extends Client implements FileClientInterface {
                 message.addObject(Integer.valueOf(n));
 
                 output.writeObject(cs.encryptEnvelope(message, Kab));
-
-
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
 
@@ -338,14 +337,17 @@ public class FileClient extends Client implements FileClientInterface {
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 if(env.getMessage().compareTo("OK")==0) {
                     System.out.printf("\nFile data upload successful\n");
-                } else {
-
+                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                    System.out.println("Token Expired. Please re-acquire token first.");
+                }
+                else {
                     System.out.printf("\nUpload failed: %s\n", env.getMessage());
                     return false;
                 }
 
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             } else {
-
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }

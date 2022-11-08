@@ -269,10 +269,12 @@ public class ClientTerminalApp {
                     if (fClient.isConnected()) { 
                         if (token != null) {
                             List<String> files = fClient.listFiles(token);
-                            System.out.println("There are " + files.size() + " files.");
-                                    for (String file : files) {
-                                        System.out.println(file);
-                                    }
+                            if(files != null) {
+                                System.out.println("There are " + files.size() + " files.");
+                                for (String file : files) {
+                                    System.out.println(file);
+                                }
+                            }
                         } else {
                             System.out.println("Valid token required to list files. Please get a token first using gettoken.");
                         }

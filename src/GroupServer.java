@@ -43,9 +43,7 @@ public class GroupServer extends Server {
             userList = (UserList)userStream.readObject();
 
             // TODO figure out this weirdest bug: it works if you do this twice else userList is null
-            FileInputStream fileIn = new FileInputStream(userFile);
-            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
-            userList = (UserList) objectIn.readObject();
+
 //            System.out.println(userList.getUserGroups("admin").get(0));
 
 
@@ -91,10 +89,7 @@ public class GroupServer extends Server {
 //            System.out.println(cs.readRSAPublicKey(username).toString());
 //            System.out.println(cs.readRSAPrivateKey(username).toString());
 
-        } catch(IOException e) {
-            System.out.println("Error reading from UserList file");
-            System.exit(-1);
-        } catch(ClassNotFoundException e) {
+        } catch(IOException | ClassNotFoundException e) {
             System.out.println("Error reading from UserList file");
             System.exit(-1);
         }
@@ -110,10 +105,7 @@ public class GroupServer extends Server {
             System.out.println("No Group currently exists.");
             // I don't think you inititalize it here by creating a group unlike UserList which has the ADMIN case
                     
-        } catch(IOException e) {
-            System.out.println("Error reading from UserList file in order to retrieve group list");
-            System.exit(-1);
-        } catch(ClassNotFoundException e) {
+        } catch(IOException | ClassNotFoundException e) {
             System.out.println("Error reading from UserList file in order to retrieve group list");
             System.exit(-1);
         }

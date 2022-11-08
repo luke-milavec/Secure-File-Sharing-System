@@ -140,7 +140,7 @@ public class CryptoSec {
     public KeyPair genECDHKeyPair() {
        try {
            ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256k1");
-           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
            keyGen.initialize(ecAlgoSpec);
            return keyGen.generateKeyPair();
        } catch (NoSuchAlgorithmException e) {
@@ -335,15 +335,8 @@ public class CryptoSec {
                 bis = new ByteArrayInputStream(signedToken.getTokenBytes());
                 in = new ObjectInputStream(bis);
                 return (UserToken) in.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (SignatureException e) {
-                e.printStackTrace();
-            } catch (NoSuchProviderException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
+            } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
+                     NoSuchProviderException | InvalidKeyException e) {
                 e.printStackTrace();
             }
         }
@@ -479,16 +472,9 @@ public class CryptoSec {
                 byte[] enc = c.doFinal(msg);
                 return new Message(hmac, enc);
             }
-        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
-        } catch (NoSuchPaddingException e){
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e){
-            e.printStackTrace();
-        } catch (BadPaddingException e){
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-           e.printStackTrace();
         }
         return null;
     }
