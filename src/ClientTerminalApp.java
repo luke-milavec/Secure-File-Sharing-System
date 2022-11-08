@@ -32,7 +32,7 @@ public class ClientTerminalApp {
 
         Scanner in = new Scanner(System.in);
         if (!login(in)) {
-            // to do in next phase 
+            System.out.println("Trouble logging in.");
         }
         
 
@@ -77,7 +77,6 @@ public class ClientTerminalApp {
                 case "cuser":
                     if(gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: cuser <username>");
@@ -86,14 +85,14 @@ public class ClientTerminalApp {
                                             System.out.println("Failed to create user.");
                                         } else {
                                             System.out.println("User " + command[1] + " created.");
+                                            System.out.println("Please provide user with the group server's public " +
+                                                    "key. The user will not be able to verify that they are connected" +
+                                                    " to the legitimate group server otherwise.");
                                         }
                                     }               
                                 } else {
                                     System.out.println("Token required to create username.");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
@@ -102,7 +101,6 @@ public class ClientTerminalApp {
                 case "duser": 
                     if (gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: duser <username>");
@@ -116,9 +114,6 @@ public class ClientTerminalApp {
                                 } else {
                                     System.out.println("Token required to create new user. Please get a token first using gettoken");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
@@ -364,13 +359,9 @@ public class ClientTerminalApp {
 
     public boolean connect(String serverType, String serverName, String port, String username) {
         if (serverType.equals("-g")) {
-            if (gClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return gClient.connect(serverName, Integer.parseInt(port), username);
         } else if (serverType.equals("-f")) {
-            if (fClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return fClient.connect(serverName, Integer.parseInt(port), username);
         }
         else {
             System.out.println("Invalid server type. Correct options were -g or -f");

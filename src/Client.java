@@ -20,6 +20,8 @@ public abstract class Client {
 
     protected byte[] Kab;
 
+    protected RSAPublicKey gsPubKey;
+
     public boolean connect(final String server, final int port, String username) {
         System.out.println("attempting to connect");
 
@@ -36,7 +38,7 @@ public abstract class Client {
             // the group server could not be verified.
           CryptoSec cs = new CryptoSec();
           Envelope pubKeyMsg = (Envelope)input.readObject();
-          RSAPublicKey gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
+          gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
           File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
           if (serverKeys.exists()) {
@@ -151,14 +153,6 @@ public abstract class Client {
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
-              // TODO don't write shared secret to file
-                if(!cs.writeSecretToFile(username, Kab)) {
-                    System.err.println("ERROR: writing secret to file failed on client side.");
-                    return false;
-                } else {
-                    System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
-                }
-
           } else {
             // Message received was neither "SignatureForHandshake" nor "FAIL"
             System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");

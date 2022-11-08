@@ -307,7 +307,6 @@ public class FileThread extends Thread {
                         PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
                         // Sign ECDH public key with RSA private key of file server
-                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey(fsName);
                         RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey(fsName);
                         byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 

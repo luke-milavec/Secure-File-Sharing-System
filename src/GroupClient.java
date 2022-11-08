@@ -1,8 +1,7 @@
 /* Implements the GroupClient Interface */
-
 import java.util.ArrayList;
 import java.util.List;
-import java.io.ObjectInputStream;
+
 
 public class GroupClient extends Client implements GroupClientInterface {
 
@@ -29,9 +28,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             //Get the response from the server
             // TODO uncomment following 2 lines
-//            encryptedMsg = (Message) input.readObject();
-//            response = cs.decryptMessage(encryptedMsg, Kab);
-            response = (Envelope)input.readObject();
+            encryptedMsg = (Message) input.readObject();
+            response = cs.decryptEnvelopeMessage(encryptedMsg, Kab);
+//            response = (Envelope)input.readObject();
 
             //Successful response
             if(response.getMessage().equals("OK")) {
@@ -42,7 +41,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 
 
                 if(temp.size() == 1) {
-                    token = (UserToken)temp.get(0);
+//                    token = (UserToken)temp.get(0);
+//                    System.out.println(cs.byteArrToHexStr(gsPubKey.getEncoded()));
+                    token = cs.decryptTokenMessage((Message) temp.get(0), Kab, gsPubKey);
                     return token;
                 }
             }
@@ -62,23 +63,15 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to create a user
             message = new Envelope("CUSER");
             message.addObject(username); //Add user name string
-            message.addObject(token); //Add the requester's token
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-//            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
-
-            output.writeObject(message);
-//            output.writeObject(encryptedMessage);
-
-            response = (Envelope)input.readObject();
-
-
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -92,18 +85,16 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             //Tell the server to delete a user
             message = new Envelope("DUSER");
-            message.addObject(username); //Add user name
-            message.addObject(token);  //Add requester's token
-            output.writeObject(message);
+            message.addObject(username); //Add username
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             
             System.err.println("Error: " + e.getMessage());
@@ -118,17 +109,16 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to create a group
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
-            message.addObject(token); //Add the requester's token
-            output.writeObject(message);
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+
 
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -142,16 +132,14 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to delete a group
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -166,10 +154,12 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to return the member list
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(response.getMessage().equals("OK")) {
@@ -188,20 +178,19 @@ public class GroupClient extends Client implements GroupClientInterface {
     public boolean addUserToGroup(String username, String groupname, UserToken token) {
         try {
             Envelope message = null, response = null;
-            //Tell the server to add a user to the group
+
+            // Tell the server to add a user to the group
             message = new Envelope("AUSERTOGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -216,16 +205,14 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("RUSERFROMGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            Message enTok = cs.encryptToken(token, Kab);
+            message.addObject(enTok); //Add the requester's token
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
-            }
-
-            return false;
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
