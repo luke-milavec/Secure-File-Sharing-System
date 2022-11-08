@@ -141,8 +141,7 @@ public class GroupThread extends Thread {
                        }
 
                        output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("DUSER")) { //Client wants to delete a user
-
+                   } else if(message.getMessage().equals("DUSER")) { // Client wants to delete a user
                        if(message.getObjContents().size() < 2) {
                            response = new Envelope("FAIL");
                        } else {
@@ -150,7 +149,7 @@ public class GroupThread extends Thread {
 
                            if(message.getObjContents().get(0) != null) {
                                if(message.getObjContents().get(1) != null) {
-                                   String username = (String)message.getObjContents().get(0); //Extract the username
+                                   String username = (String)message.getObjContents().get(0); // Extract the username
                                    UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
 
                                    if(deleteUser(username, yourToken)) {
@@ -204,8 +203,9 @@ public class GroupThread extends Thread {
                            if(message.getObjContents().get(0) != null) {
                                if(message.getObjContents().get(1) != null) {
                                    String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-                                   UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
+                                   UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
 
+                                   // This is encrypted when the envelope as a whole gets encrypts
                                    ArrayList<String> members = listMembers(groupname, yourToken);
 
                                    //response = new Envelope(listMembers(groupname, yourToken));
@@ -217,7 +217,6 @@ public class GroupThread extends Thread {
                        }
                        output.writeObject(cs.encryptEnvelope(response, Kab));
                    } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
-                       /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
                            response = new Envelope("FAIL");
                        } else {
@@ -227,9 +226,9 @@ public class GroupThread extends Thread {
                                    if(message.getObjContents().get(2) != null){
                                        String username = (String)message.getObjContents().get(0);
                                        String groupname = (String)message.getObjContents().get(1);
-                                       UserToken yourToken = (UserToken)message.getObjContents().get(2);
+                                       UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
 
-                                       if(addUserGroup(username,groupname, yourToken)) {
+                                       if(addUserGroup(username, groupname, yourToken)) {
                                            response = new Envelope("OK"); //Success
                                        }
                                    }
@@ -238,7 +237,6 @@ public class GroupThread extends Thread {
                        }
                        output.writeObject(cs.encryptEnvelope(response, Kab));
                    } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
-                       /* TODO:  Write this handler */
                        if(message.getObjContents().size() < 2) {
                            response = new Envelope("FAIL");
                        } else {
@@ -248,7 +246,7 @@ public class GroupThread extends Thread {
                                    if(message.getObjContents().get(2) != null){
                                        String username = (String)message.getObjContents().get(0);
                                        String groupname = (String)message.getObjContents().get(1);
-                                       UserToken yourToken = (UserToken)message.getObjContents().get(2);
+                                       UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
 
                                        if(removeUserGroup(username,groupname, yourToken)) {
                                            response = new Envelope("OK"); //Success
@@ -267,8 +265,7 @@ public class GroupThread extends Thread {
                    }
                } else {
                    System.out.println("Failed since message from client was null after decryption");
-                   Message response = cs.encryptEnvelope(new Envelope("FAIL"), Kab);
-                   output.writeObject(response);
+                   output.writeObject(cs.encryptEnvelope(new Envelope("FAIL"), Kab));
                }
 
             } while(proceed);
