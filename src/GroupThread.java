@@ -15,7 +15,7 @@ import java.security.*;
 
 public class GroupThread extends Thread {
     private final Socket socket;
-    private GroupServer my_gs;
+    private final GroupServer my_gs;
 
     private byte[] Kab;
 
@@ -73,7 +73,6 @@ public class GroupThread extends Thread {
                         PrivateKey ECDHprivkey = ECDHkeys.getPrivate();
 
                         // Sign ECDH public key with RSA private key of group server
-                        RSAPublicKey serverRSApublickey = cs.readRSAPublicKey("gs");
                         RSAPrivateKey serverRSAprivatekey = cs.readRSAPrivateKey("gs");
                         byte[] serverPrivateECDHKeySig = cs.rsaSign(serverRSAprivatekey, ECDHpubkey.getEncoded());
 
@@ -281,8 +280,7 @@ public class GroupThread extends Thread {
         //Check that user exists
         if(my_gs.userList.checkUser(username)) {
             //Issue a new token with server's name, user's name, and user's groups
-            UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
-            return yourToken;
+            return new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
         } else {
     
             return null;
@@ -434,7 +432,7 @@ public class GroupThread extends Thread {
                 }
             }
         }
-        return members;
+        return null;
     }
 
     private boolean addUserGroup(String username,String groupname, UserToken yourToken) {

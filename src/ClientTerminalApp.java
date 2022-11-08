@@ -32,7 +32,7 @@ public class ClientTerminalApp {
 
         Scanner in = new Scanner(System.in);
         if (!login(in)) {
-            // to do in next phase 
+            System.out.println("Trouble logging in.");
         }
         
 
@@ -359,13 +359,9 @@ public class ClientTerminalApp {
 
     public boolean connect(String serverType, String serverName, String port, String username) {
         if (serverType.equals("-g")) {
-            if (gClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return gClient.connect(serverName, Integer.parseInt(port), username);
         } else if (serverType.equals("-f")) {
-            if (fClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return fClient.connect(serverName, Integer.parseInt(port), username);
         }
         else {
             System.out.println("Invalid server type. Correct options were -g or -f");

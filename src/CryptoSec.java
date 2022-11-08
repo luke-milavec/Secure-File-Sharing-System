@@ -153,32 +153,32 @@ public class CryptoSec {
     }
 
     // TODO Key may be incorrect:
-    public byte[] rsaEncrypt(byte[] msg, Key key) {
-        try {
-            Cipher rsaCipher = Cipher.getInstance("RSA", "BC");
-            rsaCipher.init(Cipher.ENCRYPT_MODE, key);
-            return rsaCipher.doFinal(msg);
-        } catch (InvalidKeyException e) {
-            System.out.println("RSA encryption failed due to invalid key");
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            System.out.println("RSA encryption failed due to invalid padding");
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("Encryption failed due to no such encryption algorithm existing");
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            System.out.println("RSA encryption failed due to invalid provider");
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            System.out.println("RSA encryption failed due to invalid block size");
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            System.out.println("RSA encryption failed due to bad padding");
-            e.printStackTrace();
-        }
-        return null;
-    }
+//    public byte[] rsaEncrypt(byte[] msg, Key key) {
+//        try {
+//            Cipher rsaCipher = Cipher.getInstance("RSA", "BC");
+//            rsaCipher.init(Cipher.ENCRYPT_MODE, key);
+//            return rsaCipher.doFinal(msg);
+//        } catch (InvalidKeyException e) {
+//            System.out.println("RSA encryption failed due to invalid key");
+//            e.printStackTrace();
+//        } catch (NoSuchPaddingException e) {
+//            System.out.println("RSA encryption failed due to invalid padding");
+//            e.printStackTrace();
+//        } catch (NoSuchAlgorithmException e) {
+//            System.out.println("Encryption failed due to no such encryption algorithm existing");
+//            e.printStackTrace();
+//        } catch (NoSuchProviderException e) {
+//            System.out.println("RSA encryption failed due to invalid provider");
+//            e.printStackTrace();
+//        } catch (IllegalBlockSizeException e) {
+//            System.out.println("RSA encryption failed due to invalid block size");
+//            e.printStackTrace();
+//        } catch (BadPaddingException e) {
+//            System.out.println("RSA encryption failed due to bad padding");
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
 
     public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
         try {
@@ -203,8 +203,8 @@ public class CryptoSec {
     }
 
     /** Generate shared secret Kab
-    * @params privateKey - ECDH private key of party calling this function
-    *         publicKey - ECDH public key of other party provided by party calling this function
+    * @param privateKey - ECDH private key of party calling this function
+    * @param publicKey - ECDH public key of other party provided by party calling this function
     * return - byte[] of shared secret
     */
     public byte[] generateSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
@@ -212,9 +212,7 @@ public class CryptoSec {
             KeyAgreement keyAgree = KeyAgreement.getInstance("ECDH", "BC");
             keyAgree.init(privateKey);
             keyAgree.doPhase(publicKey, true);
-            byte[] sharedSecret = keyAgree.generateSecret();
-            // DEBUG: System.out.println("Shared secret: ", );
-            return sharedSecret;
+            return keyAgree.generateSecret();
         } catch(IllegalStateException e) {
             System.err.println("Error: Illegal state");
             e.printStackTrace();        
