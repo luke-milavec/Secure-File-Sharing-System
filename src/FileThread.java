@@ -59,7 +59,7 @@ public class FileThread extends Thread {
                     } else if (e.getObjContents().get(0) == null){ // if the token is null
                         response = new Envelope("FAIL-BADTOKEN");
                     } else {
-                        UserToken token = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
+                        UserToken token = cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
                         if(tokenTimeValid(token)){
                             List<String> allowedGroups = token.getGroups();
                             List<ShareFile> serverFileList = FileServer.fileList.getFiles();
@@ -184,7 +184,6 @@ public class FileThread extends Thread {
 
                                     }
 
-
                                     e.addObject(buf);
                                     e.addObject(Integer.valueOf(n));
                                     
@@ -280,7 +279,7 @@ public class FileThread extends Thread {
 //            System.out.println(fsName);
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
             RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
-            Envelope resKey = new Envelope("fs_pub_key");
+            Envelope resKey = new Envelope(fsName + "_pub_key");
             resKey.addObject(fsPubKey);
             output.writeObject(resKey);
 
