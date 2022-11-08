@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class FileClient extends Client implements FileClientInterface {
-
+    
     @Override
     public boolean connect(String server, int port, String username) {
         System.out.println("attempting to connect");
@@ -153,6 +153,7 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     public boolean delete(String filename, UserToken token) {
+        CryptoSec cs = new CryptoSec();
         String remotePath;
         if (filename.charAt(0)=='/') {
             remotePath = filename.substring(1);
@@ -161,10 +162,10 @@ public class FileClient extends Client implements FileClientInterface {
         }
         Envelope env = new Envelope("DELETEF"); //Success
         env.addObject(remotePath);
-        env.addObject(token);
+        env.addObject(cs.encryptToken(token, Kab));
         try {
-            output.writeObject(env);
-            env = (Envelope)input.readObject();
+            output.writeObject(cs.encryptEnvelope(env, Kab));
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             if (env.getMessage().compareTo("OK")==0) {
                 System.out.printf("File %s deleted successfully\n", filename);
@@ -182,6 +183,7 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     public boolean download(String sourceFile, String destFile, UserToken token) {
+        CryptoSec cs = new CryptoSec();
         if (sourceFile.charAt(0)=='/') {
             sourceFile = sourceFile.substring(1);
         }
@@ -196,17 +198,17 @@ public class FileClient extends Client implements FileClientInterface {
 
                 Envelope env = new Envelope("DOWNLOADF"); //Success
                 env.addObject(sourceFile);
-                env.addObject(token);
-                output.writeObject(env);
+                env.addObject(cs.encryptToken(token, Kab));
+                output.writeObject(cs.encryptEnvelope(env, Kab));
 
-                env = (Envelope)input.readObject();
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
                 while (env.getMessage().compareTo("CHUNK")==0) {
                     fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
-                    output.writeObject(env);
-                    env = (Envelope)input.readObject();
+                    output.writeObject(cs.encryptEnvelope(env, Kab));
+                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 }
                 fos.close();
 
@@ -214,7 +216,7 @@ public class FileClient extends Client implements FileClientInterface {
                     fos.close();
                     System.out.printf("\nTransfer successful file %s\n", sourceFile);
                     env = new Envelope("OK"); //Success
-                    output.writeObject(env);
+                    output.writeObject(cs.encryptEnvelope(env, Kab));
                 } else {
                     System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
                     file.delete();
@@ -242,14 +244,15 @@ public class FileClient extends Client implements FileClientInterface {
 
     @SuppressWarnings("unchecked")
     public List<String> listFiles(UserToken token) {
+        CryptoSec cs = new CryptoSec();
         try {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            output.writeObject(cs.encryptEnvelope(message, Kab));
 
-            e = (Envelope)input.readObject();
+            e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(e.getMessage().equals("OK")) {
@@ -268,6 +271,8 @@ public class FileClient extends Client implements FileClientInterface {
     public boolean upload(String sourceFile, String destFile, String group,
                           UserToken token) {
 
+        CryptoSec cs = new CryptoSec();
+
         if (destFile.charAt(0)!='/') {
             destFile = "/" + destFile;
         }
@@ -279,13 +284,13 @@ public class FileClient extends Client implements FileClientInterface {
             message = new Envelope("UPLOADF");
             message.addObject(destFile);
             message.addObject(group);
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            output.writeObject(cs.encryptEnvelope(message, Kab));
 
 
             FileInputStream fis = new FileInputStream(sourceFile);
 
-            env = (Envelope)input.readObject();
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(env.getMessage().equals("READY")) {
@@ -316,10 +321,10 @@ public class FileClient extends Client implements FileClientInterface {
                 message.addObject(buf);
                 message.addObject(Integer.valueOf(n));
 
-                output.writeObject(message);
+                output.writeObject(cs.encryptEnvelope(message, Kab));
 
 
-                env = (Envelope)input.readObject();
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
 
             } while (fis.available()>0);
@@ -328,9 +333,9 @@ public class FileClient extends Client implements FileClientInterface {
             if(env.getMessage().compareTo("READY")==0) {
 
                 message = new Envelope("EOF");
-                output.writeObject(message);
+                output.writeObject(cs.encryptEnvelope(message, Kab));
 
-                env = (Envelope)input.readObject();
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 if(env.getMessage().compareTo("OK")==0) {
                     System.out.printf("\nFile data upload successful\n");
                 } else {

@@ -9,6 +9,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**Implement helper method to create RSA Signature given private key ← working on it (Taha)
+/**Implement helper method to create RSA Signature given private key  working on it (Taha)
 Implement helper method to verify RSA Signature given signature and public key 
  */
 
@@ -139,7 +140,7 @@ public class CryptoSec {
     public KeyPair genECDHKeyPair() {
        try {
            ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256k1");
-           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
            keyGen.initialize(ecAlgoSpec);
            return keyGen.generateKeyPair();
        } catch (NoSuchAlgorithmException e) {
@@ -309,7 +310,7 @@ public class CryptoSec {
         byte[] serializedEnv = serializeObject(env);
         if (serializedEnv != null) {
             return encryptByteArr(serializedEnv, Kab);
-            }else {
+        } else {
             System.out.println("Error serializing");
         }
         return null;

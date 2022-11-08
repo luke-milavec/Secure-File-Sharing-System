@@ -37,6 +37,7 @@ public class FileThread extends Thread {
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             Envelope response;
+            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");//TODO retrieve from gs or explain why not
 
             // conduct Handshake A
             if (!handshake(input, output)) {
@@ -47,16 +48,18 @@ public class FileThread extends Thread {
             }
 
             do {
-                Envelope e = (Envelope)input.readObject();
+                Message msg = (Message) input.readObject();
+                Envelope e = cs.decryptEnvelopeMessage(msg, Kab);
                 System.out.println("Request received: " + e.getMessage());
                 // Handler to list files that this user is allowed to see
+
                 if(e.getMessage().equals("LFILES")) {
                     if(e.getObjContents().size() < 1) {  // no token sent
                         response = new Envelope("FAIL-BADCONTENTS");
                     } else if (e.getObjContents().get(0) == null){ // if the token is null
                         response = new Envelope("FAIL-BADTOKEN");
                     } else {
-                        UserToken token = (UserToken) e.getObjContents().get(0); // extract token
+                        UserToken token = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
                         if(tokenTimeValid(token)){
                             List<String> allowedGroups = token.getGroups();
                             List<ShareFile> serverFileList = FileServer.fileList.getFiles();
@@ -75,7 +78,7 @@ public class FileThread extends Thread {
                             response = new Envelope("FAIL-EXPIREDTOKEN");
                         }
                     }
-                    output.writeObject(response);
+                    output.writeObject(cs.encryptEnvelope(response, Kab));
                 }
                 if(e.getMessage().equals("UPLOADF")) {
 
@@ -93,7 +96,7 @@ public class FileThread extends Thread {
                         } else {
                             String remotePath = (String)e.getObjContents().get(0);
                             String group = (String)e.getObjContents().get(1);
-                            UserToken yourToken = (UserToken)e.getObjContents().get(2); //Extract token
+                            UserToken yourToken = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(2), Kab, gsPubKey); //Extract token
                             if(!tokenTimeValid(yourToken)){
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
                             } else if (FileServer.fileList.checkFile(remotePath)) {
@@ -109,14 +112,17 @@ public class FileThread extends Thread {
                                 System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
 
                                 response = new Envelope("READY"); //Success
-                                output.writeObject(response);
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
 
-                                e = (Envelope)input.readObject();
+                                msg = (Message) input.readObject();
+                                e = cs.decryptEnvelopeMessage(msg, Kab);
+
                                 while (e.getMessage().compareTo("CHUNK")==0) {
                                     fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
                                     response = new Envelope("READY"); //Success
-                                    output.writeObject(response);
-                                    e = (Envelope)input.readObject();
+                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                    msg = (Message) input.readObject();
+                                    e = cs.decryptEnvelopeMessage(msg, Kab);
                                 }
 
                                 if(e.getMessage().compareTo("EOF")==0) {
@@ -132,23 +138,25 @@ public class FileThread extends Thread {
                         }
                     }
 
-                    output.writeObject(response);
+                    output.writeObject(cs.encryptEnvelope(response, Kab));
                 } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
 
                     String remotePath = (String)e.getObjContents().get(0);
-                    Token t = (Token)e.getObjContents().get(1);
+                    UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
+                        System.out.println("Error: Token Expired");
                         response = new Envelope("FAIL-EXPIREDTOKEN");
+                        output.writeObject(cs.encryptEnvelope(e, Kab));
                     }else if (sf == null) {
                         System.out.printf("Error: File %s doesn't exist\n", remotePath);
                         e = new Envelope("ERROR_FILEMISSING");
-                        output.writeObject(e);
+                        output.writeObject(cs.encryptEnvelope(e, Kab));
 
                     } else if (!t.getGroups().contains(sf.getGroup())) {
                         System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
                         e = new Envelope("ERROR_PERMISSION");
-                        output.writeObject(e);
+                        output.writeObject(cs.encryptEnvelope(e, Kab));
                     } else {
 
                         try {
@@ -156,7 +164,7 @@ public class FileThread extends Thread {
                             if (!f.exists()) {
                                 System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
                                 e = new Envelope("ERROR_NOTONDISK");
-                                output.writeObject(e);
+                                output.writeObject(cs.encryptEnvelope(e, Kab));
 
                             } else {
                                 FileInputStream fis = new FileInputStream(f);
@@ -180,9 +188,10 @@ public class FileThread extends Thread {
                                     e.addObject(buf);
                                     e.addObject(Integer.valueOf(n));
                                     
-                                    output.writeObject(e);
+                                    output.writeObject(cs.encryptEnvelope(e, Kab));
 
-                                    e = (Envelope)input.readObject();
+                                    msg = (Message) input.readObject();
+                                    e = cs.decryptEnvelopeMessage(msg, Kab);
 
 
                                 } while (fis.available()>0);
@@ -191,9 +200,10 @@ public class FileThread extends Thread {
                                 if(e.getMessage().compareTo("DOWNLOADF")==0) {
 
                                     e = new Envelope("EOF");
-                                    output.writeObject(e);
+                                    output.writeObject(cs.encryptEnvelope(e, Kab));
 
-                                    e = (Envelope)input.readObject();
+                                    msg = (Message) input.readObject();
+                                    e = cs.decryptEnvelopeMessage(msg, Kab);
                                     if(e.getMessage().compareTo("OK")==0) {
                                         System.out.printf("File data upload successful\n");
                                     } else {
@@ -218,7 +228,7 @@ public class FileThread extends Thread {
                 } else if (e.getMessage().compareTo("DELETEF")==0) {
 
                     String remotePath = (String)e.getObjContents().get(0);
-                    Token t = (Token)e.getObjContents().get(1);
+                    UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         response = new Envelope("FAIL-EXPIREDTOKEN");
@@ -254,7 +264,7 @@ public class FileThread extends Thread {
                             e = new Envelope(e1.getMessage());
                         }
                     }
-                    output.writeObject(e);
+                    output.writeObject(cs.encryptEnvelope(e, Kab));
 
                 } else if(e.getMessage().equals("DISCONNECT")) {
                     socket.close();
