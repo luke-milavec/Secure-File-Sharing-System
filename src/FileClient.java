@@ -162,7 +162,8 @@ public class FileClient extends Client implements FileClientInterface {
         }
         Envelope env = new Envelope("DELETEF"); //Success
         env.addObject(remotePath);
-        env.addObject(cs.encryptToken(token, Kab));
+//        env.addObject(cs.encryptToken(token, Kab));
+        env.addObject(token);
         try {
             output.writeObject(cs.encryptEnvelope(env, Kab));
             env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -196,7 +197,8 @@ public class FileClient extends Client implements FileClientInterface {
 
                 Envelope env = new Envelope("DOWNLOADF"); //Success
                 env.addObject(sourceFile);
-                env.addObject(cs.encryptToken(token, Kab));
+//                env.addObject(cs.encryptToken(token, Kab));
+                env.addObject(token);
                 output.writeObject(cs.encryptEnvelope(env, Kab));
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -249,7 +251,8 @@ public class FileClient extends Client implements FileClientInterface {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            message.addObject(token);
             output.writeObject(cs.encryptEnvelope(message, Kab));
 
             e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -286,7 +289,8 @@ public class FileClient extends Client implements FileClientInterface {
             message = new Envelope("UPLOADF");
             message.addObject(destFile);
             message.addObject(group);
-            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            message.addObject(token);
             output.writeObject(cs.encryptEnvelope(message, Kab));
 
             FileInputStream fis = new FileInputStream(sourceFile);
@@ -302,7 +306,6 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }
-
 
             do {
                 byte[] buf = new byte[4096];

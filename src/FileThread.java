@@ -59,7 +59,8 @@ public class FileThread extends Thread {
                     } else if (e.getObjContents().get(0) == null){ // if the token is null
                         response = new Envelope("FAIL-BADTOKEN");
                     } else {
-                        UserToken token = cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
+                        //UserToken token = cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
+                        UserToken token = (UserToken) e.getObjContents().get(0);
                         if(tokenTimeValid(token)){
                             List<String> allowedGroups = token.getGroups();
                             List<ShareFile> serverFileList = FileServer.fileList.getFiles();
@@ -96,7 +97,8 @@ public class FileThread extends Thread {
                         } else {
                             String remotePath = (String)e.getObjContents().get(0);
                             String group = (String)e.getObjContents().get(1);
-                            UserToken yourToken = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(2), Kab, gsPubKey); //Extract token
+                            //UserToken yourToken = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(2), Kab, gsPubKey); //Extract token
+                            UserToken yourToken = (UserToken) e.getObjContents().get(2);
                             if(!tokenTimeValid(yourToken)){
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
                             } else if (FileServer.fileList.checkFile(remotePath)) {
@@ -142,7 +144,8 @@ public class FileThread extends Thread {
                 } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
 
                     String remotePath = (String)e.getObjContents().get(0);
-                    UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                    //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                    UserToken t = (UserToken) e.getObjContents().get(1);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         System.out.println("Error: Token Expired");
@@ -227,7 +230,8 @@ public class FileThread extends Thread {
                 } else if (e.getMessage().compareTo("DELETEF")==0) {
 
                     String remotePath = (String)e.getObjContents().get(0);
-                    UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                    //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                    UserToken t = (UserToken) e.getObjContents().get(1);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         e = new Envelope("FAIL-EXPIREDTOKEN");
