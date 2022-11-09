@@ -63,8 +63,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to create a user
             message = new Envelope("CUSER");
             message.addObject(username); //Add user name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -86,8 +87,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to delete a user
             message = new Envelope("DUSER");
             message.addObject(username); //Add username
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -109,8 +111,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to create a group
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -132,8 +135,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to delete a group
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -154,8 +158,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             //Tell the server to return the member list
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -183,8 +188,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("AUSERTOGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -205,8 +211,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("RUSERFROMGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            Message enTok = cs.encryptToken(token, Kab);
-            message.addObject(enTok); //Add the requester's token
+//            Message enTok = cs.encryptToken(token, Kab);
+//            message.addObject(enTok); //Add the requester's token
+            message.addObject(token);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
