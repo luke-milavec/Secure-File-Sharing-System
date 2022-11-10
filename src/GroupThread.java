@@ -10,6 +10,8 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.security.*;
+import java.io.File;
+
 
 
 
@@ -60,6 +62,30 @@ public class GroupThread extends Thread {
                     Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
                     verifySig.initVerify(userRSApublickey);
                     verifySig.update(userECDHPubKey.getEncoded());
+
+                    // Check if user already has logged in before and that the RSA pubkeys match
+                    // This prevents an attacker from logging in with same username and generating new key pair and acting as that user
+                    File userPubKeys = new File("known_users" + File.separator + username + ".public");
+                    if(userPubKeys.exists()) {
+                        RSAPublicKey cachedUserPubKey = cs.readRSAPublicKey("known_users" + File.separator + username);
+                        if(cs.byteArrToHexStr(userRSApublickey.getEncoded()).equals(cs.byteArrToHexStr(cachedUserPubKey.getEncoded()))) {
+                            System.out.println("The cached public key for this user matched the public key sent by " + username);
+                        } else {
+                            socket.close(); //Close the socket
+                            proceed = false; //End this communication loop
+                            System.out.println("Cached public key for user did not match the public key for " + username + " Disconnected. Type 'help' to see options.");
+                        }
+                    } else {
+                        // Create cache of user public keys
+                        File knownUsersDir = new File("known_users");
+                        if(!knownUsersDir.exists() && !knownUsersDir.mkdir()) {
+                            System.out.println("Error creating " + knownUsersDir);
+                        } else {
+                            String pubKeyFilePath = "known_users" + File.separator + username;
+                            if(cs.writePubKey(pubKeyFilePath, userRSApublickey))
+                                System.out.println(username + "'s public key cached in " + pubKeyFilePath);
+                        }
+                    }
                     // If false, this user did NOT sign the message contents
                     if(!verifySig.verify(UserECDHpubKeySigned)) {
 
