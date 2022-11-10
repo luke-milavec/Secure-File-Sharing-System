@@ -39,11 +39,11 @@ public abstract class Client {
           CryptoSec cs = new CryptoSec();
           Envelope pubKeyMsg = (Envelope)input.readObject();
           gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
-          File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+          File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
           if (serverKeys.exists()) {
               // Compare key sent by server to the cached one
-              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
+              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey(username + "_known_servers" + File.separator + pubKeyMsg.getMessage());
               if(cs.byteArrToHexStr(gsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedGSPubKey.getEncoded()))) {
                   System.out.println("The cached public key for this server matched the public key sent by " + server +
                           " at port " + port + ". Connecting...");
@@ -66,11 +66,11 @@ public abstract class Client {
                   String userInput = in.nextLine();
                   if (userInput.equalsIgnoreCase("y")) {
                       // Create new directory if it doesn't exist
-                      File knownServerDir = new File("known_servers");
+                      File knownServerDir = new File(username + "_known_servers");
                       if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                               System.out.println("Error creating " + knownServerDir);
                       }
-                      String pubKeyFilePath ="known_servers" + File.separator + pubKeyMsg.getMessage();
+                      String pubKeyFilePath = username + "_known_servers" + File.separator + pubKeyMsg.getMessage();
                       if (cs.writePubKey(pubKeyFilePath, gsPubKey)) {
                           System.out.println("Group Server's public key cached in " + pubKeyFilePath);
                       }

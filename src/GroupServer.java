@@ -42,10 +42,7 @@ public class GroupServer extends Server {
             userStream = new ObjectInputStream(fis);
             userList = (UserList)userStream.readObject();
 
-            // TODO figure out this weirdest bug: it works if you do this twice else userList is null
-
 //            System.out.println(userList.getUserGroups("admin").get(0));
-
 
         } catch(FileNotFoundException e) {
             System.out.println("UserList File Does Not Exist. Creating UserList...");
@@ -61,6 +58,7 @@ public class GroupServer extends Server {
             System.out.println("Generating and storing RSA key pair for " + username + "...");
 
             // Generate RSA keypair for the user and another for the group server
+            // TODO remove rsa keygen for user from here, it should happen in client terminal app like normal
             CryptoSec cs = new CryptoSec();
             cs.writeKeyPair(username, cs.genRSAKeyPair());
             System.out.println("An RSA Key Pair has been generated for " + username +

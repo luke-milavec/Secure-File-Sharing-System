@@ -29,11 +29,11 @@ public class FileClient extends Client implements FileClientInterface {
             CryptoSec cs = new CryptoSec();
             Envelope pubKeyMsg = (Envelope)input.readObject();
             RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
-            File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+            File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
             if (serverKeys.exists()) {
                 // Compare key sent by server to the cached one
-                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
+                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey(username + "_known_servers" + File.separator + pubKeyMsg.getMessage());
                 if(cs.byteArrToHexStr(fsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedFSPubKey.getEncoded()))) {
                     System.out.println("The cached public key for this server matched the public key sent by " + server +
                             " at port " + port + ". Connecting...");
@@ -57,11 +57,11 @@ public class FileClient extends Client implements FileClientInterface {
                     String userInput = in.nextLine();
                     if (userInput.equalsIgnoreCase("y")) {
                         // Create new directory if it doesn't exist
-                        File knownServerDir = new File("known_servers");
+                        File knownServerDir = new File(username + "_known_servers");
                         if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                             System.out.println("Error creating " + knownServerDir);
                         }
-                        String pubKeyFilePath = "known_servers" + File.separator + pubKeyMsg.getMessage();
+                        String pubKeyFilePath = username + "_known_servers" + File.separator + pubKeyMsg.getMessage();
                         if (cs.writePubKey(pubKeyFilePath, fsPubKey)) {
                             System.out.println("File Server's public key cached in " + pubKeyFilePath);
                         }

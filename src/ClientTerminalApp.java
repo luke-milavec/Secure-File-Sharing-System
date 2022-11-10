@@ -326,11 +326,16 @@ public class ClientTerminalApp {
         username = in.nextLine();
         File pubKFile = new File(username + ".public");
         File privKFile = new File(username + ".private");
+
         // If user accidentally deletes key files should we check for that and let them regenerate them?
         if (!pubKFile.exists() || !privKFile.exists()) {
-            System.out.println("No RSA Key Pair found for " + username + ". If the keypair exists elsewhere, copy '" +
-                    username + ".public' and '" + username + ".private' into the current directory and ");
-            System.out.println(" type 'y' to confirm the keypair has been added. Otherwise, type 'n' to setup a " +
+            System.out.println("User " + username + " information not found. If the user exists elsewhere" +
+                    " copy the following into the current directory: ");
+            System.out.println("    1. "+ username + "'s RSA public key file: '" + username + ".public'");
+            System.out.println("    2. "+ username + "'s RSA private key file: '" + username + ".private'");
+            System.out.println("    3. "+ username + "'s directory of known servers: '" + username + "_known_servers'");
+
+            System.out.println("Type 'y' to confirm the items have been added. Otherwise, type 'n' to setup a " +
                     "new user and generate a new RSA keypair for " + username + ".");
             boolean validInput = false;
             while(!validInput) {
