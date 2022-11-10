@@ -94,6 +94,7 @@ public class FileServer extends Server {
                                 ", " + fsName + "'s public key to file.");
                     }
                     System.out.println();
+                    validInput = true;
 
                 } else {
                     System.out.println("Invalid input: Please type 'y' to confirm that a keypair has been added." +
@@ -102,9 +103,8 @@ public class FileServer extends Server {
             }
         }
 
-
         // TODO shared files may exist if fs exists elsewhere
-        File file = new File("shared_files");
+        File file = new File(fsName + "_shared_files");
         if (file.mkdir()) {
             System.out.println("Created new shared_files directory");
 

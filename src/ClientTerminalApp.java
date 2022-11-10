@@ -365,6 +365,7 @@ public class ClientTerminalApp {
                         System.out.println("Sorry error generating keys, please try again");
                         System.exit(-1);
                     }
+                    validInput = true;
 
                 } else {
                     System.out.println("Invalid input: Please type 'y' to confirm that a keypair has been added." +

@@ -103,7 +103,7 @@ public class FileThread extends Thread {
                                     System.out.printf("Error: user missing valid token for group %s\n", group);
                                     response = new Envelope("FAIL-UNAUTHORIZED"); //Success
                                 } else  {
-                                    File file = new File("shared_files/"+remotePath.replace('/', '_'));
+                                    File file = new File(fsName + "_shared_files/"+remotePath.replace('/', '_'));
                                     file.createNewFile();
                                     FileOutputStream fos = new FileOutputStream(file);
                                     System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
@@ -158,7 +158,7 @@ public class FileThread extends Thread {
                         } else {
 
                             try {
-                                File f = new File("shared_files/_"+remotePath.replace('/', '_'));
+                                File f = new File(fsName + "_shared_files/_"+remotePath.replace('/', '_'));
                                 if (!f.exists()) {
                                     System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
                                     e = new Envelope("ERROR_NOTONDISK");
@@ -239,7 +239,7 @@ public class FileThread extends Thread {
                         } else {
 
                             try {
-                                File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
+                                File f = new File(fsName + "_shared_files/"+"_"+remotePath.replace('/', '_'));
 
                                 if (!f.exists()) {
                                     System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
