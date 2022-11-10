@@ -44,9 +44,6 @@ public class ClientTerminalApp {
                 case "help":
                     showOptions();
                     break;
-                case "relog": 
-                    login(in);
-                    break;
                 case "connect":
                     // What sort of input validation should we add?
                     if (command.length != 4) {
@@ -375,7 +372,6 @@ public class ClientTerminalApp {
         String newLine = System.lineSeparator();
         System.out.println("Options: " + newLine
                             + "     help                                                    Shows the list of valid commands." + newLine
-                            + "     relog                                                   Re-login to app, perhaps to change accounts." + newLine
                             + "     connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified." + newLine
                             + "     disconnect                                              Disconnect current connection to file and/or group server." + newLine
                             + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
