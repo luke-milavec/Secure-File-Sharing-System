@@ -89,6 +89,40 @@ public class FileServer extends Server {
             System.out.println("Error creating shared_files directory");
         }
 
+        // File server needs group server public key upon setup
+        File gsPubKeyFile = new File("gs.public");
+        if (!gsPubKeyFile.exists()) {
+            System.out.println("Please provide the group server's public key by adding the file 'gs.public' " +
+                    System.lineSeparator() + "to the current directory to finish setting up this file server.");
+            System.out.println("'gs.public' can be found in the 'known_servers' directory." +System.lineSeparator()
+                    + "If it isn't there," +
+                    " connect to the group server, upon first connection to the group server it will be created " +
+                    "in the 'known_servers' directory.");
+            System.out.println("Enter 'y' once the file is added or 'n' to cancel setup:");
+            Scanner in = new Scanner(System.in);
+            boolean validInput = false;
+            while(!validInput) {
+                String userInput = in.nextLine();
+                if (userInput.equalsIgnoreCase("y")) {
+                    if(gsPubKeyFile.exists()) {
+                        System.out.println("Found group server public key file, finishing setup...");
+                        validInput = true;
+                    } else {
+                        System.out.println("Could not find 'gs.public' in the current directory. " +
+                                "Please provide the group server's public key by adding the file 'gs.public'");
+                    }
+                } else if (userInput.equalsIgnoreCase("n")) {
+                    System.out.println("File server setup cancelled.");
+                    System.exit(0);
+                } else {
+                    System.out.println("Invalid input: enter 'y' once the file is added or 'n' to cancel setup.");
+                }
+            }
+        } else {
+            System.out.println("Found group server public key");
+        }
+
+
         //Autosave Daemon. Saves lists every 5 minutes
         AutoSaveFS aSave = new AutoSaveFS();
         aSave.setDaemon(true);

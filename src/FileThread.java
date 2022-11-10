@@ -37,6 +37,8 @@ public class FileThread extends Thread {
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             Envelope response;
+
+
             RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
 
             // conduct Handshake A
