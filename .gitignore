@@ -1,2 +1,5 @@
 *.class
 *.bin
+*.private
+*.public
+gs_pub_key_hex.txt
