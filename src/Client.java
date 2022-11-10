@@ -65,7 +65,7 @@ public abstract class Client {
               while(!validInput) {
                   String userInput = in.nextLine();
                   if (userInput.equalsIgnoreCase("y")) {
-                      // Create new directory if it doesn't exist
+                      // Create new directory if it doesn't exist TODO <-- dead code next few lines?
                       File knownServerDir = new File(username + "_known_servers");
                       if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                               System.out.println("Error creating " + knownServerDir);

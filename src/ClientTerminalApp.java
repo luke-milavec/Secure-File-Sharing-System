@@ -326,9 +326,9 @@ public class ClientTerminalApp {
         username = in.nextLine();
         File pubKFile = new File(username + ".public");
         File privKFile = new File(username + ".private");
-
+        File knownSDir = new File(username + "_known_servers");
         // If user accidentally deletes key files should we check for that and let them regenerate them?
-        if (!pubKFile.exists() || !privKFile.exists()) {
+        if (!pubKFile.exists() || !privKFile.exists() || !knownSDir.exists()) {
             System.out.println("User " + username + " information not found. If the user exists elsewhere" +
                     " copy the following into the current directory: ");
             System.out.println("    1. "+ username + "'s RSA public key file: '" + username + ".public'");
@@ -336,18 +336,21 @@ public class ClientTerminalApp {
             System.out.println("    3. "+ username + "'s directory of known servers: '" + username + "_known_servers'");
 
             System.out.println("Type 'y' to confirm the items have been added. Otherwise, type 'n' to setup a " +
-                    "new user and generate a new RSA keypair for " + username + ".");
+                    "new user and generate a new RSA keypair and known server directory for " + username + ".");
             boolean validInput = false;
             while(!validInput) {
                 String userInput = in.nextLine();
                 if (userInput.equalsIgnoreCase("y")) {
-                    if(pubKFile.exists() && privKFile.exists()) {
-                        System.out.println("Keypair files found.");
+                    if(pubKFile.exists() && privKFile.exists() && knownSDir.exists()) {
+                        System.out.println("Keypair files and known servers directory found.");
                         validInput = true;
                     } else {
-                        System.out.println(username + ".public' and/or '" + username + ".private' were not found.");
-                        System.out.println("Please add the keypair files into the current directory, or press 'n'" +
-                                " if no keypair exists to generate a new keypair for " + username + ".");
+                        System.out.println(username + ".public' and/or '" + username + ".private' and/or" +
+                                username + "_known_servers' were not found.");
+                        System.out.println("Please add the keypair files and known server directory into the current" +
+                                " directory," + System.lineSeparator() +
+                                "or press 'n' if no keypair/directory exists to generate a new keypair" +
+                                " and directory for " + username + ".");
                     }
                 } else if (userInput.equalsIgnoreCase("n")) {
                     System.out.println(
@@ -370,6 +373,12 @@ public class ClientTerminalApp {
                         System.out.println("Sorry error generating keys, please try again");
                         System.exit(-1);
                     }
+                    if(!knownSDir.exists() && !knownSDir.mkdir()) {
+                        System.out.println("Error creating " + knownSDir);
+                    } else {
+                        System.out.println("Created " + knownSDir + " directory.");
+                    }
+
                     validInput = true;
 
                 } else {
