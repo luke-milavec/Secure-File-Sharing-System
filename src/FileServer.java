@@ -51,34 +51,59 @@ public class FileServer extends Server {
         System.out.print("Enter the name of the file server to start or a new name to setup a new file server: ");
         String fsName = console.next();
         File pubKeyFile = new File(fsName + ".public");
-        if(!pubKeyFile.exists()) {
-            // Generate RSA keypair for the user and another for the group server
-            CryptoSec cs = new CryptoSec();
-            KeyPair fsKeyPair = cs.genRSAKeyPair();
-            cs.writeKeyPair(fsName, fsKeyPair);
-            System.out.println("An RSA Key Pair has been generated for " + fsName +
-                    " and stored in files '" + fsName +
-                    ".public' and '" + fsName + ".private' in the current directory.");
-            System.out.println();
+        File privKeyFile = new File(fsName + ".private");
+        CryptoSec cs = new CryptoSec();
+        KeyPair fsKeyPair;
+        Scanner in = new Scanner(System.in);
+        if(!pubKeyFile.exists() || !privKeyFile.exists()) {
+            System.out.println("No RSA Key Pair found for " + fsName + ". If the keypair exists elsewhere, copy '" +
+                    fsName + ".public' and '" + fsName + ".private' into the current directory and ");
+            System.out.println(" type 'y' to confirm the keypair has been added. Otherwise, type 'n' to setup a " +
+                    "new file server and generate a new RSA keypair for " + fsName + ".");
+            boolean validInput = false;
+            while(!validInput) {
+                String userInput = in.nextLine();
+                if (userInput.equalsIgnoreCase("y")) {
+                    if(privKeyFile.exists() && privKeyFile.exists()) {
+                        System.out.println("Keypair files found.");
+                        validInput = true;
+                    } else {
+                        System.out.println(fsName + ".public' and/or '" + fsName + ".private' were not found.");
+                        System.out.println("Please add the keypair files into the current directory, or press 'n'" +
+                                " if no keypair exists to generate a new keypair for " + fsName + ".");
+                    }
+                } else if (userInput.equalsIgnoreCase("n")) {
+                    // Generate RSA keypair for the group server
+                    fsKeyPair = cs.genRSAKeyPair();
+                    cs.writeKeyPair(fsName, fsKeyPair);
+                    System.out.println("An RSA Key Pair has been generated for " + fsName +
+                            " and stored in files '" + fsName +
+                            ".public' and '" + fsName + ".private' in the current directory.");
+                    System.out.println();
 
-            // Write a hex version of the group server's public key to a new file, meant to be used for verification
-            // purposes
-            String pubHexString = cs.byteArrToHexStr(fsKeyPair.getPublic().getEncoded());
-            if (cs.writeStrToFile(fsName + "_pub_key_hex", pubHexString)) {
-                System.out.println("A hex version of the File Server, " + fsName + "'s public key has been written to "
-                        + fsName + "_pub_key_hex.txt in the current directory.");
-                System.out.println("This is meant to be given to trusted new users out-of-band as needed so they can" +
-                        " verify they are connecting to the right file server.");
-            } else {
-                System.out.println("There was an error writing hex version of the file server" +
-                        ", " + fsName + "'s public key to file.");
+                    // Write a hex version of the file server's public key to a new file,
+                    // meant to be used for verification purposes
+                    String pubHexString = cs.byteArrToHexStr(fsKeyPair.getPublic().getEncoded());
+                    if (cs.writeStrToFile(fsName + "_pub_key_hex", pubHexString)) {
+                        System.out.println("A hex version of the File Server, " + fsName + "'s public key has been"
+                                + " written to " + fsName + "_pub_key_hex.txt in the current directory.");
+                        System.out.println("This is meant to be given to trusted new users out-of-band as " +
+                                "needed so they can verify they are connecting to the right file server.");
+                    } else {
+                        System.out.println("There was an error writing hex version of the file server" +
+                                ", " + fsName + "'s public key to file.");
+                    }
+                    System.out.println();
+
+                } else {
+                    System.out.println("Invalid input: Please type 'y' to confirm that a keypair has been added." +
+                            " Otherwise, type 'n' to setup a new file server and generate a new RSA keypair for it.");
+                }
             }
-            System.out.println();
-        } else {
-            System.out.println("Found File Server, " + fsName + "'s RSA KeyPair");
         }
 
 
+        // TODO shared files may exist if fs exists elsewhere
         File file = new File("shared_files");
         if (file.mkdir()) {
             System.out.println("Created new shared_files directory");
@@ -99,7 +124,6 @@ public class FileServer extends Server {
                     " connect to the group server, upon first connection to the group server it will be created " +
                     "in the 'known_servers' directory.");
             System.out.println("Enter 'y' once the file is added or 'n' to cancel setup:");
-            Scanner in = new Scanner(System.in);
             boolean validInput = false;
             while(!validInput) {
                 String userInput = in.nextLine();

@@ -328,27 +328,50 @@ public class ClientTerminalApp {
         File privKFile = new File(username + ".private");
         // If user accidentally deletes key files should we check for that and let them regenerate them?
         if (!pubKFile.exists() || !privKFile.exists()) {
-            System.out.println("No RSA Key Pair exists yet for " + username + " or it was lost." +
-                    " Generating RSA Key Pair..." + System.lineSeparator() +
-                     "If you encounter trouble getting a token, an Admin may not" +
-                    " have created a user with this username yet." + System.lineSeparator() +
-                    "Please contact an admin to setup a user" +
-                    " under this username if you encounter this issue." + System.lineSeparator() +
-                    "If the Admin has already created a user with this" +
-                    " username there should be no trouble using the system." + System.lineSeparator());
+            System.out.println("No RSA Key Pair found for " + username + ". If the keypair exists elsewhere, copy '" +
+                    username + ".public' and '" + username + ".private' into the current directory and ");
+            System.out.println(" type 'y' to confirm the keypair has been added. Otherwise, type 'n' to setup a " +
+                    "new user and generate a new RSA keypair for " + username + ".");
+            boolean validInput = false;
+            while(!validInput) {
+                String userInput = in.nextLine();
+                if (userInput.equalsIgnoreCase("y")) {
+                    if(pubKFile.exists() && privKFile.exists()) {
+                        System.out.println("Keypair files found.");
+                        validInput = true;
+                    } else {
+                        System.out.println(username + ".public' and/or '" + username + ".private' were not found.");
+                        System.out.println("Please add the keypair files into the current directory, or press 'n'" +
+                                " if no keypair exists to generate a new keypair for " + username + ".");
+                    }
+                } else if (userInput.equalsIgnoreCase("n")) {
+                    System.out.println(
+                            " Generating RSA Key Pair..." + System.lineSeparator() +
+                                    "If you encounter trouble getting a token, an Admin may not" +
+                                    " have created a user with this username yet." + System.lineSeparator() +
+                                    "Please contact an admin to setup a user" +
+                                    " under this username if you encounter this issue." + System.lineSeparator() +
+                                    "If the Admin has already created a user with this" +
+                                    " username there should be no trouble using the system." + System.lineSeparator());
 
 
-            KeyPair rsaKeyPair = cs.genRSAKeyPair();
-            if(cs.writeKeyPair(username, rsaKeyPair)) {
-                System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
-                        + " and '" + username + ".private' in the current directory." + System.lineSeparator() +
-                        "Please do not delete them if you wish to continue using this account."
-                        + System.lineSeparator());
-            } else {
-                System.out.println("Sorry error generating keys, please try again");
-                System.exit(-1);
+                    KeyPair rsaKeyPair = cs.genRSAKeyPair();
+                    if(cs.writeKeyPair(username, rsaKeyPair)) {
+                        System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
+                                + " and '" + username + ".private' in the current directory." + System.lineSeparator() +
+                                "Please do not delete them if you wish to continue using this account."
+                                + System.lineSeparator());
+                    } else {
+                        System.out.println("Sorry error generating keys, please try again");
+                        System.exit(-1);
+                    }
+
+                } else {
+                    System.out.println("Invalid input: Please type 'y' to confirm that a keypair has been added." +
+                            " Otherwise, type 'n' to setup a new user and generate a new RSA keypair for " + username
+                            + ".");
+                }
             }
-
         }
         gClient = new GroupClient();
         fClient = new FileClient();
