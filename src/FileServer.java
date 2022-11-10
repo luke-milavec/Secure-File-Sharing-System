@@ -65,7 +65,7 @@ public class FileServer extends Server {
             // purposes
             String pubHexString = cs.byteArrToHexStr(fsKeyPair.getPublic().getEncoded());
             if (cs.writeStrToFile(fsName + "_pub_key_hex", pubHexString)) {
-                System.out.println("A hex version of the File Server, " + fsName + "'s public key has been written to"
+                System.out.println("A hex version of the File Server, " + fsName + "'s public key has been written to "
                         + fsName + "_pub_key_hex.txt in the current directory.");
                 System.out.println("This is meant to be given to trusted new users out-of-band as needed so they can" +
                         " verify they are connecting to the right file server.");

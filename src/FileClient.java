@@ -100,7 +100,6 @@ public class FileClient extends Client implements FileClientInterface {
             byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
             // 3) Send to server you want to connect with
             Envelope connectRequest = new Envelope("SignatureForHandshake");
-             // TODO confirm w/ Prof it is okay to send userPublic key unencrypted
             connectRequest.addObject(userRSApublickey); // So the server can verify the signature
             connectRequest.addObject(ecKeyPair.getPublic());
             connectRequest.addObject(userPrivateECKeySig);
@@ -137,7 +136,6 @@ public class FileClient extends Client implements FileClientInterface {
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
 
             } else {
-                // Message received was neither "SignatureForHandshake" nor "FAIL"
                 System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
                 return false;
             }

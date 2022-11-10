@@ -37,7 +37,7 @@ public class FileThread extends Thread {
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
             final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
             Envelope response;
-            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");//TODO retrieve from gs or explain why not
+            RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
 
             // conduct Handshake A
             if (!handshake(input, output)) {
@@ -45,232 +45,230 @@ public class FileThread extends Thread {
                 Envelope errMsg = new Envelope("FAIL");
                 errMsg.addObject(null);
                 output.writeObject(errMsg);
-            }
+            } else {
+                do {
+                    Message msg = (Message) input.readObject();
+                    Envelope e = cs.decryptEnvelopeMessage(msg, Kab);
+                    System.out.println("Request received: " + e.getMessage());
 
-            do {
-                Message msg = (Message) input.readObject();
-                Envelope e = cs.decryptEnvelopeMessage(msg, Kab);
-                System.out.println("Request received: " + e.getMessage());
-                // Handler to list files that this user is allowed to see
-
-                if(e.getMessage().equals("LFILES")) {
-                    if(e.getObjContents().size() < 1) {  // no token sent
-                        response = new Envelope("FAIL-BADCONTENTS");
-                    } else if (e.getObjContents().get(0) == null){ // if the token is null
-                        response = new Envelope("FAIL-BADTOKEN");
-                    } else {
-                        UserToken token = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(0),gsPubKey);
-                        if(tokenTimeValid(token)){
-                            List<String> allowedGroups = token.getGroups();
-                            List<ShareFile> serverFileList = FileServer.fileList.getFiles();
-
-                            List<String> fileRetList = new ArrayList<>(); // list to return
-
-                            for (ShareFile sf : serverFileList) {
-                            if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
-                                fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
-                            }
-                            }
-                            System.out.println("Sending list of files");
-                            response = new Envelope("OK");
-                            response.addObject(fileRetList);
-                        } else {
-                            response = new Envelope("FAIL-EXPIREDTOKEN");
-                        }
-                    }
-                    output.writeObject(cs.encryptEnvelope(response, Kab));
-                }
-                if(e.getMessage().equals("UPLOADF")) {
-
-                    if(e.getObjContents().size() < 3) {
-                        response = new Envelope("FAIL-BADCONTENTS");
-                    } else {
-                        if(e.getObjContents().get(0) == null) {
-                            response = new Envelope("FAIL-BADPATH");
-                        }
-                        if(e.getObjContents().get(1) == null) {
-                            response = new Envelope("FAIL-BADGROUP");
-                        }
-                        if(e.getObjContents().get(2) == null) {
+                    // Handler to list files that this user is allowed to see
+                    if(e.getMessage().equals("LFILES")) {
+                        if(e.getObjContents().size() < 1) {  // no token sent
+                            response = new Envelope("FAIL-BADCONTENTS");
+                        } else if (e.getObjContents().get(0) == null){ // if the token is null
                             response = new Envelope("FAIL-BADTOKEN");
                         } else {
-                            String remotePath = (String)e.getObjContents().get(0);
-                            String group = (String)e.getObjContents().get(1);
-                            //UserToken yourToken = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(2), Kab, gsPubKey); //Extract token
-                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(2),gsPubKey);
-                            if(!tokenTimeValid(yourToken)){
+                            UserToken token = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(0),gsPubKey);
+                            if(tokenTimeValid(token)){
+                                List<String> allowedGroups = token.getGroups();
+                                List<ShareFile> serverFileList = FileServer.fileList.getFiles();
+
+                                List<String> fileRetList = new ArrayList<>(); // list to return
+                                for (ShareFile sf : serverFileList) {
+                                    if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
+                                        fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
+                                    }
+                                }
+                                System.out.println("Sending list of files");
+                                response = new Envelope("OK");
+                                response.addObject(fileRetList);
+                            } else {
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
-                            } else if (FileServer.fileList.checkFile(remotePath)) {
-                                System.out.printf("Error: file already exists at %s\n", remotePath);
-                                response = new Envelope("FAIL-FILEEXISTS"); //Success
-                            } else if (!yourToken.getGroups().contains(group)) {
-                                System.out.printf("Error: user missing valid token for group %s\n", group);
-                                response = new Envelope("FAIL-UNAUTHORIZED"); //Success
-                            } else  {
-                                File file = new File("shared_files/"+remotePath.replace('/', '_'));
-                                file.createNewFile();
-                                FileOutputStream fos = new FileOutputStream(file);
-                                System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
-
-                                response = new Envelope("READY"); //Success
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
-
-                                msg = (Message) input.readObject();
-                                e = cs.decryptEnvelopeMessage(msg, Kab);
-
-                                while (e.getMessage().compareTo("CHUNK")==0) {
-                                    fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
-                                    response = new Envelope("READY"); //Success
-                                    output.writeObject(cs.encryptEnvelope(response, Kab));
-                                    msg = (Message) input.readObject();
-                                    e = cs.decryptEnvelopeMessage(msg, Kab);
-                                }
-
-                                if(e.getMessage().compareTo("EOF")==0) {
-                                    System.out.printf("Transfer successful file %s\n", remotePath);
-                                    FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
-                                    response = new Envelope("OK"); //Success
-                                } else {
-                                    System.out.printf("Error reading file %s from client\n", remotePath);
-                                    response = new Envelope("ERROR-TRANSFER"); //Success
-                                }
-                                fos.close();
                             }
                         }
+                        output.writeObject(cs.encryptEnvelope(response, Kab));
                     }
+                    if(e.getMessage().equals("UPLOADF")) {
 
-                    output.writeObject(cs.encryptEnvelope(response, Kab));
-                } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
-
-                    String remotePath = (String)e.getObjContents().get(0);
-                    //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
-                    UserToken t= cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
-                    ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-                    if(!tokenTimeValid(t)){
-                        System.out.println("Error: Token Expired");
-                        e = new Envelope("FAIL-EXPIREDTOKEN");
-                        output.writeObject(cs.encryptEnvelope(e, Kab));
-                    }else if (sf == null) {
-                        System.out.printf("Error: File %s doesn't exist\n", remotePath);
-                        e = new Envelope("ERROR_FILEMISSING");
-                        output.writeObject(cs.encryptEnvelope(e, Kab));
-
-                    } else if (!t.getGroups().contains(sf.getGroup())) {
-                        System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-                        e = new Envelope("ERROR_PERMISSION");
-                        output.writeObject(cs.encryptEnvelope(e, Kab));
-                    } else {
-
-                        try {
-                            File f = new File("shared_files/_"+remotePath.replace('/', '_'));
-                            if (!f.exists()) {
-                                System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-                                e = new Envelope("ERROR_NOTONDISK");
-                                output.writeObject(cs.encryptEnvelope(e, Kab));
-
+                        if(e.getObjContents().size() < 3) {
+                            response = new Envelope("FAIL-BADCONTENTS");
+                        } else {
+                            if(e.getObjContents().get(0) == null) {
+                                response = new Envelope("FAIL-BADPATH");
+                            }
+                            if(e.getObjContents().get(1) == null) {
+                                response = new Envelope("FAIL-BADGROUP");
+                            }
+                            if(e.getObjContents().get(2) == null) {
+                                response = new Envelope("FAIL-BADTOKEN");
                             } else {
-                                FileInputStream fis = new FileInputStream(f);
+                                String remotePath = (String)e.getObjContents().get(0);
+                                String group = (String)e.getObjContents().get(1);
+                                UserToken yourToken = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(2),gsPubKey);
+                                if(!tokenTimeValid(yourToken)){
+                                    response = new Envelope("FAIL-EXPIREDTOKEN");
+                                } else if (FileServer.fileList.checkFile(remotePath)) {
+                                    System.out.printf("Error: file already exists at %s\n", remotePath);
+                                    response = new Envelope("FAIL-FILEEXISTS"); //Success
+                                } else if (!yourToken.getGroups().contains(group)) {
+                                    System.out.printf("Error: user missing valid token for group %s\n", group);
+                                    response = new Envelope("FAIL-UNAUTHORIZED"); //Success
+                                } else  {
+                                    File file = new File("shared_files/"+remotePath.replace('/', '_'));
+                                    file.createNewFile();
+                                    FileOutputStream fos = new FileOutputStream(file);
+                                    System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
 
-                                do {
-                                    byte[] buf = new byte[4096];
-                                    if (e.getMessage().compareTo("DOWNLOADF")!=0) {
-                                        System.out.printf("Server error: %s\n", e.getMessage());
-                                        break;
-                                    }
-                                    e = new Envelope("CHUNK");
-                                    int n = fis.read(buf); //can throw an IOException
-                                    if (n > 0) {
-                                        System.out.printf(".");
-                                    } else if (n < 0) {
-                                        System.out.println("Read error");
-
-                                    }
-
-                                    e.addObject(buf);
-                                    e.addObject(Integer.valueOf(n));
-                                    
-                                    output.writeObject(cs.encryptEnvelope(e, Kab));
+                                    response = new Envelope("READY"); //Success
+                                    output.writeObject(cs.encryptEnvelope(response, Kab));
 
                                     msg = (Message) input.readObject();
                                     e = cs.decryptEnvelopeMessage(msg, Kab);
 
+                                    while (e.getMessage().compareTo("CHUNK")==0) {
+                                        fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
+                                        response = new Envelope("READY"); //Success
+                                        output.writeObject(cs.encryptEnvelope(response, Kab));
+                                        msg = (Message) input.readObject();
+                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+                                    }
 
-                                } while (fis.available()>0);
+                                    if(e.getMessage().compareTo("EOF")==0) {
+                                        System.out.printf("Transfer successful file %s\n", remotePath);
+                                        FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
+                                        response = new Envelope("OK"); //Success
+                                    } else {
+                                        System.out.printf("Error reading file %s from client\n", remotePath);
+                                        response = new Envelope("ERROR-TRANSFER"); //Success
+                                    }
+                                    fos.close();
+                                }
+                            }
+                        }
 
-                                //If server indicates success, return the member list
-                                if(e.getMessage().compareTo("DOWNLOADF")==0) {
+                        output.writeObject(cs.encryptEnvelope(response, Kab));
+                    } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
 
-                                    e = new Envelope("EOF");
+                        String remotePath = (String)e.getObjContents().get(0);
+                        //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                        UserToken t= cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
+                        ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+                        if(!tokenTimeValid(t)){
+                            System.out.println("Error: Token Expired");
+                            e = new Envelope("FAIL-EXPIREDTOKEN");
+                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                        }else if (sf == null) {
+                            System.out.printf("Error: File %s doesn't exist\n", remotePath);
+                            e = new Envelope("ERROR_FILEMISSING");
+                            output.writeObject(cs.encryptEnvelope(e, Kab));
+
+                        } else if (!t.getGroups().contains(sf.getGroup())) {
+                            System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
+                            e = new Envelope("ERROR_PERMISSION");
+                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                        } else {
+
+                            try {
+                                File f = new File("shared_files/_"+remotePath.replace('/', '_'));
+                                if (!f.exists()) {
+                                    System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
+                                    e = new Envelope("ERROR_NOTONDISK");
                                     output.writeObject(cs.encryptEnvelope(e, Kab));
 
-                                    msg = (Message) input.readObject();
-                                    e = cs.decryptEnvelopeMessage(msg, Kab);
-                                    if(e.getMessage().compareTo("OK")==0) {
-                                        System.out.printf("File data upload successful\n");
+                                } else {
+                                    FileInputStream fis = new FileInputStream(f);
+
+                                    do {
+                                        byte[] buf = new byte[4096];
+                                        if (e.getMessage().compareTo("DOWNLOADF")!=0) {
+                                            System.out.printf("Server error: %s\n", e.getMessage());
+                                            break;
+                                        }
+                                        e = new Envelope("CHUNK");
+                                        int n = fis.read(buf); //can throw an IOException
+                                        if (n > 0) {
+                                            System.out.printf(".");
+                                        } else if (n < 0) {
+                                            System.out.println("Read error");
+
+                                        }
+
+                                        e.addObject(buf);
+                                        e.addObject(Integer.valueOf(n));
+
+                                        output.writeObject(cs.encryptEnvelope(e, Kab));
+
+                                        msg = (Message) input.readObject();
+                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+
+
+                                    } while (fis.available()>0);
+
+                                    //If server indicates success, return the member list
+                                    if(e.getMessage().compareTo("DOWNLOADF")==0) {
+
+                                        e = new Envelope("EOF");
+                                        output.writeObject(cs.encryptEnvelope(e, Kab));
+
+                                        msg = (Message) input.readObject();
+                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+                                        if(e.getMessage().compareTo("OK")==0) {
+                                            System.out.printf("File data upload successful\n");
+                                        } else {
+
+                                            System.out.printf("Upload failed: %s\n", e.getMessage());
+
+                                        }
+
                                     } else {
 
                                         System.out.printf("Upload failed: %s\n", e.getMessage());
 
                                     }
-
-                                } else {
-
-                                    System.out.printf("Upload failed: %s\n", e.getMessage());
-
+                                    fis.close();
                                 }
-                                fis.close();
+                            } catch(Exception e1) {
+                                System.err.println("Error: " + e.getMessage());
+                                e1.printStackTrace(System.err);
+
                             }
-                        } catch(Exception e1) {
-                            System.err.println("Error: " + e.getMessage());
-                            e1.printStackTrace(System.err);
-
                         }
-                    }
-                } else if (e.getMessage().compareTo("DELETEF")==0) {
+                    } else if (e.getMessage().compareTo("DELETEF")==0) {
 
-                    String remotePath = (String)e.getObjContents().get(0);
-                    //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
-                    UserToken t = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
-                    ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
-                    if(!tokenTimeValid(t)){
-                        e = new Envelope("FAIL-EXPIREDTOKEN");
-                    }else if (sf == null) {
-                        System.out.printf("Error: File %s doesn't exist\n", remotePath);
-                        e = new Envelope("ERROR_DOESNTEXIST");
-                    } else if (!t.getGroups().contains(sf.getGroup())) {
-                        System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
-                        e = new Envelope("ERROR_PERMISSION");
-                    } else {
+                        String remotePath = (String)e.getObjContents().get(0);
+                        //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
+                        UserToken t = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
+                        ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
+                        if(!tokenTimeValid(t)){
+                            e = new Envelope("FAIL-EXPIREDTOKEN");
+                        }else if (sf == null) {
+                            System.out.printf("Error: File %s doesn't exist\n", remotePath);
+                            e = new Envelope("ERROR_DOESNTEXIST");
+                        } else if (!t.getGroups().contains(sf.getGroup())) {
+                            System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
+                            e = new Envelope("ERROR_PERMISSION");
+                        } else {
 
-                        try {
-                            File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
+                            try {
+                                File f = new File("shared_files/"+"_"+remotePath.replace('/', '_'));
 
-                            if (!f.exists()) {
-                                System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
-                                e = new Envelope("ERROR_FILEMISSING");
-                            } else if (f.delete()) {
-                                System.out.printf("File %s deleted from disk\n", "_"+remotePath.replace('/', '_'));
-                                FileServer.fileList.removeFile("/"+remotePath);
-                                e = new Envelope("OK");
-                            } else {
-                                System.out.printf("Error deleting file %s from disk\n", "_"+remotePath.replace('/', '_'));
-                                e = new Envelope("ERROR_DELETE");
+                                if (!f.exists()) {
+                                    System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
+                                    e = new Envelope("ERROR_FILEMISSING");
+                                } else if (f.delete()) {
+                                    System.out.printf("File %s deleted from disk\n", "_"+remotePath.replace('/', '_'));
+                                    FileServer.fileList.removeFile("/"+remotePath);
+                                    e = new Envelope("OK");
+                                } else {
+                                    System.out.printf("Error deleting file %s from disk\n", "_"+remotePath.replace('/', '_'));
+                                    e = new Envelope("ERROR_DELETE");
+                                }
+
+
+                            } catch(Exception e1) {
+                                System.err.println("Error: " + e1.getMessage());
+                                e1.printStackTrace(System.err);
+                                e = new Envelope(e1.getMessage());
                             }
-
-
-                        } catch(Exception e1) {
-                            System.err.println("Error: " + e1.getMessage());
-                            e1.printStackTrace(System.err);
-                            e = new Envelope(e1.getMessage());
                         }
-                    }
-                    output.writeObject(cs.encryptEnvelope(e, Kab));
+                        output.writeObject(cs.encryptEnvelope(e, Kab));
 
-                } else if(e.getMessage().equals("DISCONNECT")) {
-                    socket.close();
-                    proceed = false;
-                }
-            } while(proceed);
+                    } else if(e.getMessage().equals("DISCONNECT")) {
+                        socket.close();
+                        proceed = false;
+                    }
+                } while(proceed);
+            }
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -336,7 +334,7 @@ public class FileThread extends Thread {
                     }
                 }
             } else {
-                System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
+                System.out.println("Connection failed because envelope received from user isn't 'SignatureForHandshake'");
             }
         }  catch(Exception e) {
             System.err.println("Error: " + e.getMessage());

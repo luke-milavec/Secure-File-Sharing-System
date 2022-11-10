@@ -141,14 +141,6 @@ public abstract class Client {
                     return false;
                 }
 
-                // Taha: There is no way this works since hash functions have pre-image resistance and
-                // are lossy operations, you cannot get back the ECDH public key from the signature
-                // Instead I had the server send it over in ptext instead
-                // Server signature is verified, obtain server's ECDH public key and step 5 key agreement can now occur
-//                X509EncodedKeySpec serverPubKeySpec = new X509EncodedKeySpec(serverECDHKeySig);
-//                KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
-//                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
-
                 // Generate Kab, shared secret between user and server
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
@@ -158,7 +150,6 @@ public abstract class Client {
             System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
             return false;
           }
-          
 
           System.out.println("Connected to " + server + " on port " + port);
           return true;
