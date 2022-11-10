@@ -15,7 +15,7 @@ public class ClientTerminalApp {
 
     GroupClient gClient;
     FileClient fClient;
-    UserToken token;
+    Message token;
     String username;
     CryptoSec cs;
 

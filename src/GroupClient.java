@@ -11,7 +11,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         cs = new CryptoSec();
     }
 
-    public UserToken getToken(String username) {
+    public Message getToken(String username) {
         try {
             UserToken token = null;
             Envelope message = null, response = null;
@@ -43,8 +43,8 @@ public class GroupClient extends Client implements GroupClientInterface {
                 if(temp.size() == 1) {
 //                    token = (UserToken)temp.get(0);
 //                    System.out.println(cs.byteArrToHexStr(gsPubKey.getEncoded()));
-                    token = cs.decryptTokenMessage((Message) temp.get(0), Kab, gsPubKey);
-                    return token;
+                    
+                    return (Message) temp.get(0);
                 }
             }
 
