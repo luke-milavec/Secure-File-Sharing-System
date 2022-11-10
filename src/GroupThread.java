@@ -404,6 +404,7 @@ public class GroupThread extends Thread {
         //Does requester exist?
         if(my_gs.userList.checkUser(requester)) {
             if(!my_gs.groupList.checkGroup(groupname)) { // if group doesn't already exist
+                    if (groupname.equals("ADMIN")) return false;
                     my_gs.groupList.addGroup(requester, groupname); // add group to grouplist with requester as owner
                     my_gs.userList.addGroup(requester, groupname); // Add group to user's list of groups they belong to
                     my_gs.userList.addOwnership(requester, groupname); // Add group to user's list of groups they own
@@ -424,6 +425,7 @@ public class GroupThread extends Thread {
         if(my_gs.userList.checkUser(requester)) {
             if(my_gs.groupList.checkGroup(groupname)) { // if group exists
                     if (my_gs.groupList.getGroupOwner(groupname).equals(requester)) { // if requester is the group owner
+                        if (groupname.equals("ADMIN")) return false;
                         ArrayList<String> members = my_gs.groupList.getGroupMembers(groupname); // List of all group members
                         // Delete the group from every member's list of groups they belong to
                         for (int i = 0; i < members.size(); i++) {
