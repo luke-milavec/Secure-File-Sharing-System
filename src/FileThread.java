@@ -41,10 +41,7 @@ public class FileThread extends Thread {
 
             // conduct Handshake A
             if (!handshake(input, output)) {
-                System.out.println("Error connecting, file server could not be verified.");
-//                Envelope errMsg = new Envelope("FAIL");
-//                errMsg.addObject(null);
-//                output.writeObject(errMsg);
+                System.out.println("Error connecting, verification failed.");
             } else {
                 do {
                     Message msg = (Message) input.readObject();
