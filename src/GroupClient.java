@@ -11,7 +11,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         cs = new CryptoSec();
     }
 
-    public Message getToken(String username) {
+    public SignedToken getToken(String username) {
         try {
             UserToken token = null;
             Envelope message = null, response = null;
@@ -44,7 +44,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 //                    token = (UserToken)temp.get(0);
 //                    System.out.println(cs.byteArrToHexStr(gsPubKey.getEncoded()));
                     
-                    return (Message) temp.get(0);
+                    return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab) ;
                 }
             }
 
@@ -57,7 +57,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 
     }
 
-    public boolean createUser(String username, UserToken token) {
+    public boolean createUser(String username, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to create a user
@@ -80,7 +80,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteUser(String username, UserToken token) {
+    public boolean deleteUser(String username, SignedToken token) {
         try {
             Envelope message = null, response = null;
 
@@ -105,7 +105,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean createGroup(String groupname, UserToken token) {
+    public boolean createGroup(String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to create a group
@@ -129,7 +129,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteGroup(String groupname, UserToken token) {
+    public boolean deleteGroup(String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to delete a group
@@ -152,7 +152,7 @@ public class GroupClient extends Client implements GroupClientInterface {
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> listMembers(String group, UserToken token) {
+    public List<String> listMembers(String group, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to return the member list
@@ -180,7 +180,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean addUserToGroup(String username, String groupname, UserToken token) {
+    public boolean addUserToGroup(String username, String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
 
@@ -204,7 +204,7 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteUserFromGroup(String username, String groupname, UserToken token) {
+    public boolean deleteUserFromGroup(String username, String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to remove a user from the group

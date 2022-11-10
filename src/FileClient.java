@@ -152,7 +152,7 @@ public class FileClient extends Client implements FileClientInterface {
         }
     }
 
-    public boolean delete(String filename, UserToken token) {
+    public boolean delete(String filename, SignedToken token) {
         CryptoSec cs = new CryptoSec();
         String remotePath;
         if (filename.charAt(0)=='/') {
@@ -183,7 +183,7 @@ public class FileClient extends Client implements FileClientInterface {
         return true;
     }
 
-    public boolean download(String sourceFile, String destFile, UserToken token) {
+    public boolean download(String sourceFile, String destFile, SignedToken token) {
         CryptoSec cs = new CryptoSec();
         if (sourceFile.charAt(0)=='/') {
             sourceFile = sourceFile.substring(1);
@@ -245,7 +245,7 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> listFiles(UserToken token) {
+    public List<String> listFiles(SignedToken token) {
         CryptoSec cs = new CryptoSec();
         try {
             Envelope message = null, e = null;
@@ -274,7 +274,7 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     public boolean upload(String sourceFile, String destFile, String group,
-                          UserToken token) {
+                          SignedToken token) {
 
         CryptoSec cs = new CryptoSec();
 

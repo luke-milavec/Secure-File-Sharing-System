@@ -10,7 +10,7 @@ public class ClientSwingApp extends JFrame {
     
     GroupClient gClient;
     FileClient fClient;
-    UserToken token;
+    SignedToken token;
     String username;
     JFrame frame; 
 

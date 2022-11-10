@@ -555,4 +555,40 @@ public class CryptoSec {
     public List<String> deserializeString(String s){
         return  Arrays.asList(s.split("|"));
     }
+
+    public SignedToken decryptMessageToSignedToken(Message msg, byte[] Kab) {
+        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+        if (orgBytes != null) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+            try {
+                ObjectInput in = new ObjectInputStream(bis);
+                return (SignedToken) in.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+    
+    public UserToken decryptSignedToken(SignedToken signedToken, RSAPublicKey gsPubKey) {
+        try{
+            Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+            verifySig.initVerify(gsPubKey);
+            //                System.out.println("token crypto sec decryption: ");
+            //                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
+            verifySig.update(signedToken.getTokenBytes());
+            if(!verifySig.verify(signedToken.getTokenSignature())) {
+                System.out.println("Token could not be verified as signature did not match.");
+                return null;
+            }
+            ByteArrayInputStream bis = new ByteArrayInputStream(signedToken.getTokenBytes());
+            ObjectInputStream in = new ObjectInputStream(bis);
+            return (UserToken) in.readObject();
+        } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
+                NoSuchProviderException | InvalidKeyException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

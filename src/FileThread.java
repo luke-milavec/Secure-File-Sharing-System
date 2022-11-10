@@ -59,8 +59,7 @@ public class FileThread extends Thread {
                     } else if (e.getObjContents().get(0) == null){ // if the token is null
                         response = new Envelope("FAIL-BADTOKEN");
                     } else {
-                        //UserToken token = cs.decryptTokenMessage((Message) e.getObjContents().get(0), Kab, gsPubKey); // extract token
-                        UserToken token = (UserToken) e.getObjContents().get(0);
+                        UserToken token = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(0),gsPubKey);
                         if(tokenTimeValid(token)){
                             List<String> allowedGroups = token.getGroups();
                             List<ShareFile> serverFileList = FileServer.fileList.getFiles();
@@ -98,7 +97,7 @@ public class FileThread extends Thread {
                             String remotePath = (String)e.getObjContents().get(0);
                             String group = (String)e.getObjContents().get(1);
                             //UserToken yourToken = (UserToken) cs.decryptTokenMessage((Message) e.getObjContents().get(2), Kab, gsPubKey); //Extract token
-                            UserToken yourToken = (UserToken) e.getObjContents().get(2);
+                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(2),gsPubKey);
                             if(!tokenTimeValid(yourToken)){
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
                             } else if (FileServer.fileList.checkFile(remotePath)) {
@@ -145,7 +144,7 @@ public class FileThread extends Thread {
 
                     String remotePath = (String)e.getObjContents().get(0);
                     //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
-                    UserToken t = (UserToken) e.getObjContents().get(1);
+                    UserToken t= cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         System.out.println("Error: Token Expired");
@@ -231,7 +230,7 @@ public class FileThread extends Thread {
 
                     String remotePath = (String)e.getObjContents().get(0);
                     //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
-                    UserToken t = (UserToken) e.getObjContents().get(1);
+                    UserToken t = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
                     ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                     if(!tokenTimeValid(t)){
                         e = new Envelope("FAIL-EXPIREDTOKEN");
