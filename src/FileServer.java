@@ -52,25 +52,31 @@ public class FileServer extends Server {
         String fsName = console.next();
         File pubKeyFile = new File(fsName + ".public");
         File privKeyFile = new File(fsName + ".private");
+        File sharedFDir = new File(fsName + "_shared_files");
         CryptoSec cs = new CryptoSec();
         KeyPair fsKeyPair;
         Scanner in = new Scanner(System.in);
-        if(!pubKeyFile.exists() || !privKeyFile.exists()) {
-            System.out.println("No RSA Key Pair found for " + fsName + ". If the keypair exists elsewhere, copy '" +
-                    fsName + ".public' and '" + fsName + ".private' into the current directory and ");
-            System.out.println(" type 'y' to confirm the keypair has been added. Otherwise, type 'n' to setup a " +
-                    "new file server and generate a new RSA keypair for " + fsName + ".");
+        if(!pubKeyFile.exists() || !privKeyFile.exists() || !sharedFDir.exists()) {
+            System.out.println("No RSA Key Pair or shared_files directory found for " + fsName + ". " +
+                   System.lineSeparator() + "If the keypair and shared_files exist elsewhere, copy '" +
+                    fsName + ".public', '" + fsName + ".private', and '" + fsName + "_shared_files' directory" +
+                    " into the current directory and ");
+            System.out.println(" type 'y' to confirm they have been added. Otherwise, type 'n' to setup a " +
+                    "new file server and generate a new RSA keypair and shared_files directory for " + fsName + ".");
             boolean validInput = false;
             while(!validInput) {
                 String userInput = in.nextLine();
                 if (userInput.equalsIgnoreCase("y")) {
-                    if(privKeyFile.exists() && privKeyFile.exists()) {
-                        System.out.println("Keypair files found.");
+                    if(privKeyFile.exists() && privKeyFile.exists() && sharedFDir.exists()) {
+                        System.out.println("Keypair files and shared files directory found.");
                         validInput = true;
                     } else {
-                        System.out.println(fsName + ".public' and/or '" + fsName + ".private' were not found.");
-                        System.out.println("Please add the keypair files into the current directory, or press 'n'" +
-                                " if no keypair exists to generate a new keypair for " + fsName + ".");
+                        System.out.println(fsName + ".public' and/or '" + fsName + ".private' and/or" +
+                                        "'" + fsName + "_shared_files' directory were not found.");
+                        System.out.println("Please add the keypair files and shared files directory " +
+                                "into the current directory, "+ System.lineSeparator() +"or press 'n'" +
+                                " if no keypair or shared_files directory exists " +
+                                "to generate a new keypair for " + fsName + " and a new shared files directory.");
                     }
                 } else if (userInput.equalsIgnoreCase("n")) {
                     // Generate RSA keypair for the group server
@@ -94,6 +100,15 @@ public class FileServer extends Server {
                                 ", " + fsName + "'s public key to file.");
                     }
                     System.out.println();
+                    if (sharedFDir.mkdir()) {
+                        System.out.println("Created new shared_files directory");
+                    }
+                    else if (sharedFDir.exists()) {
+                        System.out.println("Found shared_files directory.");
+                    } else {
+                        System.out.println("Error creating shared_files directory");
+                    }
+
                     validInput = true;
 
                 } else {
@@ -101,18 +116,21 @@ public class FileServer extends Server {
                             " Otherwise, type 'n' to setup a new file server and generate a new RSA keypair for it.");
                 }
             }
-        }
-
-        // TODO shared files may exist if fs exists elsewhere
-        File file = new File(fsName + "_shared_files");
-        if (file.mkdir()) {
-            System.out.println("Created new shared_files directory");
-
-        } else if (file.exists()) {
-            System.out.println("Found shared_files directory");
         } else {
-            System.out.println("Error creating shared_files directory");
+            System.out.println("Found file server keypair");
+            System.out.println("Found shared_files directory");
         }
+
+
+//        File file = new File(fsName + "_shared_files");
+//        if (file.mkdir()) {
+//            System.out.println("Created new shared_files directory");
+//
+//        } else if (file.exists()) {
+//            System.out.println("Found shared_files directory");
+//        } else {
+//            System.out.println("Error creating shared_files directory");
+//        }
 
         // File server needs group server public key upon setup
         File gsPubKeyFile = new File("gs.public");
