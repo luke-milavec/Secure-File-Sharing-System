@@ -115,182 +115,184 @@ public class GroupThread extends Thread {
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                     }
 
+                    do {
+                        output.reset();
+                        Message msg = (Message) input.readObject();
+//                Envelope message = (Envelope)input.readObject();
+//                System.out.println(cs.byteArrToHexStr(msg.enc));
+//                System.out.println(cs.byteArrToHexStr(msg.hmac));
+                        Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
+                        if(message != null) {
+                            System.out.println("Request received: " + message.getMessage());
+                            Envelope response;
+
+                            if(message.getMessage().equals("GET")) { //Client wants a token
+                                username = (String)message.getObjContents().get(0); //Get the username
+                                System.out.println(username + " requested a token");
+                                if(username == null) {
+                                    response = new Envelope("FAIL");
+                                    response.addObject(null);
+                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                } else {
+                                    UserToken yourToken = createToken(username); //Create a token
+//                           System.out.println("server token bytes:");
+//                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
+                                    Message enTok = cs.encryptToken(yourToken, Kab);
+
+                                    //Respond to the client. On error, the client will receive a null token
+                                    response = new Envelope("OK");
+                                    response.addObject(enTok);
+                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                }
+                            } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL");
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            username = (String)message.getObjContents().get(0); //Extract the username
+//                                     UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
+                                            if(createUser(username, yourToken)) {
+                                                response = new Envelope("OK"); //Success
+                                            }
+                                        }
+                                    }
+                                }
+
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("DUSER")) { // Client wants to delete a user
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL");
+
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            username = (String)message.getObjContents().get(0); // Extract the username
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
+                                            if(deleteUser(username, yourToken)) {
+                                                response = new Envelope("OK"); //Success
+                                            }
+                                        }
+                                    }
+                                }
+
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL"); //default fail
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
+                                            if(createGroup(groupname, yourToken)) {
+                                                response = new Envelope("OK"); //Success
+                                            }
+                                        }
+                                    }
+                                }
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("DGROUP")) { // Client wants to delete a group
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL"); // default fail
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            String groupname = (String)message.getObjContents().get(0); // Extract the groupname
+                                            // UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
+                                            if(deleteGroup(groupname, yourToken)) {
+                                                response = new Envelope("OK"); // Success
+                                            }
+                                        }
+                                    }
+                                }
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
+                                response = new Envelope("FAIL");
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL"); // default fail
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            String groupname = (String)message.getObjContents().get(0); //Extract the groupname
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
+                                            // This is encrypted when the envelope as a whole gets encrypts
+                                            ArrayList<String> members = listMembers(groupname, yourToken);
+
+                                            //response = new Envelope(listMembers(groupname, yourToken));
+                                            response = new Envelope("OK");
+                                            response.addObject(members);
+
+                                        }
+                                    }
+                                }
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL"); // default fail
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            if(message.getObjContents().get(2) != null){
+                                                username = (String)message.getObjContents().get(0);
+                                                String groupname = (String)message.getObjContents().get(1);
+                                                UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
+                                                if(addUserGroup(username, groupname, yourToken)) {
+                                                    response = new Envelope("OK"); //Success
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
+                                if(message.getObjContents().size() < 2) {
+                                    response = new Envelope("FAIL");
+                                } else {
+                                    response = new Envelope("FAIL"); // default fail
+                                    if(message.getObjContents().get(0) != null) {
+                                        if(message.getObjContents().get(1) != null) {
+                                            if(message.getObjContents().get(2) != null){
+                                                username = (String)message.getObjContents().get(0);
+                                                String groupname = (String)message.getObjContents().get(1);
+                                                //UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
+                                                UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
+                                                if(removeUserGroup(username,groupname, yourToken)) {
+                                                    response = new Envelope("OK"); //Success
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            } else if(message.getMessage().equals("DISCONNECT")) { //Client wants to disconnect
+                                socket.close(); //Close the socket
+                                proceed = false; //End this communication loop
+                            } else {
+                                response = new Envelope("FAIL"); //Server does not understand client request
+                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                            }
+                        } else {
+                            System.out.println("Failed since message from client was null after decryption");
+                            output.writeObject(cs.encryptEnvelope(new Envelope("FAIL"), Kab));
+                        }
+
+                    } while(proceed);
+
                 }
             } else {
                 System.out.println("Connection failed cause envelope received from user isn't 'SignatureForHandshake'");
             }
 
-            do {
-                output.reset();
-                Message msg = (Message) input.readObject();
-//                Envelope message = (Envelope)input.readObject();
-//                System.out.println(cs.byteArrToHexStr(msg.enc));
-//                System.out.println(cs.byteArrToHexStr(msg.hmac));
-               Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
-               if(message != null) {
-                   System.out.println("Request received: " + message.getMessage());
-                   Envelope response;
 
-                   if(message.getMessage().equals("GET")) { //Client wants a token
-                       String username = (String)message.getObjContents().get(0); //Get the username
-                       System.out.println(username + " requested a token");
-                       if(username == null) {
-                           response = new Envelope("FAIL");
-                           response.addObject(null);
-                           output.writeObject(cs.encryptEnvelope(response, Kab));
-                       } else {
-                           UserToken yourToken = createToken(username); //Create a token
-//                           System.out.println("server token bytes:");
-//                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
-                           Message enTok = cs.encryptToken(yourToken, Kab);
-
-                           //Respond to the client. On error, the client will receive a null token
-                           response = new Envelope("OK");
-                           response.addObject(enTok);
-                           output.writeObject(cs.encryptEnvelope(response, Kab));
-                       }
-                   } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL");
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   String username = (String)message.getObjContents().get(0); //Extract the username
-//                                     UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
-                                    UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                   if(createUser(username, yourToken)) {
-                                       response = new Envelope("OK"); //Success
-                                   }
-                               }
-                           }
-                       }
-
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("DUSER")) { // Client wants to delete a user
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL");
-
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   String username = (String)message.getObjContents().get(0); // Extract the username
-                                   UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                   if(deleteUser(username, yourToken)) {
-                                       response = new Envelope("OK"); //Success
-                                   }
-                               }
-                           }
-                       }
-
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL"); //default fail
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-                                   UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                   if(createGroup(groupname, yourToken)) {
-                                       response = new Envelope("OK"); //Success
-                                   }
-                               }
-                           }
-                       }
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("DGROUP")) { // Client wants to delete a group
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL"); // default fail
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   String groupname = (String)message.getObjContents().get(0); // Extract the groupname
-                                  // UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
-                                   UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                   if(deleteGroup(groupname, yourToken)) {
-                                       response = new Envelope("OK"); // Success
-                                   }
-                               }
-                           }
-                       }
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
-                       response = new Envelope("FAIL");
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL"); // default fail
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   String groupname = (String)message.getObjContents().get(0); //Extract the groupname
-                                   UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                   // This is encrypted when the envelope as a whole gets encrypts
-                                   ArrayList<String> members = listMembers(groupname, yourToken);
-
-                                   //response = new Envelope(listMembers(groupname, yourToken));
-                                   response = new Envelope("OK");
-                                   response.addObject(members);
-
-                               }
-                           }
-                       }
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL"); // default fail
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   if(message.getObjContents().get(2) != null){
-                                       String username = (String)message.getObjContents().get(0);
-                                       String groupname = (String)message.getObjContents().get(1);
-                                       UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                       if(addUserGroup(username, groupname, yourToken)) {
-                                           response = new Envelope("OK"); //Success
-                                       }
-                                   }
-                               }
-                           }
-                       }
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
-                       if(message.getObjContents().size() < 2) {
-                           response = new Envelope("FAIL");
-                       } else {
-                           response = new Envelope("FAIL"); // default fail
-                           if(message.getObjContents().get(0) != null) {
-                               if(message.getObjContents().get(1) != null) {
-                                   if(message.getObjContents().get(2) != null){
-                                       String username = (String)message.getObjContents().get(0);
-                                       String groupname = (String)message.getObjContents().get(1);
-                                       //UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
-                                       UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                       if(removeUserGroup(username,groupname, yourToken)) {
-                                           response = new Envelope("OK"); //Success
-                                       }
-                                   }
-                               }
-                           }
-                       }
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   } else if(message.getMessage().equals("DISCONNECT")) { //Client wants to disconnect
-                       socket.close(); //Close the socket
-                       proceed = false; //End this communication loop
-                   } else {
-                       response = new Envelope("FAIL"); //Server does not understand client request
-                       output.writeObject(cs.encryptEnvelope(response, Kab));
-                   }
-               } else {
-                   System.out.println("Failed since message from client was null after decryption");
-                   output.writeObject(cs.encryptEnvelope(new Envelope("FAIL"), Kab));
-               }
-
-            } while(proceed);
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);

@@ -153,33 +153,6 @@ public class CryptoSec {
        return null;
     }
 
-    // TODO Key may be incorrect:
-//    public byte[] rsaEncrypt(byte[] msg, Key key) {
-//        try {
-//            Cipher rsaCipher = Cipher.getInstance("RSA", "BC");
-//            rsaCipher.init(Cipher.ENCRYPT_MODE, key);
-//            return rsaCipher.doFinal(msg);
-//        } catch (InvalidKeyException e) {
-//            System.out.println("RSA encryption failed due to invalid key");
-//            e.printStackTrace();
-//        } catch (NoSuchPaddingException e) {
-//            System.out.println("RSA encryption failed due to invalid padding");
-//            e.printStackTrace();
-//        } catch (NoSuchAlgorithmException e) {
-//            System.out.println("Encryption failed due to no such encryption algorithm existing");
-//            e.printStackTrace();
-//        } catch (NoSuchProviderException e) {
-//            System.out.println("RSA encryption failed due to invalid provider");
-//            e.printStackTrace();
-//        } catch (IllegalBlockSizeException e) {
-//            System.out.println("RSA encryption failed due to invalid block size");
-//            e.printStackTrace();
-//        } catch (BadPaddingException e) {
-//            System.out.println("RSA encryption failed due to bad padding");
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
 
     public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
         try {
@@ -229,30 +202,6 @@ public class CryptoSec {
         }
         return null;
     }
-
-//    /**
-//     * Write shared secret Kab to file for user
-//     * @param username  the username associated with the key
-//     * @param sharedSecret shared secret derived in handshake
-//     * @return true if PemWriter successfully writes to file. False if not.
-//     */
-//    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
-//         try {
-//            // First convert byte[] to SecretKey object
-//            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
-//
-//            String secretFileName = username + ".sharedsecret";
-//            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
-//            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
-//            pemWriter.close();
-//            return true;
-//         } catch(IOException e) {
-//            System.err.println("Error when writing shared secret to file.");
-//            e.printStackTrace();
-//            return false;
-//         }
-//
-//    }
 
 
     /**
