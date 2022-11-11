@@ -203,7 +203,7 @@
     as to make sure it is the actual user sending it, and because it keeps messages consistent because HMACs are
     necessary for other types of messages and keeping the HMAC simplifies the overall implementation.
   </p>
-  <p><strong>Note: how specifially token serialization is handled in order to be able to encrypt/sign it is described
+  <p><strong>Note: how specifially token serialization is handled in order to be able to encrypt/sign is described
     in T4</strong></p>
   <div class="img">
     <img src="./img/token.jpg" alt="Diagram showing token acquisition protocol.">
@@ -353,7 +353,7 @@
     communication.
     This core design addresses the T1,T3 and T4 while T2 is covered by the use of a signed version of the token. Our
     group came
-    to this solution by iterating upon our design with each added threat. First Handshake A as our solution to T1
+    to this solution by iterating upon our design with each added threat. First, Handshake A as our solution to T1
     provided a basis
     for server-client key exchange. Our solution to T3 and T4 built on this idea by using AES and HMACs along with the
     shared key generated

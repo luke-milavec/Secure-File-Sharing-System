@@ -3,7 +3,7 @@ USAGE:
 cd into src directory
 
 Start the Group Server: 
-    In a terminal, type "java RunGroupServer [(optional) port number]"
+    In a terminal, type "java RunGroupServer -cp .:/afs/cs.pitt.edu/usr0/bill/public/bcprov-jdk18on-172.jar [(optional) port number]"
     - When the group server is first started, there are no users or groups. 
     - Since there must be an administrator of the system, the user is prompted 
     via the console to enter a username. This name becomes the first user and is a member of the ADMIN group. No other groups exist. 
@@ -11,7 +11,7 @@ Start the Group Server:
     command line argument.
 
 Start the File Server: 
-    In a terminal, type "java RunFileServer [(optional) port number]" 
+    In a terminal, type "java -c .:/afs/cs.pitt.edu/usr0/bill/public/bcprov-jdk18on-172.jar RunFileServer [(optional) port number]" 
     - The file server will create a shared_files directory inside the working directory if one does not exist. 
     - The file server is now online. The file server will by default select (and print out) a random port, but a custom port can be passed as the first
     command line argument.
