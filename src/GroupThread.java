@@ -71,9 +71,10 @@ public class GroupThread extends Thread {
                         if(cs.byteArrToHexStr(userRSApublickey.getEncoded()).equals(cs.byteArrToHexStr(cachedUserPubKey.getEncoded()))) {
                             System.out.println("The cached public key for this user matched the public key sent by " + username);
                         } else {
-                            socket.close(); //Close the socket
-                            proceed = false; //End this communication loop
                             System.out.println("Cached public key for user did not match the public key for " + username + " Disconnected. Type 'help' to see options.");
+                            res = new Envelope("FAIL");
+                            res.addObject(null);
+                            output.writeObject(res);
                         }
                     } else {
                         // Create cache of user public keys

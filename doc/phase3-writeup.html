@@ -109,7 +109,9 @@
     means users have secure out-of-band options of getting/verifying the group server's key such as via company email
     or via physical transfer of the file using a thumb drive since the admin also works at the company. The usability
     of this system is reasonable as well because the key is cached for subsequent use, and this out-of-bound
-    verification is expected to be a one time thing.
+    verification is expected to be a one time thing. Caching will also allow employees to use the same user account
+    on multiple devices by transferring the keypair files and known servers directory using a thumbdrive or email out of 
+    band. A file system can be moved to a different machine in a similar fashion, which adds to the system's usability.
   </p>
   <p>
     Establishment of a secure session over an insecure network will take place using Elliptic Curve Diffie-Hellman
@@ -373,7 +375,9 @@
     considered using Java SealedObject to serialize objects to enable encryption because it seemed from the documentation
     that it was secure, but after looking at the source code we realized it was actually using the default Java serialization.
     Instead, we decided to use the default Java serialization ourselves which gave us more flexibility, and we mitigated its
-    downsides by deserializing only after verifying an HMAC.
+    downsides by deserializing only after verifying an HMAC. Finally, given that we had decided against passwords, but 
+    the SSH key method is much yes usable in it's initial form, so we incorporated key caching and mechanisms for using the system
+    from different machines.
   </p>
 
 
