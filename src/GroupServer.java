@@ -60,11 +60,13 @@ public class GroupServer extends Server {
             // Generate RSA keypair for the user and another for the group server
             // TODO remove rsa keygen for user from here, it should happen in client terminal app like normal
             CryptoSec cs = new CryptoSec();
-            cs.writeKeyPair(username, cs.genRSAKeyPair());
-            System.out.println("An RSA Key Pair has been generated for " + username +
-                    " and stored in files '" + username +
-                    ".public' and '" + username + ".private' in the current directory.");
-            System.out.println();
+//            cs.writeKeyPair(username, cs.genRSAKeyPair());
+//            System.out.println("An RSA Key Pair has been generated for " + username +
+//                    " and stored in files '" + username +
+//                    ".public' and '" + username + ".private' in the current directory.");
+//            System.out.println();
+            System.out.println("RSA Keypair will be created for " + username + " when they run their client app" +
+                    " for the first time.");
 
             KeyPair gsKeyPair =  cs.genRSAKeyPair();
             cs.writeKeyPair("gs", gsKeyPair);
