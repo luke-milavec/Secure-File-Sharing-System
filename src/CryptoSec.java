@@ -140,7 +140,7 @@ public class CryptoSec {
     public KeyPair genECDHKeyPair() {
        try {
            ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256k1");
-           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
            keyGen.initialize(ecAlgoSpec);
            return keyGen.generateKeyPair();
        } catch (NoSuchAlgorithmException e) {
