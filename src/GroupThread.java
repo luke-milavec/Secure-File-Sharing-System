@@ -317,7 +317,6 @@ public class GroupThread extends Thread {
     //Method to create a user
     private boolean createUser(String username, UserToken yourToken) {
         String requester = yourToken.getSubject();
-        System.out.println("in create user");
         //Check if requester exists
         if(my_gs.userList.checkUser(requester)) {
             //Get the user's groups
