@@ -34,19 +34,14 @@
     <h2>Overview</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>In this section, broadly overview the types of cryptographic techniques that
-      your group has decided to use to address threats T5–T7.</p>
-
-    <p>Remove these instructions from your final submission.</p>
-
+    
     <p>
-      Our approach for threat 5 is largely covered from our phase 3 implementation. With a combination of
-      shared session keys that expire after each session, message sequencing, and HMAC verification, we can
-      adequately detect and prevent reorder, replay, and modification attacks from occuring. The only
-      mechanism we did not implement in phase 3 is message sequencing, which is now included in our phase 4 plan.
-    </p>
-    <p>
-      The mechanisms we will implement for threat 6: File Leakage include
+      Our approach for threat 5 is partly covered from our phase 3 implementation due to a combination of
+      shared session keys expiring after each session (which tackles replay attacks between different session)
+      and HMAC verification with an integrity key (which tackles modifications).
+      With the addition of message sequencing we can adequately detect and prevent in session reorder and replay
+      attacks in our phase 4 plan. T6 is handled by introducing group keys used to encrypt files while they are on
+      a file server, and T7 is handled by adding an intended recipient field to each token.
     </p>
 
     <!-- END CHANGES HERE -->
@@ -56,38 +51,51 @@
     <!-- BEGIN CHANGES HERE -->
 
     <p>
-      This threat involves an attacker utilizing the network traffic to their advantage. If an attacker eavesdrops
-      on the communication, they can save the messages they believe could be most useful for them. Upon having
-      acquired the messages, the attacker can now either reorder or modify the messages in whatever way they
-      deem fit for their purpose. They could also simply act as the sender by sending the messages to the
-      intended recepient, conducting a replay attack. This attack could lead to greater attacks down the line,
+      This threat involves an attacker utilizing the network traffic to their advantage. The attack will
+      not be able to read messages in transit because all communications are encrypted, but they could
+      still potentially reorder or modify messages before they reach the recipient. They could also simply impersonate
+      the sender by resending encrypted messages to the intended recepient, conducting a replay attack. If perhaps they
+      resent an old delete request, they could delete a new user/file, or perhaps recreate a deleted group by replaying
+      a create group command. This attack could lead to greater attacks down the line,
       since the attacker can acquire trust by having certain communications within their fingertips.
       After acquiring trust from servers, admins, or other users, the attacker can now have unauthorized access
       to files.
     </p>
+       
     <p>
-      Currently, our implementation has protection against <b>replay attacks</b> because of the use of Elliptic Curve
-      Diffie Helman key agreement and, subsequent, shared secret that is derived from K<sub>e</sub> and K<sub>i</sub>.
-      This shared secret ensures unique communication per session as it is thrown out after each session and then
-      regenerated before the next session. If an attacker attempts to replay messages from an earlier communication
-      that they recorded, they will be unsuccessful in further communication since that shared secret
-      K<sub>ab</sub> does not exist anymore.
-      Therefore, the message will never be verified and read and the client/server connection is terminated.
-    </p>
-    <p>
-      <b>Message reordering</b> is not being handled in our phase 3 implementation. We plan to implement sequencing
-      into our phase 4 implementation. Our handshake expects messages (such as keys, usernames, etc.)
-      in certain orderly fashion and, therefore, the handshake will fail upon any reordering. Following the
-      handshake, both client and server will maintain a sequence of the messaging, incremented by 1.
-      The sequence number is appended to the HMAC before each generation. Verifying the HMAC will now include
-      verifying the sequence number as well. If verification fails, we will default to assuming there was
-      a reorder and/or replay attack. This will work since input.read() and output.write() are blocking.
+      <b>Message reordering</b> is not being handled in our phase 3 implementation (see diagram below). We plan to implement sequencing
+      into our phase 4 implementation. Our handshake expects messages (such as keys, signatures usernames, etc.)
+      in a specific order and, therefore, the handshake will fail if any reordering is done. Following the
+      handshake, both the client and server will implicitly maintain a sequence of the messaging, started
+      at 0 and incrementing by 1 on each new message sent or recieved. 
+      The sequence number is concatenated to the message before computing the HMAC, and will be added by the other party
+      before verifying the HMAC. If verification fails, we will default to assuming there was
+      a reorder and/or replay attack and cease the connection. This will work since input.read() and output.write() are blocking
+       so the clinet and server will not run into concurrency issues.
       In short, sequences of messages will not line up if an attacker attempts a replay and/or reorder attack.
       Client/server connection will be terminated.
     </p>
+    <div class="img">
+      <img src="./img/handshakeA.jpg" alt="Diagram of session establishment protocol.">
+    </div>
+    <p><strong>Replay attacks: </strong>
+      Currently, our implementation has some protection against <b>replay attacks</b> because of the use of Elliptic Curve
+      Diffie Helman exchange and the subsequent temporary use of the shared secret K<sub>ab</sub> which is then used to
+      derive the session keys.
+      This shared secret is thrown out after each session and a new ECDH exchange happens for each new session ensuring
+      ensuring unique communication for each session. If an attacker attempts to replay messages from an earlier communication
+      that they recorded, they will be unsuccessful in further communication since that original shared secret
+      K<sub>ab</sub> does not exist anymore so the message will never be verified and read and the client/server connection
+      will be terminated.
+    </p>
+    <p>Replays within a session are not protected against currently, but the sequencing mechanism described in "message reordering"
+      will handle the threat because a replayed message's HMAC would not be able to be verified since the recipients sequence number
+      will not match.</p>
     <p>
-      <b>Message modification</b> is handled in our current implementation, since any modification will result in
-      unsuccessful verification as a result of the HMAC verification failure.
+      <b>Message modification</b> is already handled in our current implementation because we derive an integrity key K<sub>i</sub>
+      and use it to create a HMAC using SHA-256 for every message that is transmitted over the network. Any modification by an attacker
+      will result in unsuccessful verification of the HMAC, and attackers will not be able to update the HMAC because they do not
+      have K<sub>i</sub>.
     </p>
 
     <!-- END CHANGES HERE -->
@@ -96,7 +104,16 @@
     <h2>Threat T6: File Leakage</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>Repeat the steps as for Threat T5. Remove these instructions from your final submission.</p>
+    <p>File servers can be created and maintained by any user thus a malicious user could, currently, freely access any files that are stored on the file server. For example, Bob creates file server alpha and Alice stores file f on alpha. Bob can now open f because it is stored unencrypted on his machine. 
+
+      <p>In order to ensure confidentiality in regards to any prying administrative eyes, files need to be encrypted with a shared key known only to the group. This group key will be generated and distributed by the group server during the acquisition of a token. The shared key will also be accompanied by an index. This index will be used to track the version of the shared secret. Anytime a new user is added to a group, they will receive all group key versions and store them. When a user is removed from a group the group server will increment the key version number and create a new 256 bit key. The encryption of files will be done by the user uploading it using the same standard symmetric algorithm in the previous phase (AES 256 in CBC with HMAC) using the most recent group key. The encrypted file will be stored on the file server along with the key version number. Upon download, group members will decrypt the file using the correct version key for the file. 
+      </p>
+      <p>This mechanism hides the contents of files from file server admin by encrypting the file with a key unknown to the file server before storage. The group server can be trusted for key generation and distribution because the group server stores the canonical list of group members. Additionally, all users must mutually authenticate with the group server before accessing a file server, allowing for the exchange of the latest group keys. Group keys need to be updated anytime someone is removed from the group so that specific user may no longer decrypt files updated after their removal from the group. A new group member will obtain all previous group keys so that they can decrypt files that were encrypted using an old key. 
+      </p>
+      <p>>Under this approach, a deleted user can still access files that were updated before they were deleted or removed from the group. This is acceptable because they could have downloaded, decrypted, and stored the files in plaintext locally at any point before being removed from the group. Since the tokens expire in 1 hour (5 minutes for the demo), they won’t have access after that period regardless. 
+      </p>
+      <p>Now if Bob creates a file server alpha and Alice stores file f on alpha, Bob cannot read f because he will not have the group key. Also, the group server does not need to know about file servers. 
+      </p>
 
     <!-- END CHANGES HERE -->
   </section>
@@ -104,7 +121,18 @@
     <h2>Threat T7: Token Theft</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>Repeat the steps as for Threat T5. Remove these instructions from your final submission.</p>
+    <p>A file server may “steal” the token used by one of its clients and
+      attempt to pass it off to another user. You must develop a mechanism for ensuring
+      that any stolen tokens are usable only on the server at which the theft took place (and
+      are thus effectively useless, as this rogue file server could simply allow access without
+      checking the token)
+      </p>
+     <p> Under the new threat model, the file server is untrustworthy and may give one user’s token to another. So for example, if Alice hands a malicious file server a token, nothing is preventing the file server from recording the token and giving it to Bob in our phase 3 implementation. Bob could then use the token to read files from groups Alice is in or access the group server impersonating Alice. If Alice was an admin, Bob could also create and delete users. In short, Bob could wreck the entire system.
+      To prevent this from happening we will modify the get token mechanism to include a field for the intended recipient such as the name for a file server or “gs” for group server. Each server will verify that the token given by the user is intended for itself before accepting it. 
+     </p>
+     <p> 
+      Going back to T7, if a malicious file server hands Alice’s key to Bob, Bob can no longer take the token and use it at another legitimate file server since the legitimate file server will reject it. Sure a malicious file server can ignore the intended recipient and do the file command regardless, but a malicious file server can just not check the token in the first place anyways. However, Bob will not be able to use the stolen token at a legitimate file server or use it to perform group server commands since the group server is trustworthy and will reject it. A user generating a “gs” token and then giving it to a malicious file server accidentally or deliberately is kind of a moot point as well because the user could just give someone their own token or just publish their private RSA key anyways.
+      </p>
 
     <!-- END CHANGES HERE -->
   </section>
@@ -127,9 +155,9 @@
 
     <p>Remove these instructions from your final submission.</p>
 
-
     <!-- END CHANGES HERE -->
   </section>
 </body>
+  
 
 </html>
