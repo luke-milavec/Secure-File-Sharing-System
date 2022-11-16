@@ -75,6 +75,9 @@
       In short, sequences of messages will not line up if an attacker attempts a replay and/or reorder attack.
       Client/server connection will be terminated.
     </p>
+    <p>One additional thing we will add is each party will verify the other side has arrived at K<sub>ab</sub>
+    by sending an HMAC(name || K<sub>ab</sub>) to each other before we move on to using the shared secrets (so two arrows
+  after the key agreement arrow).</p>
     <div class="img">
       <img src="./img/handshakeA.jpg" alt="Diagram of session establishment protocol.">
     </div>
@@ -139,6 +142,12 @@
   <section id="discussion">
     <h2>Discussion</h2>
     <!-- BEGIN CHANGES HERE -->
+    <p>None of the modifications to the protocols affect effectiveness against T1-T4 since
+      group servers still authenticate users,
+      all communications in transmission are still encrypted, tokens are still signed, and file servers are still authenticated.
+    </p>
+
+
 
     <p>Conclude with a paragraph or two discussing the interplay between your
       proposed mechanisms, and commenting on the design process that your group
@@ -158,6 +167,6 @@
     <!-- END CHANGES HERE -->
   </section>
 </body>
-  
+
 
 </html>
