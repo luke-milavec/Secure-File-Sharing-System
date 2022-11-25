@@ -63,7 +63,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
-                System.out.println("The intended recipient in token was invalid, it must be the group server.");
+                System.out.println("The intended recipient in token was invalid.");
             }
             // If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -86,7 +86,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             output.writeObject(encryptedMessage);
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {
@@ -109,6 +111,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {
@@ -129,6 +134,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             output.writeObject(encryptedMessage);
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {
@@ -153,7 +162,9 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             //If server indicates success, return the member list
             if(response.getMessage().equals("OK")) {
-                return (List<String>)response.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+                return (List<String>)response.getObjContents().get(0); // This cast creates compiler warnings. Sorry.
+            } else if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
             }
 
             return null;
@@ -178,6 +189,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             output.writeObject(encryptedMessage);
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {
@@ -199,6 +214,9 @@ public class GroupClient extends Client implements GroupClientInterface {
             output.writeObject(encryptedMessage);
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {

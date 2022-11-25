@@ -200,8 +200,11 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             username = (String)message.getObjContents().get(0); // Extract the username
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(deleteUser(username, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if(validTokRecipient && deleteUser(username, yourToken)) {
                                                 response = new Envelope("OK"); //Success
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
                                             }
                                         }
                                     }
@@ -217,8 +220,11 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); //Extract the groupname
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(createGroup(groupname, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if(validTokRecipient && createGroup(groupname, yourToken)) {
                                                 response = new Envelope("OK"); //Success
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
                                             }
                                         }
                                     }
@@ -232,10 +238,12 @@ public class GroupThread extends Thread {
                                     if(message.getObjContents().get(0) != null) {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); // Extract the groupname
-                                            // UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(deleteGroup(groupname, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if(validTokRecipient && deleteGroup(groupname, yourToken)) {
                                                 response = new Envelope("OK"); // Success
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
                                             }
                                         }
                                     }
@@ -251,12 +259,18 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); //Extract the groupname
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            // This is encrypted when the envelope as a whole gets encrypts
-                                            ArrayList<String> members = listMembers(groupname, yourToken);
 
-                                            //response = new Envelope(listMembers(groupname, yourToken));
-                                            response = new Envelope("OK");
-                                            response.addObject(members);
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+
+                                            if (validTokRecipient) {
+                                                // This is encrypted when the envelope as a whole gets encrypts
+                                                ArrayList<String> members = listMembers(groupname, yourToken);
+                                                response = new Envelope("OK");
+                                                response.addObject(members);
+                                            } else {
+                                              response = new Envelope("InvalidTokenRecipient");
+                                              response.addObject(null);
+                                            }
 
                                         }
                                     }
@@ -273,8 +287,11 @@ public class GroupThread extends Thread {
                                                 username = (String)message.getObjContents().get(0);
                                                 String groupname = (String)message.getObjContents().get(1);
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                                if(addUserGroup(username, groupname, yourToken)) {
+                                                boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                                if(validTokRecipient && addUserGroup(username, groupname, yourToken)) {
                                                     response = new Envelope("OK"); //Success
+                                                } else if (!validTokRecipient) {
+                                                    response = new Envelope("InvalidTokenRecipient");
                                                 }
                                             }
                                         }
@@ -291,10 +308,12 @@ public class GroupThread extends Thread {
                                             if(message.getObjContents().get(2) != null){
                                                 username = (String)message.getObjContents().get(0);
                                                 String groupname = (String)message.getObjContents().get(1);
-                                                //UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                                if(removeUserGroup(username,groupname, yourToken)) {
+                                                boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                                if(validTokRecipient && removeUserGroup(username,groupname, yourToken)) {
                                                     response = new Envelope("OK"); //Success
+                                                } else if (!validTokRecipient) {
+                                                    response = new Envelope("InvalidTokenRecipient");
                                                 }
                                             }
                                         }
