@@ -1,4 +1,5 @@
 import java.security.KeyPair;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Scanner;
 import java.io.File;
 import java.util.List;
@@ -60,11 +61,27 @@ public class ClientTerminalApp {
                 case "gettoken": 
                     if(gClient.isConnected()) {
                         if(username != null) {
-                            token = gClient.getToken(username);
-                            if (token != null) {
-                                System.out.println("Token Recieved");                                            
+                            if(command.length != 2){
+                                System.out.println("Invalid parameters. Expected format: gettoken <server_name>");
                             } else {
-                                System.out.println("Request for token failed.");
+                                String serverName = command[1];
+
+                                RSAPublicKey recipientPubKey = cs.readRSAPublicKey(username + "_known_servers"
+                                        + File.separator + ((serverName.equalsIgnoreCase("gs") ?
+                                        serverName : (serverName + "_pub_key"))));
+                                if (recipientPubKey != null) {
+                                    token = gClient.getToken(username, recipientPubKey);
+                                    if (token != null) {
+                                        System.out.println("Token Recieved");
+                                    } else {
+                                        System.out.println("Request for token failed.");
+                                    }
+
+                                } else {
+                                    System.out.println("Could not find public key for " + serverName + ". " +
+                                            "If you have never connected to " + serverName + " before, connect " +
+                                            "to it first to get its public key.");
+                                }
                             }
                         }
                     } else {
@@ -413,7 +430,8 @@ public class ClientTerminalApp {
                             + "     connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified." + newLine
                             + "     disconnect                                              Disconnect current connection to file and/or group server." + newLine
                             + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
-                            + "         gettoken                                            Fetch a token for the user that is logged in." + newLine
+                            + "         gettoken <server_name>                              Fetch a token for the user that is logged in, where <server_name> is the name of the" + newLine
+                            + "                                                             server where the token is intended to be used. Use 'gs' for group server." + newLine
                             + "         cgroup <groupname>                                  Create a group named <groupname>." + newLine
                             + "         cuser <username>                                    Create a user named <username>." + newLine
                             + "         dgroup <groupname>                                  Delete the group specified by <groupname>." + newLine

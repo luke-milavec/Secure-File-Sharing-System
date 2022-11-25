@@ -8,6 +8,7 @@ import java.lang.Thread;
 import java.net.Socket;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.security.*;
 import java.io.File;
@@ -24,12 +25,12 @@ public class GroupThread extends Thread {
         socket = _socket;
         my_gs = _gs;
     }
-
+    private CryptoSec cs;
     public void run() {
         boolean proceed = true;
 
         try {
-            CryptoSec cs = new CryptoSec();
+            cs = new CryptoSec();
             //Announces connection and opens object streams
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
@@ -111,21 +112,14 @@ public class GroupThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
-                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                         output.reset();
                         byte[] KabHMAC = cs.genKabHMAC(Kab, "gs");
                         if (KabHMAC != null) {
-//                            Envelope serverHandshake = new Envelope("KabConfirmation");
-//                            serverHandshake.addObject(KabHMAC);
                             output.writeObject(KabHMAC);
 
                             // Confirm that the server arrived at the same Kab
                             byte[] userKabHMAC = (byte[]) input.readObject();
                             if (userKabHMAC != null) {
-                                // not the best approach to hardcode 'gs', gclient should probably override this method
-                                // like fclient does
-
                                 byte[] genUserKabHMAC = cs.genKabHMAC(Kab, username);
 
                                 if (genUserKabHMAC != null && Arrays.equals(userKabHMAC, genUserKabHMAC)) {
@@ -154,9 +148,6 @@ public class GroupThread extends Thread {
                     do {
                         output.reset();
                         Message msg = (Message) input.readObject();
-//                Envelope message = (Envelope)input.readObject();
-//                System.out.println(cs.byteArrToHexStr(msg.enc));
-//                System.out.println(cs.byteArrToHexStr(msg.hmac));
                         Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
                         if(message != null) {
                             System.out.println("Request received: " + message.getMessage());
@@ -164,15 +155,14 @@ public class GroupThread extends Thread {
 
                             if(message.getMessage().equals("GET")) { //Client wants a token
                                 username = (String)message.getObjContents().get(0); //Get the username
+                                RSAPublicKey recipientPubKey = (RSAPublicKey) message.getObjContents().get(1);
                                 System.out.println(username + " requested a token");
                                 if(username == null) {
                                     response = new Envelope("FAIL");
                                     response.addObject(null);
                                     output.writeObject(cs.encryptEnvelope(response, Kab));
                                 } else {
-                                    UserToken yourToken = createToken(username); //Create a token
-//                           System.out.println("server token bytes:");
-//                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
+                                    UserToken yourToken = createToken(username, recipientPubKey); //Create a token
                                     Message enTok = cs.encryptToken(yourToken, Kab);
 
                                     //Respond to the client. On error, the client will receive a null token
@@ -188,9 +178,14 @@ public class GroupThread extends Thread {
                                     if(message.getObjContents().get(0) != null) {
                                         if(message.getObjContents().get(1) != null) {
                                             username = (String)message.getObjContents().get(0); //Extract the username
-//                                     UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
-                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(createUser(username, yourToken)) {
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken)
+                                                    message.getObjContents().get(1), gsPubKey);
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if (!tokenTimeValid(yourToken)) {
+                                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
+                                            } else if(createUser(username, yourToken)) {
                                                 response = new Envelope("OK"); //Success
                                             }
                                         }
@@ -208,7 +203,12 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             username = (String)message.getObjContents().get(0); // Extract the username
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(deleteUser(username, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if (!tokenTimeValid(yourToken)) {
+                                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
+                                            } else if(deleteUser(username, yourToken)) {
                                                 response = new Envelope("OK"); //Success
                                             }
                                         }
@@ -225,7 +225,12 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); //Extract the groupname
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(createGroup(groupname, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if (!tokenTimeValid(yourToken)) {
+                                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
+                                            } else if(createGroup(groupname, yourToken)) {
                                                 response = new Envelope("OK"); //Success
                                             }
                                         }
@@ -240,9 +245,13 @@ public class GroupThread extends Thread {
                                     if(message.getObjContents().get(0) != null) {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); // Extract the groupname
-                                            // UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(deleteGroup(groupname, yourToken)) {
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if (!tokenTimeValid(yourToken)) {
+                                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
+                                            } else if(deleteGroup(groupname, yourToken)) {
                                                 response = new Envelope("OK"); // Success
                                             }
                                         }
@@ -259,12 +268,18 @@ public class GroupThread extends Thread {
                                         if(message.getObjContents().get(1) != null) {
                                             String groupname = (String)message.getObjContents().get(0); //Extract the groupname
                                             UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            // This is encrypted when the envelope as a whole gets encrypts
-                                            ArrayList<String> members = listMembers(groupname, yourToken);
 
-                                            //response = new Envelope(listMembers(groupname, yourToken));
-                                            response = new Envelope("OK");
-                                            response.addObject(members);
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if (!tokenTimeValid(yourToken)) {
+                                                response = new Envelope("FAIL-EXPIREDTOKEN");
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
+                                            } else {
+                                                // This is encrypted when the envelope as a whole gets encrypts
+                                                ArrayList<String> members = listMembers(groupname, yourToken);
+                                                response = new Envelope("OK");
+                                                response.addObject(members);
+                                            }
 
                                         }
                                     }
@@ -281,7 +296,13 @@ public class GroupThread extends Thread {
                                                 username = (String)message.getObjContents().get(0);
                                                 String groupname = (String)message.getObjContents().get(1);
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                                if(addUserGroup(username, groupname, yourToken)) {
+                                                boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+
+                                                if (!tokenTimeValid(yourToken)) {
+                                                    response = new Envelope("FAIL-EXPIREDTOKEN");
+                                                } else if (!validTokRecipient) {
+                                                    response = new Envelope("InvalidTokenRecipient");
+                                                } else if(addUserGroup(username, groupname, yourToken)) {
                                                     response = new Envelope("OK"); //Success
                                                 }
                                             }
@@ -299,9 +320,14 @@ public class GroupThread extends Thread {
                                             if(message.getObjContents().get(2) != null){
                                                 username = (String)message.getObjContents().get(0);
                                                 String groupname = (String)message.getObjContents().get(1);
-                                                //UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(2), Kab, gsPubKey);
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
-                                                if(removeUserGroup(username,groupname, yourToken)) {
+                                                boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+
+                                                if (!tokenTimeValid(yourToken)) {
+                                                    response = new Envelope("FAIL-EXPIREDTOKEN");
+                                                } else if (!validTokRecipient) {
+                                                    response = new Envelope("InvalidTokenRecipient");
+                                                } else if(removeUserGroup(username,groupname, yourToken)) {
                                                     response = new Envelope("OK"); //Success
                                                 }
                                             }
@@ -336,14 +362,13 @@ public class GroupThread extends Thread {
     }
 
     //Method to create tokens
-    private UserToken createToken(String username) {
+    private UserToken createToken(String username, RSAPublicKey recipientPubKey) {
         
         //Check that user exists
         if(my_gs.userList.checkUser(username)) {
             //Issue a new token with server's name, user's name, and user's groups
-            return new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+            return new Token(my_gs.name, username, my_gs.userList.getUserGroups(username), recipientPubKey);
         } else {
-    
             return null;
         }
     }
@@ -410,9 +435,11 @@ public class GroupThread extends Thread {
                     }
 
                     //Delete owned groups
+                    // TODO TEST THIS
+                    RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
                     for(int index = 0; index < deleteOwnedGroup.size(); index++) {
                         //Use the delete group method. Token must be created for this action
-                        deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup));
+                        deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup, gsPubKey));
                     }
 
                     //Delete the user from the user list
@@ -552,5 +579,12 @@ public class GroupThread extends Thread {
             } else {
                 return false; 
         }
+    }
+
+    private boolean tokenTimeValid(UserToken token) {
+        int expirySecs = 300; // 5 minutes for now
+        Instant t1 = token.getTimestamp();
+        Instant t2 = Instant.now();
+        return (t2.getEpochSecond() - t1.getEpochSecond()) <= expirySecs;
     }
 }

@@ -1,4 +1,5 @@
 
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.List;
 
@@ -55,5 +56,15 @@ public interface UserToken {
      * @return An Instant timestamp dating to initial token creation
      */
     public Instant getTimestamp();
+
+
+    /**
+     * This method returns a RSAPublicKey containing the token's intended
+     * recipient's public key. For example if the token was created to be used
+     * at the group server, this method will return the group server's
+     * public key.*
+     * @return A RSAPublicKey containing the intended recipient public key in hex
+     * */
+    public RSAPublicKey getRecipientPubKey();
 
 }   //-- end interface UserToken

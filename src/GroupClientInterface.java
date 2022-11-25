@@ -1,4 +1,5 @@
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public interface GroupClientInterface {
      *         If this user does not exist, a null value will be returned.
      *
      */
-    public SignedToken getToken(final String username);
+    public SignedToken getToken(final String username, final RSAPublicKey recipientPubKey);
 
 
     /**
