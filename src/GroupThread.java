@@ -11,8 +11,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.security.*;
 import java.io.File;
-
-
+import java.util.Arrays;
 
 
 public class GroupThread extends Thread {
@@ -114,6 +113,42 @@ public class GroupThread extends Thread {
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                        output.reset();
+                        byte[] KabHMAC = cs.genKabHMAC(Kab, "gs");
+                        if (KabHMAC != null) {
+//                            Envelope serverHandshake = new Envelope("KabConfirmation");
+//                            serverHandshake.addObject(KabHMAC);
+                            output.writeObject(KabHMAC);
+
+                            // Confirm that the server arrived at the same Kab
+                            byte[] userKabHMAC = (byte[]) input.readObject();
+                            if (userKabHMAC != null) {
+                                // not the best approach to hardcode 'gs', gclient should probably override this method
+                                // like fclient does
+
+                                byte[] genUserKabHMAC = cs.genKabHMAC(Kab, username);
+
+                                if (genUserKabHMAC != null && Arrays.equals(userKabHMAC, genUserKabHMAC)) {
+                                    System.out.println("Confirmed user arrived at the same shared secret Kab.");
+                                } else {
+                                    System.out.println("Could not confirm whether user arrived at same shared secret Kab.");
+                                    res = new Envelope("FAIL");
+                                    res.addObject(null);
+                                    output.writeObject(res);
+                                }
+
+                            } else {
+                                System.out.println("Failed to receive confirmation whether user arrived at same shared secret Kab.");
+                                res = new Envelope("FAIL");
+                                res.addObject(null);
+                                output.writeObject(res);
+                            }
+                        } else {
+                            System.out.println("Error generating shared secret Kab.");
+                            res = new Envelope("FAIL");
+                            res.addObject(null);
+                            output.writeObject(res);
+                        }
                     }
 
                     do {

@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.security.*;
 
@@ -144,6 +145,38 @@ public abstract class Client {
                 // Generate Kab, shared secret between user and server
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
+              // Send over HMAC(Kab + name) to prove to server, the user was able to arrive at shared secret
+              output.reset();
+              byte[] KabHMAC = cs.genKabHMAC(Kab, username);
+              if (KabHMAC != null) {
+//                  serverHandshake = new Envelope("KabConfirmation");
+//                  serverHandshake.addObject(KabHMAC);
+                  output.writeObject(KabHMAC);
+
+                  // Confirm that the server arrived at the same Kab
+                  byte[] serverKabHMAC = (byte[]) input.readObject();
+                  if (serverKabHMAC != null) {
+                      // not the best approach to hardcode 'gs', gclient should probably override this method
+                      // like fclient does
+
+                      byte[] genGSKabHMAC = cs.genKabHMAC(Kab, "gs");
+
+                      if (genGSKabHMAC != null && Arrays.equals(serverKabHMAC, genGSKabHMAC)) {
+                          System.out.println("Confirmed server arrived at the same shared secret Kab.");
+                      } else {
+                          System.out.println("Could not confirm whether server arrived at same shared secret Kab.");
+                          return false;
+                      }
+
+                  } else {
+                      System.out.println("Failed to receive confirmation whether server arrived at same shared secret Kab.");
+                      return false;
+                  }
+              } else {
+                  System.out.println("Error generating shared secret Kab.");
+                  return false;
+              }
+
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
           } else {
             // Message received was neither "SignatureForHandshake" nor "FAIL"

@@ -427,6 +427,21 @@ public class CryptoSec {
         }
         return null;
     }
+    public byte[] genKabHMAC(byte[] Kab, String name) {
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            sha256_HMAC.init(getKi(Kab));
+            byte[] nameBytes = name.getBytes();
+            byte[] toHash = new byte[Kab.length + nameBytes.length];
+            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
+            System.arraycopy(nameBytes, 0, toHash, Kab.length, nameBytes.length);
+            return sha256_HMAC.doFinal(toHash);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public byte[] decryptString(Message m, byte[] k){
         try {
