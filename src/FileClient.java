@@ -142,7 +142,7 @@ public class FileClient extends Client implements FileClientInterface {
                     Envelope envKabHMAC  = new Envelope("KabConfirmation");
                     serverHandshake.addObject(KabHMAC);
                     serverHandshake.addObject(username);
-                    output.writeObject(KabHMAC);
+                    output.writeObject(envKabHMAC);
 
                     // Confirm that the server arrived at the same Kab
                     byte[] serverKabHMAC = (byte[]) input.readObject();
