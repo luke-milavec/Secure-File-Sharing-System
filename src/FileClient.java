@@ -29,7 +29,7 @@ public class FileClient extends Client implements FileClientInterface {
             // the file server could not be verified.
             CryptoSec cs = new CryptoSec();
             Envelope pubKeyMsg = (Envelope)input.readObject();
-            String fsName = pubKeyMsg.getMessage();
+            String fsPubKeyName = pubKeyMsg.getMessage();
             RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
             File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
@@ -140,14 +140,15 @@ public class FileClient extends Client implements FileClientInterface {
                 byte[] KabHMAC = cs.genKabHMAC(Kab, username);
                 if (KabHMAC != null) {
                     Envelope envKabHMAC  = new Envelope("KabConfirmation");
-                    serverHandshake.addObject(KabHMAC);
-                    serverHandshake.addObject(username);
+                    envKabHMAC.addObject(KabHMAC);
+                    envKabHMAC.addObject(username);
                     output.writeObject(envKabHMAC);
 
                     // Confirm that the server arrived at the same Kab
                     byte[] serverKabHMAC = (byte[]) input.readObject();
                     if (serverKabHMAC != null) {
-                        byte[] genFSKabHMAC = cs.genKabHMAC(Kab, fsName);
+                        // If file server name is 'fs' fsPubKeyName contains 'fs_pub_key' hence the split
+                        byte[] genFSKabHMAC = cs.genKabHMAC(Kab, fsPubKeyName.split("_")[0]);
                         if (genFSKabHMAC != null && Arrays.equals(serverKabHMAC, genFSKabHMAC)) {
                             System.out.println("Confirmed file server arrived at the same shared secret Kab.");
                         } else {
