@@ -62,8 +62,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             output.writeObject(encryptedMessage);
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-
-            //If server indicates success, return true
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid, it must be the group server.");
+            }
+            // If server indicates success, return true
             return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());

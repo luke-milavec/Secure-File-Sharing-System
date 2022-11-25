@@ -111,21 +111,14 @@ public class GroupThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
-                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                         output.reset();
                         byte[] KabHMAC = cs.genKabHMAC(Kab, "gs");
                         if (KabHMAC != null) {
-//                            Envelope serverHandshake = new Envelope("KabConfirmation");
-//                            serverHandshake.addObject(KabHMAC);
                             output.writeObject(KabHMAC);
 
                             // Confirm that the server arrived at the same Kab
                             byte[] userKabHMAC = (byte[]) input.readObject();
                             if (userKabHMAC != null) {
-                                // not the best approach to hardcode 'gs', gclient should probably override this method
-                                // like fclient does
-
                                 byte[] genUserKabHMAC = cs.genKabHMAC(Kab, username);
 
                                 if (genUserKabHMAC != null && Arrays.equals(userKabHMAC, genUserKabHMAC)) {
@@ -169,8 +162,6 @@ public class GroupThread extends Thread {
                                     output.writeObject(cs.encryptEnvelope(response, Kab));
                                 } else {
                                     UserToken yourToken = createToken(username, recipientPubKey); //Create a token
-//                           System.out.println("server token bytes:");
-//                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
                                     Message enTok = cs.encryptToken(yourToken, Kab);
 
                                     //Respond to the client. On error, the client will receive a null token
@@ -186,10 +177,13 @@ public class GroupThread extends Thread {
                                     if(message.getObjContents().get(0) != null) {
                                         if(message.getObjContents().get(1) != null) {
                                             username = (String)message.getObjContents().get(0); //Extract the username
-//                                     UserToken yourToken = cs.decryptTokenMessage((Message) message.getObjContents().get(1), Kab, gsPubKey);
-                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(1),gsPubKey);
-                                            if(createUser(username, yourToken)) {
+                                            UserToken yourToken = cs.decryptSignedToken( (SignedToken)
+                                                    message.getObjContents().get(1), gsPubKey);
+                                            boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
+                                            if(validTokRecipient && createUser(username, yourToken)) {
                                                 response = new Envelope("OK"); //Success
+                                            } else if (!validTokRecipient) {
+                                                response = new Envelope("InvalidTokenRecipient");
                                             }
                                         }
                                     }
@@ -552,4 +546,6 @@ public class GroupThread extends Thread {
                 return false; 
         }
     }
+
+
 }
