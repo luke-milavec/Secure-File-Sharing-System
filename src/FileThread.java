@@ -10,6 +10,7 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
@@ -328,6 +329,38 @@ public class FileThread extends Thread {
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
 //                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                        output.reset();
+                        byte[] KabHMAC = cs.genKabHMAC(Kab, fsName);
+                        if (KabHMAC != null) {
+                            output.writeObject(KabHMAC);
+
+                            // Confirm that the server arrived at the same Kab
+                            Envelope envUserKabHMAC = (Envelope) input.readObject();
+                            byte[] userKabHMAC = (byte[]) envUserKabHMAC.getObjContents().get(0);
+                            String username = (String) envUserKabHMAC.getObjContents().get(1);
+                            if (userKabHMAC != null && username != null) {
+                                byte[] genUserKabHMAC = cs.genKabHMAC(Kab, username);
+                                if (genUserKabHMAC != null && Arrays.equals(userKabHMAC, genUserKabHMAC)) {
+                                    System.out.println("Confirmed user arrived at the same shared secret Kab.");
+                                } else {
+                                    System.out.println("Could not confirm whether user arrived at same shared secret Kab.");
+                                    res = new Envelope("FAIL");
+                                    res.addObject(null);
+                                    output.writeObject(res);
+                                }
+
+                            } else {
+                                System.out.println("Failed to receive confirmation whether user arrived at same shared secret Kab.");
+                                res = new Envelope("FAIL");
+                                res.addObject(null);
+                                output.writeObject(res);
+                            }
+                        } else {
+                            System.out.println("Error generating shared secret Kab.");
+                            res = new Envelope("FAIL");
+                            res.addObject(null);
+                            output.writeObject(res);
+                        }
                         output.reset(); // TODO may cause issue
                         return true;
                     }

@@ -158,9 +158,7 @@ public abstract class Client {
                   if (serverKabHMAC != null) {
                       // not the best approach to hardcode 'gs', gclient should probably override this method
                       // like fclient does
-
                       byte[] genGSKabHMAC = cs.genKabHMAC(Kab, "gs");
-
                       if (genGSKabHMAC != null && Arrays.equals(serverKabHMAC, genGSKabHMAC)) {
                           System.out.println("Confirmed server arrived at the same shared secret Kab.");
                       } else {
