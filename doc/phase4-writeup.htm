@@ -71,7 +71,7 @@
       The sequence number is concatenated to the message before computing the HMAC, and will be added by the other party
       before verifying the HMAC. If verification fails, we will default to assuming there was
       a reorder and/or replay attack and cease the connection. This will work since input.read() and output.write() are blocking
-       so the clinet and server will not run into concurrency issues.
+       so the client and server will not run into concurrency issues.
       In short, sequences of messages will not line up if an attacker attempts a replay and/or reorder attack.
       Client/server connection will be terminated.
     </p>

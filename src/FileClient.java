@@ -7,6 +7,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
@@ -28,6 +29,7 @@ public class FileClient extends Client implements FileClientInterface {
             // the file server could not be verified.
             CryptoSec cs = new CryptoSec();
             Envelope pubKeyMsg = (Envelope)input.readObject();
+            String fsPubKeyName = pubKeyMsg.getMessage();
             RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
             File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
@@ -134,6 +136,34 @@ public class FileClient extends Client implements FileClientInterface {
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                output.reset();
+                byte[] KabHMAC = cs.genKabHMAC(Kab, username);
+                if (KabHMAC != null) {
+                    Envelope envKabHMAC  = new Envelope("KabConfirmation");
+                    envKabHMAC.addObject(KabHMAC);
+                    envKabHMAC.addObject(username);
+                    output.writeObject(envKabHMAC);
+
+                    // Confirm that the server arrived at the same Kab
+                    byte[] serverKabHMAC = (byte[]) input.readObject();
+                    if (serverKabHMAC != null) {
+                        // If file server name is 'fs' fsPubKeyName contains 'fs_pub_key' hence the split
+                        byte[] genFSKabHMAC = cs.genKabHMAC(Kab, fsPubKeyName.split("_")[0]);
+                        if (genFSKabHMAC != null && Arrays.equals(serverKabHMAC, genFSKabHMAC)) {
+                            System.out.println("Confirmed file server arrived at the same shared secret Kab.");
+                        } else {
+                            System.out.println("Could not confirm whether file server arrived at same shared secret Kab.");
+                            return false;
+                        }
+
+                    } else {
+                        System.out.println("Failed to receive confirmation whether file server arrived at same shared secret Kab.");
+                        return false;
+                    }
+                } else {
+                    System.out.println("Error generating shared secret Kab.");
+                    return false;
+                }
 
             } else {
                 System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
