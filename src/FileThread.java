@@ -41,7 +41,7 @@ public class FileThread extends Thread {
 
 
             RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
-
+            RSAPublicKey fsPubkey = cs.readRSAPublicKey(fsName);
             // conduct Handshake A
             if (!handshake(input, output)) {
                 System.out.println("Error connecting, verification failed.");
@@ -59,19 +59,24 @@ public class FileThread extends Thread {
                             response = new Envelope("FAIL-BADTOKEN");
                         } else {
                             UserToken token = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(0),gsPubKey);
-                            if(tokenTimeValid(token)){
-                                List<String> allowedGroups = token.getGroups();
-                                List<ShareFile> serverFileList = FileServer.fileList.getFiles();
+                            if(tokenTimeValid(token)) {
+                                if (token.getRecipientPubKey().equals(fsPubkey)) {
+                                    List<String> allowedGroups = token.getGroups();
+                                    List<ShareFile> serverFileList = FileServer.fileList.getFiles();
 
-                                List<String> fileRetList = new ArrayList<>(); // list to return
-                                for (ShareFile sf : serverFileList) {
-                                    if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
-                                        fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
+                                    List<String> fileRetList = new ArrayList<>(); // list to return
+                                    for (ShareFile sf : serverFileList) {
+                                        if (allowedGroups.contains(sf.getGroup())) { // user is allowed to access file
+                                            fileRetList.add(sf.getPath()); // Return a list of file paths which is essentially the name of the file?
+                                        }
                                     }
+                                    System.out.println("Sending list of files");
+                                    response = new Envelope("OK");
+                                    response.addObject(fileRetList);
+                                } else {
+                                    response = new Envelope("InvalidTokenRecipient");
+                                    response.addObject(null);
                                 }
-                                System.out.println("Sending list of files");
-                                response = new Envelope("OK");
-                                response.addObject(fileRetList);
                             } else {
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
                             }
@@ -97,6 +102,8 @@ public class FileThread extends Thread {
                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(2),gsPubKey);
                                 if(!tokenTimeValid(yourToken)){
                                     response = new Envelope("FAIL-EXPIREDTOKEN");
+                                } else if (!yourToken.getRecipientPubKey().equals(fsPubkey)){
+                                    response = new Envelope("InvalidTokenRecipient");
                                 } else if (FileServer.fileList.checkFile(remotePath)) {
                                     System.out.printf("Error: file already exists at %s\n", remotePath);
                                     response = new Envelope("FAIL-FILEEXISTS"); //Success
@@ -147,7 +154,11 @@ public class FileThread extends Thread {
                             System.out.println("Error: Token Expired");
                             e = new Envelope("FAIL-EXPIREDTOKEN");
                             output.writeObject(cs.encryptEnvelope(e, Kab));
-                        }else if (sf == null) {
+                        } else if (!t.getRecipientPubKey().equals(fsPubkey)){
+                            System.out.println("Error: Token Recipient not " + fsName);
+                            e = new Envelope("InvalidTokenRecipient");
+                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                        } else if (sf == null) {
                             System.out.printf("Error: File %s doesn't exist\n", remotePath);
                             e = new Envelope("ERROR_FILEMISSING");
                             output.writeObject(cs.encryptEnvelope(e, Kab));
@@ -226,12 +237,15 @@ public class FileThread extends Thread {
                     } else if (e.getMessage().compareTo("DELETEF")==0) {
 
                         String remotePath = (String)e.getObjContents().get(0);
-                        //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
                         UserToken t = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);
                         ShareFile sf = FileServer.fileList.getFile("/"+remotePath);
                         if(!tokenTimeValid(t)){
+                            System.out.println("Error: expired token");
                             e = new Envelope("FAIL-EXPIREDTOKEN");
-                        }else if (sf == null) {
+                        } else if (!t.getRecipientPubKey().equals(fsPubkey)){
+                            System.out.println("Error: Token Recipient not " + fsName);
+                            e = new Envelope("InvalidTokenRecipient");
+                        } else if (sf == null) {
                             System.out.printf("Error: File %s doesn't exist\n", remotePath);
                             e = new Envelope("ERROR_DOESNTEXIST");
                         } else if (!t.getGroups().contains(sf.getGroup())) {

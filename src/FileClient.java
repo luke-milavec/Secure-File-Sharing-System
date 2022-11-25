@@ -190,7 +190,6 @@ public class FileClient extends Client implements FileClientInterface {
         }
         Envelope env = new Envelope("DELETEF"); //Success
         env.addObject(remotePath);
-//        env.addObject(cs.encryptToken(token, Kab));
         env.addObject(token);
         try {
             output.writeObject(cs.encryptEnvelope(env, Kab));
@@ -200,6 +199,8 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.printf("File %s deleted successfully\n", filename);
             } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Token Expired. Please re-acquire token first.");
+            }  else if (env.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
             } else {
                 System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
                 return false;
@@ -290,6 +291,8 @@ public class FileClient extends Client implements FileClientInterface {
                 return (List<String>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
             } else if (e.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Token Expired. Please re-acquire token first.");
+            }  else if (e.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
             }
 
             return null;
