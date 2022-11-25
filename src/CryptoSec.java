@@ -8,6 +8,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.security.interfaces.RSAPrivateKey;
@@ -495,17 +497,18 @@ public class CryptoSec {
         return s.toString();
     }
 
-    public Token deserializeToken(String s){
-        String[] arr = s.split("|");
-        String issuer = arr[0];
-        String subject = arr[1];
-//        List<String> groups = new List<String>();
-        List<String> groups = new ArrayList<>();
-        for (int i=2;i<arr.length;i++){
-            groups.add(arr[i]);
-        }
-        return new Token(issuer,subject,groups);
-    }
+//    public Token deserializeToken(String s){
+//        String[] arr = s.split("|");
+//        String issuer = arr[0];
+//        String subject = arr[1];
+//        String recipientPubKey = arr[2];
+////        List<String> groups = new List<String>();
+//        List<String> groups = new ArrayList<>();
+//        for (int i=2;i<arr.length;i++){
+//            groups.add(arr[i]);
+//        }
+//        return new Token(issuer,subject,groups, recipientPubKey);
+//    }
 
     public String serializeList(List<String> arr){
         String s = "";

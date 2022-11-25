@@ -24,12 +24,12 @@ public class GroupThread extends Thread {
         socket = _socket;
         my_gs = _gs;
     }
-
+    private CryptoSec cs;
     public void run() {
         boolean proceed = true;
 
         try {
-            CryptoSec cs = new CryptoSec();
+            cs = new CryptoSec();
             //Announces connection and opens object streams
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
@@ -154,9 +154,6 @@ public class GroupThread extends Thread {
                     do {
                         output.reset();
                         Message msg = (Message) input.readObject();
-//                Envelope message = (Envelope)input.readObject();
-//                System.out.println(cs.byteArrToHexStr(msg.enc));
-//                System.out.println(cs.byteArrToHexStr(msg.hmac));
                         Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
                         if(message != null) {
                             System.out.println("Request received: " + message.getMessage());
@@ -164,13 +161,14 @@ public class GroupThread extends Thread {
 
                             if(message.getMessage().equals("GET")) { //Client wants a token
                                 username = (String)message.getObjContents().get(0); //Get the username
+                                RSAPublicKey recipientPubKey = (RSAPublicKey) message.getObjContents().get(1);
                                 System.out.println(username + " requested a token");
                                 if(username == null) {
                                     response = new Envelope("FAIL");
                                     response.addObject(null);
                                     output.writeObject(cs.encryptEnvelope(response, Kab));
                                 } else {
-                                    UserToken yourToken = createToken(username); //Create a token
+                                    UserToken yourToken = createToken(username, recipientPubKey); //Create a token
 //                           System.out.println("server token bytes:");
 //                           System.out.println(cs.byteArrToHexStr(cs.serializeObject(yourToken)));
                                     Message enTok = cs.encryptToken(yourToken, Kab);
@@ -336,14 +334,13 @@ public class GroupThread extends Thread {
     }
 
     //Method to create tokens
-    private UserToken createToken(String username) {
+    private UserToken createToken(String username, RSAPublicKey recipientPubKey) {
         
         //Check that user exists
         if(my_gs.userList.checkUser(username)) {
             //Issue a new token with server's name, user's name, and user's groups
-            return new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+            return new Token(my_gs.name, username, my_gs.userList.getUserGroups(username), recipientPubKey);
         } else {
-    
             return null;
         }
     }
@@ -410,9 +407,11 @@ public class GroupThread extends Thread {
                     }
 
                     //Delete owned groups
+                    // TODO TEST THIS
+                    RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
                     for(int index = 0; index < deleteOwnedGroup.size(); index++) {
                         //Use the delete group method. Token must be created for this action
-                        deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup));
+                        deleteGroup(deleteOwnedGroup.get(index), new Token(my_gs.name, username, deleteOwnedGroup, gsPubKey));
                     }
 
                     //Delete the user from the user list
