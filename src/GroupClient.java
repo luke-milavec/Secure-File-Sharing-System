@@ -64,6 +64,8 @@ public class GroupClient extends Client implements GroupClientInterface {
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             // If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -88,6 +90,8 @@ public class GroupClient extends Client implements GroupClientInterface {
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -113,6 +117,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -137,6 +143,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -165,6 +173,8 @@ public class GroupClient extends Client implements GroupClientInterface {
                 return (List<String>)response.getObjContents().get(0); // This cast creates compiler warnings. Sorry.
             } else if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
 
             return null;
@@ -192,6 +202,8 @@ public class GroupClient extends Client implements GroupClientInterface {
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -216,6 +228,8 @@ public class GroupClient extends Client implements GroupClientInterface {
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");

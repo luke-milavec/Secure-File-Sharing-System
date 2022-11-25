@@ -431,7 +431,7 @@ public class ClientTerminalApp {
                             + "     disconnect                                              Disconnect current connection to file and/or group server." + newLine
                             + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
                             + "         gettoken <server_name>                              Fetch a token for the user that is logged in, where <server_name> is the name of the" + newLine
-                                                                                            + "server where the token is intended to be used. Use 'gs' for group server." + newLine
+                            + "                                                             server where the token is intended to be used. Use 'gs' for group server." + newLine
                             + "         cgroup <groupname>                                  Create a group named <groupname>." + newLine
                             + "         cuser <username>                                    Create a user named <username>." + newLine
                             + "         dgroup <groupname>                                  Delete the group specified by <groupname>." + newLine
