@@ -18,6 +18,7 @@ import java.security.spec.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.math.BigInteger;
 
 /**Implement helper method to create RSA Signature given private key  working on it (Taha)
 Implement helper method to verify RSA Signature given signature and public key 
@@ -254,14 +255,38 @@ public class CryptoSec {
      * a HMAC of the envelope
      * @param env Envelope to be encrypted
      * @param Kab shared secret used to derive ki and ke
+     * @param seq sequence number to maintain order of envelopes
      * @return Message (containing enc and hmac)
      **/
-    public Message encryptEnvelope(Envelope env, byte[] Kab) {
+    public Message encryptEnvelope(Envelope env, byte[] Kab, int seq) {
         byte[] serializedEnv = serializeObject(env);
-        if (serializedEnv != null) {
-            return encryptByteArr(serializedEnv, Kab);
+        // Convert seq to byte array
+        BigInteger bigInt = BigInteger.valueOf(seq);
+        byte[] seqByteArr = bigInt.toByteArray();
+        // Concatenate byte arrays then encrypt as one
+        byte[] seqEnv = new byte[serializedEnv.length + seqByteArr.length];
+        System.arraycopy(serializedEnv, 0, seqEnv, 0, serializedEnv.length);
+        System.arraycopy(seqByteArr, 0, seqEnv, serializedEnv.length, seqByteArr.length);
+        
+        if (seqEnv != null) {
+            return encryptByteArr(seqEnv, Kab);
         } else {
             System.out.println("Error serializing");
+        }
+        return null;
+    }
+
+        public byte[] genKabHMAC(byte[] Kab, String name) {
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            sha256_HMAC.init(getKi(Kab));
+            byte[] nameBytes = name.getBytes();
+            byte[] toHash = new byte[Kab.length + nameBytes.length];
+            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
+            System.arraycopy(nameBytes, 0, toHash, Kab.length, nameBytes.length);
+            return sha256_HMAC.doFinal(toHash);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -393,8 +418,9 @@ public class CryptoSec {
      * the message and generates a HMAC for it, returning both
      * as a Message
      * @param msg The message in byte[] form to be encrypted
-     * @return k shared secret Kab used to derive keys to encrypt
+     * @param k shared secret Kab used to derive keys to encrypt
      *         and generate the HMAC
+     * @return encrypted message with HMAC
      * **/
     public Message encryptByteArr(byte[] msg,  byte[] k){
         try {
