@@ -1,4 +1,5 @@
 import java.security.KeyPair;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Scanner;
 import java.io.File;
 import java.util.List;
@@ -15,7 +16,7 @@ public class ClientTerminalApp {
 
     GroupClient gClient;
     FileClient fClient;
-    UserToken token;
+    SignedToken token;
     String username;
     CryptoSec cs;
 
@@ -32,7 +33,7 @@ public class ClientTerminalApp {
 
         Scanner in = new Scanner(System.in);
         if (!login(in)) {
-            // to do in next phase 
+            System.out.println("Trouble logging in.");
         }
         
 
@@ -43,9 +44,6 @@ public class ClientTerminalApp {
             switch (command[0]) {
                 case "help":
                     showOptions();
-                    break;
-                case "relog": 
-                    login(in);
                     break;
                 case "connect":
                     // What sort of input validation should we add?
@@ -63,11 +61,27 @@ public class ClientTerminalApp {
                 case "gettoken": 
                     if(gClient.isConnected()) {
                         if(username != null) {
-                            token = gClient.getToken(username);
-                            if (token != null) {
-                                System.out.println("Token Recieved");                                            
+                            if(command.length != 2){
+                                System.out.println("Invalid parameters. Expected format: gettoken <server_name>");
                             } else {
-                                System.out.println("Request for token failed.");
+                                String serverName = command[1];
+
+                                RSAPublicKey recipientPubKey = cs.readRSAPublicKey(username + "_known_servers"
+                                        + File.separator + ((serverName.equalsIgnoreCase("gs") ?
+                                        serverName : (serverName + "_pub_key"))));
+                                if (recipientPubKey != null) {
+                                    token = gClient.getToken(username, recipientPubKey);
+                                    if (token != null) {
+                                        System.out.println("Token Recieved");
+                                    } else {
+                                        System.out.println("Request for token failed.");
+                                    }
+
+                                } else {
+                                    System.out.println("Could not find public key for " + serverName + ". " +
+                                            "If you have never connected to " + serverName + " before, connect " +
+                                            "to it first to get its public key.");
+                                }
                             }
                         }
                     } else {
@@ -77,7 +91,6 @@ public class ClientTerminalApp {
                 case "cuser":
                     if(gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: cuser <username>");
@@ -86,14 +99,14 @@ public class ClientTerminalApp {
                                             System.out.println("Failed to create user.");
                                         } else {
                                             System.out.println("User " + command[1] + " created.");
+                                            System.out.println("Please provide user with the group server's public " +
+                                                    "key. The user will not be able to verify that they are connected" +
+                                                    " to the legitimate group server otherwise.");
                                         }
                                     }               
                                 } else {
                                     System.out.println("Token required to create username.");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
@@ -102,7 +115,6 @@ public class ClientTerminalApp {
                 case "duser": 
                     if (gClient.isConnected()) {
                         if (username != null) {
-                            // if (userList.getUserGroups(username).contains("ADMIN")) { // Security measure on client side as well
                                 if (token != null) {
                                     if (command.length != 2) {
                                         System.out.println("Invalid format. Expected: duser <username>");
@@ -116,9 +128,6 @@ public class ClientTerminalApp {
                                 } else {
                                     System.out.println("Token required to create new user. Please get a token first using gettoken");
                                 }
-                            // } else {
-                            //     System.out.println("Permission Denied.");
-                            // }
                         }
                     } else {
                         System.out.println("Connect to a group server first.");
@@ -274,10 +283,12 @@ public class ClientTerminalApp {
                     if (fClient.isConnected()) { 
                         if (token != null) {
                             List<String> files = fClient.listFiles(token);
-                            System.out.println("There are " + files.size() + " files.");
-                                    for (String file : files) {
-                                        System.out.println(file);
-                                    }
+                            if(files != null) {
+                                System.out.println("There are " + files.size() + " files.");
+                                for (String file : files) {
+                                    System.out.println(file);
+                                }
+                            }
                         } else {
                             System.out.println("Valid token required to list files. Please get a token first using gettoken.");
                         }
@@ -332,29 +343,67 @@ public class ClientTerminalApp {
         username = in.nextLine();
         File pubKFile = new File(username + ".public");
         File privKFile = new File(username + ".private");
+        File knownSDir = new File(username + "_known_servers");
         // If user accidentally deletes key files should we check for that and let them regenerate them?
-        if (!pubKFile.exists() || !privKFile.exists()) {
-            System.out.println("No RSA Key Pair exists yet for " + username + " or it was lost." +
-                    " Generating RSA Key Pair..." + System.lineSeparator() +
-                     "If you encounter trouble getting a token, an Admin may not" +
-                    " have created a user with this username yet." + System.lineSeparator() +
-                    "Please contact an admin to setup a user" +
-                    " under this username if you encounter this issue." + System.lineSeparator() +
-                    "If the Admin has already created a user with this" +
-                    " username there should be no trouble using the system." + System.lineSeparator());
+        if (!pubKFile.exists() || !privKFile.exists() || !knownSDir.exists()) {
+            System.out.println("User " + username + " information not found. If the user exists elsewhere" +
+                    " copy the following into the current directory: ");
+            System.out.println("    1. "+ username + "'s RSA public key file: '" + username + ".public'");
+            System.out.println("    2. "+ username + "'s RSA private key file: '" + username + ".private'");
+            System.out.println("    3. "+ username + "'s directory of known servers: '" + username + "_known_servers'");
+
+            System.out.println("Type 'y' to confirm the items have been added. Otherwise, type 'n' to setup a " +
+                    "new user and generate a new RSA keypair and known server directory for " + username + ".");
+            boolean validInput = false;
+            while(!validInput) {
+                String userInput = in.nextLine();
+                if (userInput.equalsIgnoreCase("y")) {
+                    if(pubKFile.exists() && privKFile.exists() && knownSDir.exists()) {
+                        System.out.println("Keypair files and known servers directory found.");
+                        validInput = true;
+                    } else {
+                        System.out.println(username + ".public' and/or '" + username + ".private' and/or" +
+                                username + "_known_servers' were not found.");
+                        System.out.println("Please add the keypair files and known server directory into the current" +
+                                " directory," + System.lineSeparator() +
+                                "or press 'n' if no keypair/directory exists to generate a new keypair" +
+                                " and directory for " + username + ".");
+                    }
+                } else if (userInput.equalsIgnoreCase("n")) {
+                    System.out.println(
+                            " Generating RSA Key Pair..." + System.lineSeparator() +
+                                    "If you encounter trouble getting a token, an Admin may not" +
+                                    " have created a user with this username yet." + System.lineSeparator() +
+                                    "Please contact an admin to setup a user" +
+                                    " under this username if you encounter this issue." + System.lineSeparator() +
+                                    "If the Admin has already created a user with this" +
+                                    " username there should be no trouble using the system." + System.lineSeparator());
 
 
-            KeyPair rsaKeyPair = cs.genRSAKeyPair();
-            if(cs.writeKeyPair(username, rsaKeyPair)) {
-                System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
-                        + " and '" + username + ".private' in the current directory." + System.lineSeparator() +
-                        "Please do not delete them if you wish to continue using this account."
-                        + System.lineSeparator());
-            } else {
-                System.out.println("Sorry error generating keys, please try again");
-                System.exit(-1);
+                    KeyPair rsaKeyPair = cs.genRSAKeyPair();
+                    if(cs.writeKeyPair(username, rsaKeyPair)) {
+                        System.out.println("An RSA Key Pair has been generated and stored in files '" + username + ".public'"
+                                + " and '" + username + ".private' in the current directory." + System.lineSeparator() +
+                                "Please do not delete them if you wish to continue using this account."
+                                + System.lineSeparator());
+                    } else {
+                        System.out.println("Sorry error generating keys, please try again");
+                        System.exit(-1);
+                    }
+                    if(!knownSDir.exists() && !knownSDir.mkdir()) {
+                        System.out.println("Error creating " + knownSDir);
+                    } else {
+                        System.out.println("Created " + knownSDir + " directory.");
+                    }
+
+                    validInput = true;
+
+                } else {
+                    System.out.println("Invalid input: Please type 'y' to confirm that a keypair has been added." +
+                            " Otherwise, type 'n' to setup a new user and generate a new RSA keypair for " + username
+                            + ".");
+                }
             }
-
         }
         gClient = new GroupClient();
         fClient = new FileClient();
@@ -364,13 +413,9 @@ public class ClientTerminalApp {
 
     public boolean connect(String serverType, String serverName, String port, String username) {
         if (serverType.equals("-g")) {
-            if (gClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return gClient.connect(serverName, Integer.parseInt(port), username);
         } else if (serverType.equals("-f")) {
-            if (fClient.connect(serverName, Integer.parseInt(port), username)) {
-                return true;
-            }
+            return fClient.connect(serverName, Integer.parseInt(port), username);
         }
         else {
             System.out.println("Invalid server type. Correct options were -g or -f");
@@ -382,11 +427,11 @@ public class ClientTerminalApp {
         String newLine = System.lineSeparator();
         System.out.println("Options: " + newLine
                             + "     help                                                    Shows the list of valid commands." + newLine
-                            + "     relog                                                   Re-login to app, perhaps to change accounts." + newLine
                             + "     connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified." + newLine
                             + "     disconnect                                              Disconnect current connection to file and/or group server." + newLine
                             + "     group commands:                                         Must be connected to group server. Commands other than gettoken require valid token." + newLine
-                            + "         gettoken                                            Fetch a token for the user that is logged in." + newLine
+                            + "         gettoken <server_name>                              Fetch a token for the user that is logged in, where <server_name> is the name of the" + newLine
+                            + "                                                             server where the token is intended to be used. Use 'gs' for group server." + newLine
                             + "         cgroup <groupname>                                  Create a group named <groupname>." + newLine
                             + "         cuser <username>                                    Create a user named <username>." + newLine
                             + "         dgroup <groupname>                                  Delete the group specified by <groupname>." + newLine

@@ -8,7 +8,10 @@ import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.*;
@@ -16,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**Implement helper method to create RSA Signature given private key ← working on it (Taha)
+/**Implement helper method to create RSA Signature given private key  working on it (Taha)
 Implement helper method to verify RSA Signature given signature and public key 
  */
 
@@ -47,8 +50,7 @@ public class CryptoSec {
         } catch (NoSuchAlgorithmException e) {
             System.out.println("Error finding RSA");
         } catch (FileNotFoundException e) {
-            System.out.println("Unable to find RSA public key for " + fileName);
-            e.printStackTrace();
+            System.out.println("Could not find " + fileName + ".public");
         } catch (IOException e) {
             System.out.println("Error reading in public key");
         } catch (InvalidKeySpecException e) {
@@ -138,7 +140,7 @@ public class CryptoSec {
 
     public KeyPair genECDHKeyPair() {
        try {
-           ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256k1");
+           ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256r1");
            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
            keyGen.initialize(ecAlgoSpec);
            return keyGen.generateKeyPair();
@@ -152,33 +154,6 @@ public class CryptoSec {
        return null;
     }
 
-    // TODO Key may be incorrect:
-    public byte[] rsaEncrypt(byte[] msg, Key key) {
-        try {
-            Cipher rsaCipher = Cipher.getInstance("RSA", "BC");
-            rsaCipher.init(Cipher.ENCRYPT_MODE, key);
-            return rsaCipher.doFinal(msg);
-        } catch (InvalidKeyException e) {
-            System.out.println("RSA encryption failed due to invalid key");
-            e.printStackTrace();
-        } catch (NoSuchPaddingException e) {
-            System.out.println("RSA encryption failed due to invalid padding");
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("Encryption failed due to no such encryption algorithm existing");
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            System.out.println("RSA encryption failed due to invalid provider");
-            e.printStackTrace();
-        } catch (IllegalBlockSizeException e) {
-            System.out.println("RSA encryption failed due to invalid block size");
-            e.printStackTrace();
-        } catch (BadPaddingException e) {
-            System.out.println("RSA encryption failed due to bad padding");
-            e.printStackTrace();
-        }
-        return null;
-    }
 
     public byte[] rsaSign(RSAPrivateKey privateKey, byte[] msg) {
         try {
@@ -203,8 +178,8 @@ public class CryptoSec {
     }
 
     /** Generate shared secret Kab
-    * @params privateKey - ECDH private key of party calling this function
-    *         publicKey - ECDH public key of other party provided by party calling this function
+    * @param privateKey - ECDH private key of party calling this function
+    * @param publicKey - ECDH public key of other party provided by party calling this function
     * return - byte[] of shared secret
     */
     public byte[] generateSharedSecret(PrivateKey privateKey, PublicKey publicKey) {
@@ -212,9 +187,7 @@ public class CryptoSec {
             KeyAgreement keyAgree = KeyAgreement.getInstance("ECDH", "BC");
             keyAgree.init(privateKey);
             keyAgree.doPhase(publicKey, true);
-            byte[] sharedSecret = keyAgree.generateSecret();
-            // DEBUG: System.out.println("Shared secret: ", );
-            return sharedSecret;
+            return keyAgree.generateSecret();
         } catch(IllegalStateException e) {
             System.err.println("Error: Illegal state");
             e.printStackTrace();        
@@ -229,30 +202,6 @@ public class CryptoSec {
             e.printStackTrace();
         }
         return null;
-    }
-
-    /**
-     * Write shared secret Kab to file for user
-     * @param username  the username associated with the key
-     * @param sharedSecret shared secret derived in handshake
-     * @return true if PemWriter successfully writes to file. False if not.
-     */
-    public boolean writeSecretToFile(String username, byte[] sharedSecret) {
-         try {
-            // First convert byte[] to SecretKey object
-            SecretKey Kab = new SecretKeySpec(sharedSecret, "AES");
-            
-            String secretFileName = username + ".sharedsecret";
-            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(secretFileName)));
-            pemWriter.writeObject(new PemObject("SHARED SECRET (Kab): ", Kab.getEncoded()));
-            pemWriter.close();
-            return true;
-         } catch(IOException e) {
-            System.err.println("Error when writing shared secret to file.");
-            e.printStackTrace();
-            return false;
-         }
-
     }
 
 
@@ -285,7 +234,7 @@ public class CryptoSec {
      * @param Kab shared secret
      * @return Envelope
      **/
-    public Envelope decryptMessage(Message msg, byte[] Kab) {
+    public Envelope decryptEnvelopeMessage(Message msg, byte[] Kab) {
         byte[] orgBytes = decryptString(msg, Kab); // get decrypted envelope bytes
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
@@ -311,8 +260,63 @@ public class CryptoSec {
         byte[] serializedEnv = serializeObject(env);
         if (serializedEnv != null) {
             return encryptByteArr(serializedEnv, Kab);
-            }else {
+        } else {
             System.out.println("Error serializing");
+        }
+        return null;
+    }
+
+    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey gsPubKey) {
+        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+        if (orgBytes != null) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+            try {
+                ObjectInput in = new ObjectInputStream(bis);
+                SignedToken signedToken = (SignedToken) in.readObject();
+                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+                verifySig.initVerify(gsPubKey);
+//                System.out.println("token crypto sec decryption: ");
+//                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
+                verifySig.update(signedToken.getTokenBytes());
+                if(!verifySig.verify(signedToken.getTokenSignature())) {
+                    System.out.println("Token could not be verified as signature did not match.");
+                    return null;
+                }
+                bis = new ByteArrayInputStream(signedToken.getTokenBytes());
+                in = new ObjectInputStream(bis);
+                return (UserToken) in.readObject();
+            } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
+                     NoSuchProviderException | InvalidKeyException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+
+    public Message encryptToken(UserToken token, byte[] Kab) {
+        try {
+            RSAPrivateKey privateKey = readRSAPrivateKey("gs");
+            if (privateKey != null) {
+                byte[] tokenBytes = serializeObject(token);
+                byte[] tokenSigned = rsaSign(privateKey, tokenBytes);
+                if (tokenSigned != null) {
+                    SignedToken tokenPackage = new SignedToken(tokenBytes, tokenSigned);
+                    byte[] tokenPackageBytes = serializeObject(tokenPackage);
+                    if (tokenPackageBytes != null) {
+                        return encryptByteArr(tokenPackageBytes, Kab);
+                    } else {
+                        System.out.println("Could not serialize token while encrypting it.");
+                    }
+                } else {
+                    System.out.println("Could not sign token in encrypt token.");
+                }
+            } else {
+                System.out.println("Private key for the group server could not be found while encrypting token");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -418,16 +422,23 @@ public class CryptoSec {
                 byte[] enc = c.doFinal(msg);
                 return new Message(hmac, enc);
             }
-        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException e) {
             e.printStackTrace();
-        } catch (NoSuchPaddingException e){
+        }
+        return null;
+    }
+    public byte[] genKabHMAC(byte[] Kab, String name) {
+        try {
+            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            sha256_HMAC.init(getKi(Kab));
+            byte[] nameBytes = name.getBytes();
+            byte[] toHash = new byte[Kab.length + nameBytes.length];
+            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
+            System.arraycopy(nameBytes, 0, toHash, Kab.length, nameBytes.length);
+            return sha256_HMAC.doFinal(toHash);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
-        } catch (IllegalBlockSizeException e){
-            e.printStackTrace();
-        } catch (BadPaddingException e){
-            e.printStackTrace();
-        } catch (InvalidAlgorithmParameterException e) {
-           e.printStackTrace();
         }
         return null;
     }
@@ -485,17 +496,18 @@ public class CryptoSec {
         return s.toString();
     }
 
-    public Token deserializeToken(String s){
-        String[] arr = s.split("|");
-        String issuer = arr[0];
-        String subject = arr[1];
-//        List<String> groups = new List<String>();
-        List<String> groups = new ArrayList<>();
-        for (int i=2;i<arr.length;i++){
-            groups.add(arr[i]);
-        }
-        return new Token(issuer,subject,groups);
-    }
+//    public Token deserializeToken(String s){
+//        String[] arr = s.split("|");
+//        String issuer = arr[0];
+//        String subject = arr[1];
+//        String recipientPubKey = arr[2];
+////        List<String> groups = new List<String>();
+//        List<String> groups = new ArrayList<>();
+//        for (int i=2;i<arr.length;i++){
+//            groups.add(arr[i]);
+//        }
+//        return new Token(issuer,subject,groups, recipientPubKey);
+//    }
 
     public String serializeList(List<String> arr){
         String s = "";
@@ -508,4 +520,40 @@ public class CryptoSec {
     public List<String> deserializeString(String s){
         return  Arrays.asList(s.split("|"));
     }
+
+    public SignedToken decryptMessageToSignedToken(Message msg, byte[] Kab) {
+        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+        if (orgBytes != null) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+            try {
+                ObjectInput in = new ObjectInputStream(bis);
+                return (SignedToken) in.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+    
+    public UserToken decryptSignedToken(SignedToken signedToken, RSAPublicKey gsPubKey) {
+        try{
+            Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+            verifySig.initVerify(gsPubKey);
+            //                System.out.println("token crypto sec decryption: ");
+            //                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
+            verifySig.update(signedToken.getTokenBytes());
+            if(!verifySig.verify(signedToken.getTokenSignature())) {
+                System.out.println("Token could not be verified as signature did not match.");
+                return null;
+            }
+            ByteArrayInputStream bis = new ByteArrayInputStream(signedToken.getTokenBytes());
+            ObjectInputStream in = new ObjectInputStream(bis);
+            return (UserToken) in.readObject();
+        } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
+                NoSuchProviderException | InvalidKeyException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

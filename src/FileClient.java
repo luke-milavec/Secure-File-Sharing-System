@@ -7,11 +7,12 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 
 public class FileClient extends Client implements FileClientInterface {
-
+    
     @Override
     public boolean connect(String server, int port, String username) {
         System.out.println("attempting to connect");
@@ -28,12 +29,13 @@ public class FileClient extends Client implements FileClientInterface {
             // the file server could not be verified.
             CryptoSec cs = new CryptoSec();
             Envelope pubKeyMsg = (Envelope)input.readObject();
+            String fsPubKeyName = pubKeyMsg.getMessage();
             RSAPublicKey fsPubKey= (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
-            File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+            File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
             if (serverKeys.exists()) {
                 // Compare key sent by server to the cached one
-                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
+                RSAPublicKey cachedFSPubKey = cs.readRSAPublicKey(username + "_known_servers" + File.separator + pubKeyMsg.getMessage());
                 if(cs.byteArrToHexStr(fsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedFSPubKey.getEncoded()))) {
                     System.out.println("The cached public key for this server matched the public key sent by " + server +
                             " at port " + port + ". Connecting...");
@@ -57,11 +59,11 @@ public class FileClient extends Client implements FileClientInterface {
                     String userInput = in.nextLine();
                     if (userInput.equalsIgnoreCase("y")) {
                         // Create new directory if it doesn't exist
-                        File knownServerDir = new File("known_servers");
+                        File knownServerDir = new File(username + "_known_servers");
                         if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                             System.out.println("Error creating " + knownServerDir);
                         }
-                        String pubKeyFilePath = "known_servers" + File.separator + pubKeyMsg.getMessage();
+                        String pubKeyFilePath = username + "_known_servers" + File.separator + pubKeyMsg.getMessage();
                         if (cs.writePubKey(pubKeyFilePath, fsPubKey)) {
                             System.out.println("File Server's public key cached in " + pubKeyFilePath);
                         }
@@ -100,7 +102,6 @@ public class FileClient extends Client implements FileClientInterface {
             byte[] userPrivateECKeySig = cs.rsaSign(userRSAprivatekey, ecKeyPair.getPublic().getEncoded());
             // 3) Send to server you want to connect with
             Envelope connectRequest = new Envelope("SignatureForHandshake");
-             // TODO confirm w/ Prof it is okay to send userPublic key unencrypted
             connectRequest.addObject(userRSApublickey); // So the server can verify the signature
             connectRequest.addObject(ecKeyPair.getPublic());
             connectRequest.addObject(userPrivateECKeySig);
@@ -135,9 +136,36 @@ public class FileClient extends Client implements FileClientInterface {
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
                 // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+                output.reset();
+                byte[] KabHMAC = cs.genKabHMAC(Kab, username);
+                if (KabHMAC != null) {
+                    Envelope envKabHMAC  = new Envelope("KabConfirmation");
+                    envKabHMAC.addObject(KabHMAC);
+                    envKabHMAC.addObject(username);
+                    output.writeObject(envKabHMAC);
+
+                    // Confirm that the server arrived at the same Kab
+                    byte[] serverKabHMAC = (byte[]) input.readObject();
+                    if (serverKabHMAC != null) {
+                        // If file server name is 'fs' fsPubKeyName contains 'fs_pub_key' hence the split
+                        byte[] genFSKabHMAC = cs.genKabHMAC(Kab, fsPubKeyName.split("_")[0]);
+                        if (genFSKabHMAC != null && Arrays.equals(serverKabHMAC, genFSKabHMAC)) {
+                            System.out.println("Confirmed file server arrived at the same shared secret Kab.");
+                        } else {
+                            System.out.println("Could not confirm whether file server arrived at same shared secret Kab.");
+                            return false;
+                        }
+
+                    } else {
+                        System.out.println("Failed to receive confirmation whether file server arrived at same shared secret Kab.");
+                        return false;
+                    }
+                } else {
+                    System.out.println("Error generating shared secret Kab.");
+                    return false;
+                }
 
             } else {
-                // Message received was neither "SignatureForHandshake" nor "FAIL"
                 System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
                 return false;
             }
@@ -152,7 +180,8 @@ public class FileClient extends Client implements FileClientInterface {
         }
     }
 
-    public boolean delete(String filename, UserToken token) {
+    public boolean delete(String filename, SignedToken token) {
+        CryptoSec cs = new CryptoSec();
         String remotePath;
         if (filename.charAt(0)=='/') {
             remotePath = filename.substring(1);
@@ -163,50 +192,52 @@ public class FileClient extends Client implements FileClientInterface {
         env.addObject(remotePath);
         env.addObject(token);
         try {
-            output.writeObject(env);
-            env = (Envelope)input.readObject();
+            output.writeObject(cs.encryptEnvelope(env, Kab));
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             if (env.getMessage().compareTo("OK")==0) {
                 System.out.printf("File %s deleted successfully\n", filename);
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
+            }  else if (env.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
             } else {
                 System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
                 return false;
             }
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        } catch (ClassNotFoundException e1) {
+        } catch (IOException | ClassNotFoundException e1) {
             e1.printStackTrace();
         }
 
         return true;
     }
 
-    public boolean download(String sourceFile, String destFile, UserToken token) {
+    public boolean download(String sourceFile, String destFile, SignedToken token) {
+        CryptoSec cs = new CryptoSec();
         if (sourceFile.charAt(0)=='/') {
             sourceFile = sourceFile.substring(1);
         }
 
         File file = new File(destFile);
         try {
-
-
             if (!file.exists()) {
                 file.createNewFile();
                 FileOutputStream fos = new FileOutputStream(file);
 
                 Envelope env = new Envelope("DOWNLOADF"); //Success
                 env.addObject(sourceFile);
+//                env.addObject(cs.encryptToken(token, Kab));
                 env.addObject(token);
-                output.writeObject(env);
+                output.writeObject(cs.encryptEnvelope(env, Kab));
 
-                env = (Envelope)input.readObject();
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
                 while (env.getMessage().compareTo("CHUNK")==0) {
                     fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
-                    output.writeObject(env);
-                    env = (Envelope)input.readObject();
+                    output.writeObject(cs.encryptEnvelope(env, Kab));
+                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 }
                 fos.close();
 
@@ -214,7 +245,9 @@ public class FileClient extends Client implements FileClientInterface {
                     fos.close();
                     System.out.printf("\nTransfer successful file %s\n", sourceFile);
                     env = new Envelope("OK"); //Success
-                    output.writeObject(env);
+                    output.writeObject(cs.encryptEnvelope(env, Kab));
+                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                    System.out.println("Token Expired. Please re-acquire token first.");
                 } else {
                     System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
                     file.delete();
@@ -241,19 +274,25 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> listFiles(UserToken token) {
+    public List<String> listFiles(SignedToken token) {
+        CryptoSec cs = new CryptoSec();
         try {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            message.addObject(token);
+            output.writeObject(cs.encryptEnvelope(message, Kab));
 
-            e = (Envelope)input.readObject();
+            e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(e.getMessage().equals("OK")) {
                 return (List<String>)e.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+            } else if (e.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
+            }  else if (e.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
             }
 
             return null;
@@ -266,7 +305,9 @@ public class FileClient extends Client implements FileClientInterface {
     }
 
     public boolean upload(String sourceFile, String destFile, String group,
-                          UserToken token) {
+                          SignedToken token) {
+
+        CryptoSec cs = new CryptoSec();
 
         if (destFile.charAt(0)!='/') {
             destFile = "/" + destFile;
@@ -279,24 +320,23 @@ public class FileClient extends Client implements FileClientInterface {
             message = new Envelope("UPLOADF");
             message.addObject(destFile);
             message.addObject(group);
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
-
+//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
+            message.addObject(token);
+            output.writeObject(cs.encryptEnvelope(message, Kab));
 
             FileInputStream fis = new FileInputStream(sourceFile);
-
-            env = (Envelope)input.readObject();
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(env.getMessage().equals("READY")) {
                 System.out.printf("Meta data upload successful\n");
 
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             } else {
-
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }
-
 
             do {
                 byte[] buf = new byte[4096];
@@ -316,10 +356,8 @@ public class FileClient extends Client implements FileClientInterface {
                 message.addObject(buf);
                 message.addObject(Integer.valueOf(n));
 
-                output.writeObject(message);
-
-
-                env = (Envelope)input.readObject();
+                output.writeObject(cs.encryptEnvelope(message, Kab));
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
 
             } while (fis.available()>0);
@@ -328,19 +366,22 @@ public class FileClient extends Client implements FileClientInterface {
             if(env.getMessage().compareTo("READY")==0) {
 
                 message = new Envelope("EOF");
-                output.writeObject(message);
+                output.writeObject(cs.encryptEnvelope(message, Kab));
 
-                env = (Envelope)input.readObject();
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 if(env.getMessage().compareTo("OK")==0) {
                     System.out.printf("\nFile data upload successful\n");
-                } else {
-
+                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                    System.out.println("Token Expired. Please re-acquire token first.");
+                }
+                else {
                     System.out.printf("\nUpload failed: %s\n", env.getMessage());
                     return false;
                 }
 
+            } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Token Expired. Please re-acquire token first.");
             } else {
-
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }

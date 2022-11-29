@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.security.KeyPair;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.security.*;
 
@@ -19,6 +20,8 @@ public abstract class Client {
     protected ObjectInputStream input;
 
     protected byte[] Kab;
+
+    protected RSAPublicKey gsPubKey;
 
     public boolean connect(final String server, final int port, String username) {
         System.out.println("attempting to connect");
@@ -36,12 +39,12 @@ public abstract class Client {
             // the group server could not be verified.
           CryptoSec cs = new CryptoSec();
           Envelope pubKeyMsg = (Envelope)input.readObject();
-          RSAPublicKey gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
-          File serverKeys = new File("known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
+          gsPubKey = (RSAPublicKey) pubKeyMsg.getObjContents().get(0);
+          File serverKeys = new File(username + "_known_servers" + File.separator + pubKeyMsg.getMessage() +".public");
 
           if (serverKeys.exists()) {
               // Compare key sent by server to the cached one
-              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey("known_servers" + File.separator + pubKeyMsg.getMessage());
+              RSAPublicKey cachedGSPubKey = cs.readRSAPublicKey(username + "_known_servers" + File.separator + pubKeyMsg.getMessage());
               if(cs.byteArrToHexStr(gsPubKey.getEncoded()).equals(cs.byteArrToHexStr(cachedGSPubKey.getEncoded()))) {
                   System.out.println("The cached public key for this server matched the public key sent by " + server +
                           " at port " + port + ". Connecting...");
@@ -63,12 +66,12 @@ public abstract class Client {
               while(!validInput) {
                   String userInput = in.nextLine();
                   if (userInput.equalsIgnoreCase("y")) {
-                      // Create new directory if it doesn't exist
-                      File knownServerDir = new File("known_servers");
+                      // Create new directory if it doesn't exist TODO <-- dead code next few lines?
+                      File knownServerDir = new File(username + "_known_servers");
                       if(!knownServerDir.exists() && !knownServerDir.mkdir()) {
                               System.out.println("Error creating " + knownServerDir);
                       }
-                      String pubKeyFilePath ="known_servers" + File.separator + pubKeyMsg.getMessage();
+                      String pubKeyFilePath = username + "_known_servers" + File.separator + pubKeyMsg.getMessage();
                       if (cs.writePubKey(pubKeyFilePath, gsPubKey)) {
                           System.out.println("Group Server's public key cached in " + pubKeyFilePath);
                       }
@@ -139,32 +142,45 @@ public abstract class Client {
                     return false;
                 }
 
-                // Taha: There is no way this works since hash functions have pre-image resistance and
-                // are lossy operations, you cannot get back the ECDH public key from the signature
-                // Instead I had the server send it over in ptext instead
-                // Server signature is verified, obtain server's ECDH public key and step 5 key agreement can now occur
-//                X509EncodedKeySpec serverPubKeySpec = new X509EncodedKeySpec(serverECDHKeySig);
-//                KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
-//                PublicKey serverECDHPubKey = (PublicKey) keyFactory.generatePublic(serverPubKeySpec);
-
                 // Generate Kab, shared secret between user and server
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
 //                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
-                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
-              // TODO don't write shared secret to file
-                if(!cs.writeSecretToFile(username, Kab)) {
-                    System.err.println("ERROR: writing secret to file failed on client side.");
-                    return false;
-                } else {
-                    System.out.println("Shared secret successfully generated and written to file with the extension .sharedsecret");
-                }
+              // Send over HMAC(Kab + name) to prove to server, the user was able to arrive at shared secret
+              output.reset();
+              byte[] KabHMAC = cs.genKabHMAC(Kab, username);
+              if (KabHMAC != null) {
+//                  serverHandshake = new Envelope("KabConfirmation");
+//                  serverHandshake.addObject(KabHMAC);
+                  output.writeObject(KabHMAC);
 
+                  // Confirm that the server arrived at the same Kab
+                  byte[] serverKabHMAC = (byte[]) input.readObject();
+                  if (serverKabHMAC != null) {
+                      // not the best approach to hardcode 'gs', gclient should probably override this method
+                      // like fclient does
+                      byte[] genGSKabHMAC = cs.genKabHMAC(Kab, "gs");
+                      if (genGSKabHMAC != null && Arrays.equals(serverKabHMAC, genGSKabHMAC)) {
+                          System.out.println("Confirmed server arrived at the same shared secret Kab.");
+                      } else {
+                          System.out.println("Could not confirm whether server arrived at same shared secret Kab.");
+                          return false;
+                      }
+
+                  } else {
+                      System.out.println("Failed to receive confirmation whether server arrived at same shared secret Kab.");
+                      return false;
+                  }
+              } else {
+                  System.out.println("Error generating shared secret Kab.");
+                  return false;
+              }
+
+                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
           } else {
             // Message received was neither "SignatureForHandshake" nor "FAIL"
             System.err.println("ERROR: Message received was neither SignatureForHandshake nor FAIL");
             return false;
           }
-          
 
           System.out.println("Connected to " + server + " on port " + port);
           return true;

@@ -1,8 +1,9 @@
 /* Implements the GroupClient Interface */
-
+import java.io.File;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.ObjectInputStream;
+
 
 public class GroupClient extends Client implements GroupClientInterface {
 
@@ -12,26 +13,22 @@ public class GroupClient extends Client implements GroupClientInterface {
         cs = new CryptoSec();
     }
 
-    public UserToken getToken(String username) {
+    public SignedToken getToken(String username, RSAPublicKey recipientPubKey) {
         try {
             UserToken token = null;
             Envelope message = null, response = null;
 
             //Tell the server to return a token.
             message = new Envelope("GET");
-            message.addObject(username); //Add user name string
-
+            message.addObject(username); // Add user name string
+            message.addObject(recipientPubKey); // Add the intended recipient's public key
             Message encryptedMsg = cs.encryptEnvelope(message, Kab);
-//            System.out.println(cs.byteArrToHexStr(encryptedMsg.enc));
-//            System.out.println(cs.byteArrToHexStr(encryptedMsg.hmac));
+
             output.writeObject(encryptedMsg);
-//            output.writeObject(message);
 
             //Get the response from the server
-            // TODO uncomment following 2 lines
-//            encryptedMsg = (Message) input.readObject();
-//            response = cs.decryptMessage(encryptedMsg, Kab);
-            response = (Envelope)input.readObject();
+            encryptedMsg = (Message) input.readObject();
+            response = cs.decryptEnvelopeMessage(encryptedMsg, Kab);
 
             //Successful response
             if(response.getMessage().equals("OK")) {
@@ -39,11 +36,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 
                 ArrayList<Object> temp = null;
                 temp = response.getObjContents();
-                
 
                 if(temp.size() == 1) {
-                    token = (UserToken)temp.get(0);
-                    return token;
+                    return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab) ;
                 }
             }
 
@@ -56,29 +51,24 @@ public class GroupClient extends Client implements GroupClientInterface {
 
     }
 
-    public boolean createUser(String username, UserToken token) {
+    public boolean createUser(String username, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to create a user
             message = new Envelope("CUSER");
-            message.addObject(username); //Add user name string
-            message.addObject(token); //Add the requester's token
+            message.addObject(username); //Add username
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
+            output.writeObject(encryptedMessage);
 
-//            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
-
-            output.writeObject(message);
-//            output.writeObject(encryptedMessage);
-
-            response = (Envelope)input.readObject();
-
-
-
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            // If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -86,24 +76,25 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteUser(String username, UserToken token) {
+    public boolean deleteUser(String username, SignedToken token) {
         try {
             Envelope message = null, response = null;
 
             //Tell the server to delete a user
             message = new Envelope("DUSER");
-            message.addObject(username); //Add user name
-            message.addObject(token);  //Add requester's token
-            output.writeObject(message);
+            message.addObject(username); //Add username
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
-
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            //If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             
             System.err.println("Error: " + e.getMessage());
@@ -112,23 +103,25 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean createGroup(String groupname, UserToken token) {
+    public boolean createGroup(String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to create a group
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
-            message.addObject(token); //Add the requester's token
-            output.writeObject(message);
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            //If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -136,22 +129,25 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteGroup(String groupname, UserToken token) {
+    public boolean deleteGroup(String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to delete a group
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            //If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -160,20 +156,25 @@ public class GroupClient extends Client implements GroupClientInterface {
     }
 
     @SuppressWarnings("unchecked")
-    public List<String> listMembers(String group, UserToken token) {
+    public List<String> listMembers(String group, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to return the member list
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
             //If server indicates success, return the member list
             if(response.getMessage().equals("OK")) {
-                return (List<String>)response.getObjContents().get(0); //This cast creates compiler warnings. Sorry.
+                return (List<String>)response.getObjContents().get(0); // This cast creates compiler warnings. Sorry.
+            } else if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
 
             return null;
@@ -185,23 +186,27 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean addUserToGroup(String username, String groupname, UserToken token) {
+    public boolean addUserToGroup(String username, String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
-            //Tell the server to add a user to the group
+
+            // Tell the server to add a user to the group
             message = new Envelope("AUSERTOGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            //If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);
@@ -209,23 +214,25 @@ public class GroupClient extends Client implements GroupClientInterface {
         }
     }
 
-    public boolean deleteUserFromGroup(String username, String groupname, UserToken token) {
+    public boolean deleteUserFromGroup(String username, String groupname, SignedToken token) {
         try {
             Envelope message = null, response = null;
             //Tell the server to remove a user from the group
             message = new Envelope("RUSERFROMGROUP");
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
-            message.addObject(token); //Add requester's token
-            output.writeObject(message);
+            message.addObject(token);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            output.writeObject(encryptedMessage);
 
-            response = (Envelope)input.readObject();
-            //If server indicates success, return true
-            if(response.getMessage().equals("OK")) {
-                return true;
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            if (response.getMessage().equals("InvalidTokenRecipient")) {
+                System.out.println("The intended recipient in token was invalid.");
+            } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                System.out.println("Failed: Expired Token.");
             }
-
-            return false;
+            //If server indicates success, return true
+            return response.getMessage().equals("OK");
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace(System.err);

@@ -42,10 +42,6 @@ public class GroupServer extends Server {
             userStream = new ObjectInputStream(fis);
             userList = (UserList)userStream.readObject();
 
-            // TODO figure out this weirdest bug: it works if you do this twice else userList is null
-            FileInputStream fileIn = new FileInputStream(userFile);
-            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
-            userList = (UserList) objectIn.readObject();
 //            System.out.println(userList.getUserGroups("admin").get(0));
 
         } catch(FileNotFoundException e) {
@@ -62,12 +58,15 @@ public class GroupServer extends Server {
             System.out.println("Generating and storing RSA key pair for " + username + "...");
 
             // Generate RSA keypair for the user and another for the group server
+            // TODO remove rsa keygen for user from here, it should happen in client terminal app like normal
             CryptoSec cs = new CryptoSec();
-            cs.writeKeyPair(username, cs.genRSAKeyPair());
-            System.out.println("An RSA Key Pair has been generated for " + username +
-                    " and stored in files '" + username +
-                    ".public' and '" + username + ".private' in the current directory.");
-            System.out.println();
+//            cs.writeKeyPair(username, cs.genRSAKeyPair());
+//            System.out.println("An RSA Key Pair has been generated for " + username +
+//                    " and stored in files '" + username +
+//                    ".public' and '" + username + ".private' in the current directory.");
+//            System.out.println();
+            System.out.println("RSA Keypair will be created for " + username + " when they run their client app" +
+                    " for the first time.");
 
             KeyPair gsKeyPair =  cs.genRSAKeyPair();
             cs.writeKeyPair("gs", gsKeyPair);
@@ -90,10 +89,7 @@ public class GroupServer extends Server {
 //            System.out.println(cs.readRSAPublicKey(username).toString());
 //            System.out.println(cs.readRSAPrivateKey(username).toString());
 
-        } catch(IOException e) {
-            System.out.println("Error reading from UserList file");
-            System.exit(-1);
-        } catch(ClassNotFoundException e) {
+        } catch(IOException | ClassNotFoundException e) {
             System.out.println("Error reading from UserList file");
             System.exit(-1);
         }
@@ -109,10 +105,7 @@ public class GroupServer extends Server {
             System.out.println("No Group currently exists.");
             // I don't think you inititalize it here by creating a group unlike UserList which has the ADMIN case
                     
-        } catch(IOException e) {
-            System.out.println("Error reading from UserList file in order to retrieve group list");
-            System.exit(-1);
-        } catch(ClassNotFoundException e) {
+        } catch(IOException | ClassNotFoundException e) {
             System.out.println("Error reading from UserList file in order to retrieve group list");
             System.exit(-1);
         }

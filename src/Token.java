@@ -1,24 +1,23 @@
-import java.io.Serial;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.List;
 
 public class Token implements java.io.Serializable, UserToken{
 
     // Copy of another version id for now, maybe change later?
-    @Serial
     private static final long serialVersionUID = -6699986336399821598L;
 
     private final String issuer;
     private final String subject;
     private final List<String> groups;
-
     private final Instant timestamp;
+    private final RSAPublicKey recipientPubKey;
 
-
-    Token(String issuer, String subject, List<String> groups) {
+    Token(String issuer, String subject, List<String> groups, RSAPublicKey recipientPubKey) {
         this.issuer = issuer;
         this.subject = subject;
         this.groups = groups;
+        this.recipientPubKey = recipientPubKey;
         timestamp = Instant.now(); // Instant provides UTC time to prevent timezone shenanigans
     }
     
@@ -38,6 +37,8 @@ public class Token implements java.io.Serializable, UserToken{
     }
 
     public Instant getTimestamp() { return timestamp; }
+
+    public RSAPublicKey getRecipientPubKey() { return recipientPubKey; }
 
 
 }
