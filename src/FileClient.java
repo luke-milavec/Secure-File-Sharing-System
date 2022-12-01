@@ -7,9 +7,12 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+
+import javax.crypto.SecretKey;
 
 public class FileClient extends Client implements FileClientInterface {
     
@@ -231,9 +234,12 @@ public class FileClient extends Client implements FileClientInterface {
                 output.writeObject(cs.encryptEnvelope(env, Kab));
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+                ArrayList<SecretKey> keyring =cs.readGroupKey((String) env.getObjContents().get(0));
+                int index = (int) env.getObjContents().get(1);
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
                 while (env.getMessage().compareTo("CHUNK")==0) {
-                    fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
+                    fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, (Integer)env.getObjContents().get(1));
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
                     output.writeObject(cs.encryptEnvelope(env, Kab));
@@ -337,7 +343,7 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.printf("Upload failed: %s\n", env.getMessage());
                 return false;
             }
-
+            ArrayList<SecretKey> keyring = cs.readGroupKey(group);
             do {
                 byte[] buf = new byte[4096];
                 if (env.getMessage().compareTo("READY")!=0) {
@@ -352,6 +358,7 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.println("Read error");
                     return false;
                 }
+                buf = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded()).enc;
 
                 message.addObject(buf);
                 message.addObject(Integer.valueOf(n));
@@ -366,6 +373,8 @@ public class FileClient extends Client implements FileClientInterface {
             if(env.getMessage().compareTo("READY")==0) {
 
                 message = new Envelope("EOF");
+                message.addObject(keyring.size()-1);
+
                 output.writeObject(cs.encryptEnvelope(message, Kab));
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);

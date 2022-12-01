@@ -132,7 +132,7 @@ public class FileThread extends Thread {
 
                                     if(e.getMessage().compareTo("EOF")==0) {
                                         System.out.printf("Transfer successful file %s\n", remotePath);
-                                        FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
+                                        FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath, (int) e.getObjContents().get(0));
                                         response = new Envelope("OK"); //Success
                                     } else {
                                         System.out.printf("Error reading file %s from client\n", remotePath);
@@ -178,7 +178,10 @@ public class FileThread extends Thread {
 
                                 } else {
                                     FileInputStream fis = new FileInputStream(f);
-
+                                    e = new Envelope("GROUP KEY");
+                                    e.addObject(sf.getGroup());
+                                    e.addObject(sf.getKey());
+                                    output.writeObject(cs.encryptEnvelope(e, Kab));
                                     do {
                                         byte[] buf = new byte[4096];
                                         if (e.getMessage().compareTo("DOWNLOADF")!=0) {

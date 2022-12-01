@@ -4,6 +4,8 @@ import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.crypto.SecretKey;
+
 
 public class GroupClient extends Client implements GroupClientInterface {
 
@@ -36,10 +38,15 @@ public class GroupClient extends Client implements GroupClientInterface {
                 
                 ArrayList<Object> temp = null;
                 temp = response.getObjContents();
-
-                if(temp.size() == 1) {
+                ArrayList<String> groups = (ArrayList<String>) temp.get(1);
+                if (groups.size() == temp.size()-2){
+                    for(int i = 2; i<temp.size();i++){
+                        cs.writeGroupKey(groups.get(i-2), (ArrayList<SecretKey>) temp.get(i));
+                    }
                     return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab) ;
                 }
+                
+                
             }
 
             return null;

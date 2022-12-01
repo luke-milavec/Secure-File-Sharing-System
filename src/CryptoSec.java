@@ -556,4 +556,69 @@ public class CryptoSec {
         return null;
     }
 
+    public ArrayList<SecretKey> readGroupKey(String groupname) {
+        try {
+            PemReader pemReader = new PemReader(new FileReader(groupname + "_keyring" + ".txt"));
+            ArrayList<SecretKey> keyring = new ArrayList<SecretKey>();
+            while(pemReader.ready()){
+                byte[] keyBytes = pemReader.readPemObject().getContent();
+                SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "AES");
+                keyring.add(secretKeySpec);
+            }
+            return keyring;
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Error finding RSA");
+        } catch (FileNotFoundException e) {
+            System.out.println("Could not find " + groupname + "_keyring" + ".txt");
+        } catch (IOException e) {
+            System.out.println("Error reading in public key");
+        } catch (InvalidKeySpecException e) {
+            System.out.println("The public key encoding was improperly configured so turning it back into a" +
+                    " RSAPublicKey key failed");
+        }
+        return null;
+    }
+
+    public boolean writeGroupKey(String groupname, ArrayList<SecretKey> keyring) {
+        try {
+            String fileName = groupname+"_keyring" + ".txt";
+            PemWriter pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(fileName)));
+            for(int i = 0; i < keyring.size(); i++){
+                pemWriter.writeObject(new PemObject(groupname+" "+i, keyring.get(i).getEncoded()));
+            }
+            pemWriter.close();
+
+            return true;
+        } catch (IOException e) {
+            System.out.println("Error writing key to file.");
+        }
+        return false;
+    }
+
+    public SecretKey generateGroupKey() throws NoSuchAlgorithmException{
+        KeyGenerator kg = KeyGenerator.getInstance("AES");
+        kg.init(256);
+        return kg.generateKey();
+    }
+
+    public byte[] decryptByteArr(byte[] msg,  byte[] k){
+        try {
+            SecretKey ke = getKe(k);
+//            System.out.println("ke encrypt");
+//            System.out.println(byteArrToHexStr(ke.getEncoded()));
+
+            Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
+            byte[] ivBytes = genIV(k);
+            if (ivBytes != null) {
+                IvParameterSpec iv = new IvParameterSpec(ivBytes);
+                c.init(Cipher.DECRYPT_MODE, ke, iv);
+                byte[] enc = c.doFinal(msg);
+                return enc;
+            }
+        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
+                 BadPaddingException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }
