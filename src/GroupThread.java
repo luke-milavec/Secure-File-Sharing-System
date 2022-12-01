@@ -421,9 +421,9 @@ public class GroupThread extends Thread {
     }
 
     //Method to delete a user
-    private boolean deleteUser(String username, UserToken yourToken) {
+    private boolean deleteUser(String username, UserToken yourToken){
         String requester = yourToken.getSubject();
-
+        CryptoSec cs = new CryptoSec();
         //Does requester exist?
         if(my_gs.userList.checkUser(requester)) {
             ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
@@ -446,6 +446,12 @@ public class GroupThread extends Thread {
                     //If user is the owner, removeMember will automatically delete group!
                     for(int index = 0; index < deleteFromGroups.size(); index++) {
                         my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
+                        
+                        if(new File(deleteFromGroups.get(index) + "_keyring" + ".txt").exists()){
+                            ArrayList<SecretKey> keyring = cs.readGroupKey(deleteFromGroups.get(index));
+                            keyring.add(cs.generateGroupKey());
+                            cs.writeGroupKey(deleteFromGroups.get(index), keyring);
+                        }
                     }
 
                     //If groups are owned, they must be deleted

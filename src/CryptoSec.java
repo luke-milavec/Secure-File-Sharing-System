@@ -141,7 +141,7 @@ public class CryptoSec {
     public KeyPair genECDHKeyPair() {
        try {
            ECGenParameterSpec ecAlgoSpec = new ECGenParameterSpec("secp256r1");
-           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("ECDH");
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
            keyGen.initialize(ecAlgoSpec);
            return keyGen.generateKeyPair();
        } catch (NoSuchAlgorithmException e) {
@@ -590,10 +590,16 @@ public class CryptoSec {
         return false;
     }
 
-    public SecretKey generateGroupKey() throws NoSuchAlgorithmException{
-        KeyGenerator kg = KeyGenerator.getInstance("AES");
-        kg.init(256);
-        return kg.generateKey();
+    public SecretKey generateGroupKey(){
+        try{
+            KeyGenerator kg = KeyGenerator.getInstance("AES");
+            kg.init(256);
+            return kg.generateKey();
+        } catch (NoSuchAlgorithmException e){
+            e.printStackTrace();
+            return null;
+        }
+        
     }
 
     public byte[] decryptByteArr(byte[] msg,  byte[] k){
