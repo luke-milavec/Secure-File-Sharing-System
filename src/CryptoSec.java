@@ -566,15 +566,10 @@ public class CryptoSec {
                 keyring.add(secretKeySpec);
             }
             return keyring;
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("Error finding RSA");
         } catch (FileNotFoundException e) {
             System.out.println("Could not find " + groupname + "_keyring" + ".txt");
         } catch (IOException e) {
             System.out.println("Error reading in public key");
-        } catch (InvalidKeySpecException e) {
-            System.out.println("The public key encoding was improperly configured so turning it back into a" +
-                    " RSAPublicKey key failed");
         }
         return null;
     }

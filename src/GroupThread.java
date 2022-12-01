@@ -338,9 +338,12 @@ public class GroupThread extends Thread {
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
                                                 boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
 
-                                                ArrayList<SecretKey> keyring = cs.readGroupKey(groupname);
-                                                keyring.add(cs.generateGroupKey());
-                                                cs.writeGroupKey(groupname, keyring);
+                                                if(new File(groupname + "_keyring" + ".txt").exists()){
+                                                    ArrayList<SecretKey> keyring = cs.readGroupKey(groupname);
+                                                    keyring.add(cs.generateGroupKey());
+                                                    cs.writeGroupKey(groupname, keyring);
+                                                }
+                                                
 
                                                 if (!tokenTimeValid(yourToken)) {
                                                     response = new Envelope("FAIL-EXPIREDTOKEN");
