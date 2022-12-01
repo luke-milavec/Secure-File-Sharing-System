@@ -22,6 +22,7 @@ public class FileThread extends Thread {
     private final Socket socket;
     String fsName;
     CryptoSec cs;
+    private int msgSequence = 0;
 
     private byte[] Kab;
 
@@ -48,11 +49,20 @@ public class FileThread extends Thread {
             } else {
                 do {
                     Message msg = (Message) input.readObject();
+                    msgSequence++;
                     Envelope e = cs.decryptEnvelopeMessage(msg, Kab);
                     System.out.println("Request received: " + e.getMessage());
 
                     // Handler to list files that this user is allowed to see
                     if(e.getMessage().equals("LFILES")) {
+                        if((int)e.getObjContents().get(1) != msgSequence) {
+                            System.out.println("Sequence out of order: ");
+                            System.out.println("group thread seq = " + msgSequence);
+                            System.out.println("Group client seq fetched = " + e.getObjContents().get(1));
+                            // Shut down connection
+                        } else {
+                            System.out.println("Sequences match!");
+                        }
                         if(e.getObjContents().size() < 1) {  // no token sent
                             response = new Envelope("FAIL-BADCONTENTS");
                         } else if (e.getObjContents().get(0) == null){ // if the token is null
@@ -74,6 +84,8 @@ public class FileThread extends Thread {
                                     response = new Envelope("OK");
                                     response.addObject(fileRetList);
                                 } else {
+                                    // Reminding user (on client side) that 
+                                    // they need to grab a token from the file server first
                                     response = new Envelope("InvalidTokenRecipient");
                                     response.addObject(null);
                                 }
@@ -84,6 +96,14 @@ public class FileThread extends Thread {
                         output.writeObject(cs.encryptEnvelope(response, Kab));
                     }
                     if(e.getMessage().equals("UPLOADF")) {
+                        if((int)e.getObjContents().get(3) != msgSequence) {
+                            System.out.println("Sequence out of order: ");
+                            System.out.println("group thread seq = " + msgSequence);
+                            System.out.println("Group client seq fetched = " + e.getObjContents().get(3));
+                            // Shut down connection
+                        } else {
+                            System.out.println("Sequences match!");
+                        }
 
                         if(e.getObjContents().size() < 3) {
                             response = new Envelope("FAIL-BADCONTENTS");
@@ -145,6 +165,14 @@ public class FileThread extends Thread {
 
                         output.writeObject(cs.encryptEnvelope(response, Kab));
                     } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
+                        if((int)e.getObjContents().get(2) != msgSequence) {
+                            System.out.println("Sequence out of order: ");
+                            System.out.println("group thread seq = " + msgSequence);
+                            System.out.println("Group client seq fetched = " + e.getObjContents().get(2));
+                            // Shut down connection
+                        } else {
+                            System.out.println("Sequences match!");
+                        }
 
                         String remotePath = (String)e.getObjContents().get(0);
                         //UserToken t = cs.decryptTokenMessage((Message) e.getObjContents().get(1), Kab, gsPubKey);
@@ -235,6 +263,14 @@ public class FileThread extends Thread {
                             }
                         }
                     } else if (e.getMessage().compareTo("DELETEF")==0) {
+                        if((int)e.getObjContents().get(2) != msgSequence) {
+                            System.out.println("Sequence out of order: ");
+                            System.out.println("group thread seq = " + msgSequence);
+                            System.out.println("Group client seq fetched = " + e.getObjContents().get(2));
+                            // Shut down connection
+                        } else {
+                            System.out.println("Sequences match!");
+                        }
 
                         String remotePath = (String)e.getObjContents().get(0);
                         UserToken t = cs.decryptSignedToken( (SignedToken) e.getObjContents().get(1),gsPubKey);

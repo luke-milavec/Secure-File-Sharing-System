@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class FileClient extends Client implements FileClientInterface {
+    int sequence = 0;
     
     @Override
     public boolean connect(String server, int port, String username) {
@@ -191,6 +192,7 @@ public class FileClient extends Client implements FileClientInterface {
         Envelope env = new Envelope("DELETEF"); //Success
         env.addObject(remotePath);
         env.addObject(token);
+        env.addObject(++sequence);
         try {
             output.writeObject(cs.encryptEnvelope(env, Kab));
             env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -201,6 +203,7 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.println("Token Expired. Please re-acquire token first.");
             }  else if (env.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+                System.out.println("Try fetching a token from the file server first.")
             } else {
                 System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
                 return false;
@@ -228,6 +231,7 @@ public class FileClient extends Client implements FileClientInterface {
                 env.addObject(sourceFile);
 //                env.addObject(cs.encryptToken(token, Kab));
                 env.addObject(token);
+                env.addObject(++sequence);
                 output.writeObject(cs.encryptEnvelope(env, Kab));
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -236,6 +240,7 @@ public class FileClient extends Client implements FileClientInterface {
                     fos.write((byte[])env.getObjContents().get(0), 0, (Integer)env.getObjContents().get(1));
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
+                    env.addObject(++sequence);
                     output.writeObject(cs.encryptEnvelope(env, Kab));
                     env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 }
@@ -282,6 +287,7 @@ public class FileClient extends Client implements FileClientInterface {
             message = new Envelope("LFILES");
 //            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
+            message.addObject(++sequence);
             output.writeObject(cs.encryptEnvelope(message, Kab));
 
             e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
@@ -293,6 +299,7 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.println("Token Expired. Please re-acquire token first.");
             }  else if (e.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
+                System.out.println("Try fetching a token from the file server first.")
             }
 
             return null;
@@ -322,6 +329,7 @@ public class FileClient extends Client implements FileClientInterface {
             message.addObject(group);
 //            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
+            message.addObject(++sequence);
             output.writeObject(cs.encryptEnvelope(message, Kab));
 
             FileInputStream fis = new FileInputStream(sourceFile);

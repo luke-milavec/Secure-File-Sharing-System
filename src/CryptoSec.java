@@ -231,7 +231,7 @@ public class CryptoSec {
      * verifies the HMAC, decrypts the contents, deserializes contents
      * back into an envelope and returns it.
      * Returns null if HMAC verification fails
-     * @param msg  encrypted Message containing encrypted envelope & HMAC
+     * @param msg  encrypted Message containing encrypted envelope, HMAC, and sequence number
      * @param Kab shared secret
      * @return Envelope
      **/
@@ -255,38 +255,21 @@ public class CryptoSec {
      * a HMAC of the envelope
      * @param env Envelope to be encrypted
      * @param Kab shared secret used to derive ki and ke
-     * @param seq sequence number to maintain order of envelopes
      * @return Message (containing enc and hmac)
      **/
-    public Message encryptEnvelope(Envelope env, byte[] Kab, int seq) {
+    public Message encryptEnvelope(Envelope env, byte[] Kab) {
         byte[] serializedEnv = serializeObject(env);
-        // Convert seq to byte array
-        BigInteger bigInt = BigInteger.valueOf(seq);
-        byte[] seqByteArr = bigInt.toByteArray();
-        // Concatenate byte arrays then encrypt as one
-        byte[] seqEnv = new byte[serializedEnv.length + seqByteArr.length];
-        System.arraycopy(serializedEnv, 0, seqEnv, 0, serializedEnv.length);
-        System.arraycopy(seqByteArr, 0, seqEnv, serializedEnv.length, seqByteArr.length);
-        
-        if (seqEnv != null) {
-            return encryptByteArr(seqEnv, Kab);
+        // // Convert seq to byte array
+        // BigInteger bigInt = BigInteger.valueOf(seq);
+        // byte[] seqByteArr = bigInt.toByteArray();
+        // // Concatenate byte arrays then encrypt as one
+        // byte[] seqEnv = new byte[serializedEnv.length + seqByteArr.length];
+        // System.arraycopy(serializedEnv, 0, seqEnv, 0, serializedEnv.length);
+        // System.arraycopy(seqByteArr, 0, seqEnv, serializedEnv.length, seqByteArr.length);
+        if (serializedEnv != null) {
+            return encryptByteArr(serializedEnv, Kab);
         } else {
             System.out.println("Error serializing");
-        }
-        return null;
-    }
-
-        public byte[] genKabHMAC(byte[] Kab, String name) {
-        try {
-            Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            sha256_HMAC.init(getKi(Kab));
-            byte[] nameBytes = name.getBytes();
-            byte[] toHash = new byte[Kab.length + nameBytes.length];
-            System.arraycopy(Kab, 0, toHash, 0, Kab.length);
-            System.arraycopy(nameBytes, 0, toHash, Kab.length, nameBytes.length);
-            return sha256_HMAC.doFinal(toHash);
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            e.printStackTrace();
         }
         return null;
     }

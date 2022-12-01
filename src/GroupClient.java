@@ -8,6 +8,7 @@ import java.util.List;
 public class GroupClient extends Client implements GroupClientInterface {
 
     CryptoSec cs;
+    int sequence = 0;
 
     public GroupClient() {
         cs = new CryptoSec();
@@ -17,13 +18,14 @@ public class GroupClient extends Client implements GroupClientInterface {
         try {
             UserToken token = null;
             Envelope message = null, response = null;
+            
 
             //Tell the server to return a token.
             message = new Envelope("GET");
             message.addObject(username); // Add user name string
             message.addObject(recipientPubKey); // Add the intended recipient's public key
+            message.addObject(++sequence); // Add sequence number to envelope
             Message encryptedMsg = cs.encryptEnvelope(message, Kab);
-
             output.writeObject(encryptedMsg);
 
             //Get the response from the server
@@ -58,6 +60,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CUSER");
             message.addObject(username); //Add username
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab);
             output.writeObject(encryptedMessage);
 
@@ -84,6 +87,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DUSER");
             message.addObject(username); //Add username
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -110,6 +114,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -136,8 +141,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
+            
 
             response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
@@ -163,6 +170,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -195,6 +203,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
@@ -222,6 +231,7 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token);
+            message.addObject(++sequence);
             Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
             output.writeObject(encryptedMessage);
 
