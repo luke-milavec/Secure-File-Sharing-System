@@ -123,7 +123,7 @@ public class FileThread extends Thread {
                                     e = cs.decryptEnvelopeMessage(msg, Kab);
                                     int offset = 0;
                                     while (e.getMessage().compareTo("CHUNK")==0) {
-                                        fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
+                                        fos.write((byte[])e.getObjContents().get(0), 0, 4112);
                                         if ((Integer)e.getObjContents().get(1) != 4096) offset = (Integer)e.getObjContents().get(1);
                                         response = new Envelope("READY"); //Success
                                         output.writeObject(cs.encryptEnvelope(response, Kab));
@@ -187,7 +187,7 @@ public class FileThread extends Thread {
                                     msg = (Message) input.readObject();
                                     e = cs.decryptEnvelopeMessage(msg, Kab);
                                     do {
-                                        byte[] buf = new byte[4096];
+                                        byte[] buf = new byte[4112];
                                         if (e.getMessage().compareTo("DOWNLOADF")!=0) {
                                             System.out.printf("Server error: %s\n", e.getMessage());
                                             break;

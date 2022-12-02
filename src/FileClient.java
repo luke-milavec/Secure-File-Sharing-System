@@ -254,7 +254,7 @@ public class FileClient extends Client implements FileClientInterface {
                     b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
                     byte[] truncated = new byte[offset];
                     System.arraycopy(b, 0, truncated, 0, offset);
-                    fos.write(truncated, 0, (Integer)env.getObjContents().get(1));
+                    fos.write(truncated, 0, offset);
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
                     output.writeObject(cs.encryptEnvelope(env, Kab));
@@ -374,9 +374,9 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.println("Read error");
                     return false;
                 }
-                buf = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded()).enc;
+                byte[] b = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded()).enc;
 
-                message.addObject(buf);
+                message.addObject(b);
                 message.addObject(Integer.valueOf(n));
 
                 output.writeObject(cs.encryptEnvelope(message, Kab));
