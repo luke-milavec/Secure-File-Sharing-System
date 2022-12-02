@@ -260,6 +260,7 @@ public class FileClient extends Client implements FileClientInterface {
                     output.writeObject(cs.encryptEnvelope(env, Kab));
                     env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                 }
+                
                 fos.close();
 
                 if(env.getMessage().compareTo("EOF")==0) {
@@ -271,7 +272,7 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.println("Token Expired. Please re-acquire token first.");
                 } else {
                     System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
-                    file.delete();
+                    //file.delete();
                     return false;
                 }
             }
