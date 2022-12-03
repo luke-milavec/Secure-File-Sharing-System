@@ -121,9 +121,10 @@ public class FileThread extends Thread {
 
                                     msg = (Message) input.readObject();
                                     e = cs.decryptEnvelopeMessage(msg, Kab);
-
+                                    int offset = 0;
                                     while (e.getMessage().compareTo("CHUNK")==0) {
-                                        fos.write((byte[])e.getObjContents().get(0), 0, (Integer)e.getObjContents().get(1));
+                                        fos.write((byte[])e.getObjContents().get(0), 0, 4112);
+                                        if ((Integer)e.getObjContents().get(1) != 4096) offset = (Integer)e.getObjContents().get(1);
                                         response = new Envelope("READY"); //Success
                                         output.writeObject(cs.encryptEnvelope(response, Kab));
                                         msg = (Message) input.readObject();
@@ -132,7 +133,7 @@ public class FileThread extends Thread {
 
                                     if(e.getMessage().compareTo("EOF")==0) {
                                         System.out.printf("Transfer successful file %s\n", remotePath);
-                                        FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath);
+                                        FileServer.fileList.addFile(yourToken.getSubject(), group, remotePath, (int) e.getObjContents().get(0), offset);
                                         response = new Envelope("OK"); //Success
                                     } else {
                                         System.out.printf("Error reading file %s from client\n", remotePath);
@@ -178,9 +179,15 @@ public class FileThread extends Thread {
 
                                 } else {
                                     FileInputStream fis = new FileInputStream(f);
-
+                                    e = new Envelope("GROUP KEY");
+                                    e.addObject(sf.getGroup());
+                                    e.addObject(sf.getKey());
+                                    e.addObject(sf.getOffset());
+                                    output.writeObject(cs.encryptEnvelope(e, Kab));
+                                    msg = (Message) input.readObject();
+                                    e = cs.decryptEnvelopeMessage(msg, Kab);
                                     do {
-                                        byte[] buf = new byte[4096];
+                                        byte[] buf = new byte[4112];
                                         if (e.getMessage().compareTo("DOWNLOADF")!=0) {
                                             System.out.printf("Server error: %s\n", e.getMessage());
                                             break;
@@ -193,7 +200,7 @@ public class FileThread extends Thread {
                                             System.out.println("Read error");
 
                                         }
-
+                                        if(!(fis.available()>0)) e = new Envelope("CHUNKL");
                                         e.addObject(buf);
                                         e.addObject(Integer.valueOf(n));
 

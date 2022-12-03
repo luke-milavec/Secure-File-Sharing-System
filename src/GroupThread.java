@@ -14,6 +14,8 @@ import java.security.*;
 import java.io.File;
 import java.util.Arrays;
 
+import javax.crypto.SecretKey;
+
 
 public class GroupThread extends Thread {
     private final Socket socket;
@@ -168,6 +170,19 @@ public class GroupThread extends Thread {
                                     //Respond to the client. On error, the client will receive a null token
                                     response = new Envelope("OK");
                                     response.addObject(enTok);
+                                    ArrayList<String> groups = my_gs.userList.getUserGroups(username);
+                                    response.addObject(groups);
+                                    for(String g : groups){
+                                        if(new File(g+"_keyring.txt").exists()){
+                                            response.addObject(cs.readGroupKey(g));
+                                        }else{
+                                            SecretKey gkey = cs.generateGroupKey();
+                                            ArrayList<SecretKey> keyring = new ArrayList<SecretKey>();
+                                            keyring.add(gkey);
+                                            cs.writeGroupKey(g, keyring);
+                                            response.addObject(keyring);
+                                        }
+                                    }
                                     output.writeObject(cs.encryptEnvelope(response, Kab));
                                 }
                             } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
@@ -323,6 +338,13 @@ public class GroupThread extends Thread {
                                                 UserToken yourToken = cs.decryptSignedToken( (SignedToken) message.getObjContents().get(2),gsPubKey);
                                                 boolean validTokRecipient = yourToken.getRecipientPubKey().equals(gsPubKey);
 
+                                                if(new File(groupname + "_keyring" + ".txt").exists()){
+                                                    ArrayList<SecretKey> keyring = cs.readGroupKey(groupname);
+                                                    keyring.add(cs.generateGroupKey());
+                                                    cs.writeGroupKey(groupname, keyring);
+                                                }
+                                                
+
                                                 if (!tokenTimeValid(yourToken)) {
                                                     response = new Envelope("FAIL-EXPIREDTOKEN");
                                                 } else if (!validTokRecipient) {
@@ -399,9 +421,9 @@ public class GroupThread extends Thread {
     }
 
     //Method to delete a user
-    private boolean deleteUser(String username, UserToken yourToken) {
+    private boolean deleteUser(String username, UserToken yourToken){
         String requester = yourToken.getSubject();
-
+        CryptoSec cs = new CryptoSec();
         //Does requester exist?
         if(my_gs.userList.checkUser(requester)) {
             ArrayList<String> temp = my_gs.userList.getUserGroups(requester);
@@ -424,6 +446,12 @@ public class GroupThread extends Thread {
                     //If user is the owner, removeMember will automatically delete group!
                     for(int index = 0; index < deleteFromGroups.size(); index++) {
                         my_gs.groupList.removeMember(username, deleteFromGroups.get(index));
+                        
+                        if(new File(deleteFromGroups.get(index) + "_keyring" + ".txt").exists()){
+                            ArrayList<SecretKey> keyring = cs.readGroupKey(deleteFromGroups.get(index));
+                            keyring.add(cs.generateGroupKey());
+                            cs.writeGroupKey(deleteFromGroups.get(index), keyring);
+                        }
                     }
 
                     //If groups are owned, they must be deleted
