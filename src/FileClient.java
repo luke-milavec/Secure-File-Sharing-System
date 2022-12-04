@@ -234,52 +234,58 @@ public class FileClient extends Client implements FileClientInterface {
                 output.writeObject(cs.encryptEnvelope(env, Kab));
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                ArrayList<SecretKey> keyring =cs.readGroupKey((String) env.getObjContents().get(0));
-                int index = (int) env.getObjContents().get(1);
-                int offset = (int) env.getObjContents().get(2);
-                env = new Envelope("DOWNLOADF");
-                output.writeObject(cs.encryptEnvelope(env, Kab));
-
-                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-
-                while (env.getMessage().compareTo("CHUNK")==0) {
-                    fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
-                    System.out.printf(".");
-                    env = new Envelope("DOWNLOADF"); //Success
+                if(env.getObjContents().size() != 0) {
+                    ArrayList<SecretKey> keyring =cs.readGroupKey((String) env.getObjContents().get(0));
+                    int index = (int) env.getObjContents().get(1);
+                    int offset = (int) env.getObjContents().get(2);
+                    env = new Envelope("DOWNLOADF");
                     output.writeObject(cs.encryptEnvelope(env, Kab));
+
                     env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                }
-                if(env.getMessage().compareTo("CHUNKL")==0){
-                    byte[] b = (byte[]) env.getObjContents().get(0);
-                    b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
-                    if(offset != 0){
-                        byte[] truncated = new byte[offset];
-                        System.arraycopy(b, 0, truncated, 0, offset);
-                        fos.write(truncated, 0, offset);
-                    } else {
-                        fos.write(b, 0, (Integer)env.getObjContents().get(1));
+
+                    while (env.getMessage().compareTo("CHUNK")==0) {
+                        fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
+                        System.out.printf(".");
+                        env = new Envelope("DOWNLOADF"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab));
+                        env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+                    }
+                    if(env.getMessage().compareTo("CHUNKL")==0){
+                        byte[] b = (byte[]) env.getObjContents().get(0);
+                        b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
+                        if(offset != 0){
+                            byte[] truncated = new byte[offset];
+                            System.arraycopy(b, 0, truncated, 0, offset);
+                            fos.write(truncated, 0, offset);
+                        } else {
+                            fos.write(b, 0, (Integer)env.getObjContents().get(1));
+                        }
+
+                        System.out.printf(".");
+                        env = new Envelope("DOWNLOADF"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab));
+                        env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
                     }
 
-                    System.out.printf(".");
-                    env = new Envelope("DOWNLOADF"); //Success
-                    output.writeObject(cs.encryptEnvelope(env, Kab));
-                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                }
-                
-                fos.close();
-
-                if(env.getMessage().compareTo("EOF")==0) {
                     fos.close();
-                    System.out.printf("\nTransfer successful file %s\n", sourceFile);
-                    env = new Envelope("OK"); //Success
-                    output.writeObject(cs.encryptEnvelope(env, Kab));
-                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
-                    System.out.println("Token Expired. Please re-acquire token first.");
+
+                    if(env.getMessage().compareTo("EOF")==0) {
+                        fos.close();
+                        System.out.printf("\nTransfer successful file %s\n", sourceFile);
+                        env = new Envelope("OK"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab));
+                    } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                        System.out.println("Token Expired. Please re-acquire token first.");
+                    } else {
+                        System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
+                        //file.delete();
+                        return false;
+                    }
                 } else {
-                    System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
-                    //file.delete();
+                    System.out.printf("Could not download file %s\n", sourceFile);
                     return false;
                 }
+
             }
 
             else {
