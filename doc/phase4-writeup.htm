@@ -121,7 +121,8 @@
         The group server can be trusted for key generation and distribution because the group server stores the canonical list of group members. 
         Additionally, all users must mutually authenticate with the group server before accessing a file server, allowing for the exchange of the latest group keys. 
         Group keys need to be updated anytime someone is removed from the group so that specific user may no longer decrypt files updated after their removal from the group. 
-        A new group member will obtain all previous group keys so that they can decrypt files that were encrypted using an old key.
+        A new group member will obtain all previous group keys so that they can decrypt files that were encrypted using an old key. ShareFiles will also now store the index of the key used to encrypt and the size of the last chunk. 
+        This is required because the client needs to know which key on the keyring to use for decryption and truncate the final chunk to the size of the original file. 
       </p>
       <p>>Under this approach, a deleted user can still access files that were updated before they were deleted or removed from the group. This is acceptable because they could have downloaded, decrypted, and stored the files in plaintext locally at any point before being removed from the group. Since the tokens expire in 1 hour (5 minutes for the demo), they won’t have access after that period regardless. 
       </p>
