@@ -243,7 +243,7 @@ public class FileClient extends Client implements FileClientInterface {
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
 
                 while (env.getMessage().compareTo("CHUNK")==0) {
-                    fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, (Integer)env.getObjContents().get(1));
+                    fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
                     output.writeObject(cs.encryptEnvelope(env, Kab));
@@ -252,9 +252,14 @@ public class FileClient extends Client implements FileClientInterface {
                 if(env.getMessage().compareTo("CHUNKL")==0){
                     byte[] b = (byte[]) env.getObjContents().get(0);
                     b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
-                    byte[] truncated = new byte[offset];
-                    System.arraycopy(b, 0, truncated, 0, offset);
-                    fos.write(truncated, 0, offset);
+                    if(offset != 0){
+                        byte[] truncated = new byte[offset];
+                        System.arraycopy(b, 0, truncated, 0, offset);
+                        fos.write(truncated, 0, offset);
+                    } else {
+                        fos.write(b, 0, (Integer)env.getObjContents().get(1));
+                    }
+
                     System.out.printf(".");
                     env = new Envelope("DOWNLOADF"); //Success
                     output.writeObject(cs.encryptEnvelope(env, Kab));
