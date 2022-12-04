@@ -196,7 +196,7 @@ public class FileThread extends Thread {
                                         e = new Envelope("CHUNK");
                                         int n = fis.read(buf); //can throw an IOException
                                         if (n > 0) {
-                                            System.out.print(".");
+                                            System.out.printf(".");
                                         } else if (n < 0) {
                                             System.out.println("Read error");
 
@@ -222,7 +222,7 @@ public class FileThread extends Thread {
                                         msg = (Message) input.readObject();
                                         e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                         if(e.getMessage().compareTo("OK")==0) {
-                                            System.out.print("File data upload successful\n");
+                                            System.out.printf("File data upload successful\n");
                                         } else {
 
                                             System.out.printf("Upload failed: %s\n", e.getMessage());

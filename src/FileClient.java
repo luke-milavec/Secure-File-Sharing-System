@@ -243,7 +243,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                     while (env.getMessage().compareTo("CHUNK")==0) {
                         fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
-                        System.out.print(".");
+                        System.out.printf(".");
                         env = new Envelope("DOWNLOADF"); //Success
                         output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
                         env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
@@ -259,7 +259,7 @@ public class FileClient extends Client implements FileClientInterface {
                             fos.write(b, 0, (Integer)env.getObjContents().get(1));
                         }
 
-                        System.out.print(".");
+                        System.out.printf(".");
                         env = new Envelope("DOWNLOADF"); //Success
                         output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
                         env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
@@ -403,7 +403,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
                 if(env.getMessage().compareTo("OK")==0) {
-                    System.out.print("\nFile data upload successful\n");
+                    System.out.printf("\nFile data upload successful\n");
                 } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                     System.out.println("Token Expired. Please re-acquire token first.");
                 }
