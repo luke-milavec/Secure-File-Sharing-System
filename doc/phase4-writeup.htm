@@ -158,22 +158,13 @@
       all communications in transmission are still encrypted, tokens are still signed, and file servers are still authenticated.
     </p>
 
+    <p>The additions of teansmission sequencing, token's being unique to the server and keyrings used to encrypt files on the 
+      File Server are all independant solutions for each new threat. In conjunction, these new mechanisms provide a protocol that 
+      effectively protects against each threat while maintaining the same functionality of the previous phase. 
+      We initally had the intended recipient field in the token as the server name, not the public key of the server. 
+      This could cause issues as the server name is not unique and thus could be used on multiple servers of the same name. 
+      For the most part, the design process was quick in this phase with all group member easily finding solutions to the given threats. </p>
 
-
-    <p>Conclude with a paragraph or two discussing the interplay between your
-      proposed mechanisms, and commenting on the design process that your group
-      followed. Did you discuss other ideas that didn’t pan out before settling on the
-      above-documented approach? Did you end up designing a really interesting
-      protocol suite that addresses multiple threats at once? Use this space to show
-      off your hard work!</p>
-
-    <p>Finally, spend about one paragraph arguing that your modified protocols still
-      address the threats T1–T4 described in Phase 3 of the project.</p>
-
-    <p>If your group did any extra credit, please discuss that in this section, as
-      well.</p>
-
-    <p>Remove these instructions from your final submission.</p>
 
     <!-- END CHANGES HERE -->
   </section>
