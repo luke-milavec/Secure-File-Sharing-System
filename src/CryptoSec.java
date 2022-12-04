@@ -410,6 +410,7 @@ public class CryptoSec {
 //            System.out.println("kab encrypt");
 //            System.out.println(byteArrToHexStr(k));
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+            
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
             SecretKey ki = getKi(k);

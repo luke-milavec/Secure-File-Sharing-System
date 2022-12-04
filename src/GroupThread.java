@@ -90,7 +90,6 @@ public class GroupThread extends Thread {
                     }
                     // If false, this user did NOT sign the message contents
                     if(!verifySig.verify(UserECDHpubKeySigned)) {
-
                         res = new Envelope("FAIL");
                         res.addObject(null);
                         output.writeObject(res);
@@ -153,23 +152,19 @@ public class GroupThread extends Thread {
                         Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
                         if(message != null) {
                             System.out.println("Request received: " + message.getMessage());
-                            for(int i = 0; i < message.getObjContents().size(); i++) {
-                                
-                                System.out.println("envelope contents: " + message.getObjContents().get(i));
-                            }
-                            
                             Envelope response;
 
                             
                             if(message.getMessage().equals("GET")) { //Client wants a token
                                 // Check sequencing
                                 if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
 
                                 username = (String)message.getObjContents().get(0); //Get the username
@@ -190,12 +185,13 @@ public class GroupThread extends Thread {
                                 }
                             } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
                                 if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -221,12 +217,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("DUSER")) { // Client wants to delete a user
                                 if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -252,12 +249,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
                             if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -281,12 +279,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("DGROUP")) { // Client wants to delete a group
                                 if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -310,12 +309,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
                                 if((int)message.getObjContents().get(2) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(2));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 response = new Envelope("FAIL");
                                 if(message.getObjContents().size() < 2) {
@@ -345,12 +345,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
                                 if((int)message.getObjContents().get(3) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(3));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -378,12 +379,13 @@ public class GroupThread extends Thread {
                                 output.writeObject(cs.encryptEnvelope(response, Kab));
                             } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
                                 if((int)message.getObjContents().get(3) != msgSequence) {
-                                    System.out.println("Sequence out of order: ");
+                                    System.out.println("Incorrect Message Sequence: Possible Attack");
                                     System.out.println("group thread seq = " + msgSequence);
                                     System.out.println("Group client seq fetched = " + message.getObjContents().get(3));
                                     // Shut down connection
+                                    response = new Envelope("FAIL");
                                 } else {
-                                    System.out.println("Sequences match!");
+                                    System.out.println("Correct Message Sequence");
                                 }
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");

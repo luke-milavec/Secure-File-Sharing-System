@@ -43,7 +43,7 @@ public class GroupClient extends Client implements GroupClientInterface {
                     return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab) ;
                 }
             }
-
+            System.out.println("Error when fetching token");
             return null;
         } catch(Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -69,6 +69,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when creating user");
+                return false;
             }
             // If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -96,6 +99,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when deleting user");
+                return false;
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -124,6 +130,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when creating group");
+                return false;
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -152,6 +161,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when deleting group");
+                return false;
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -183,6 +195,8 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            }else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when listing members of group");
             }
 
             return null;
@@ -213,6 +227,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when adding user to group");
+                return false;
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");
@@ -240,6 +257,9 @@ public class GroupClient extends Client implements GroupClientInterface {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                 System.out.println("Failed: Expired Token.");
+            } else if(response.getMessage().equals("FAIL")) {
+                System.out.println("Error when deleting user from group");
+                return false;
             }
             //If server indicates success, return true
             return response.getMessage().equals("OK");

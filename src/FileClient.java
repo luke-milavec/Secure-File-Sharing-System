@@ -203,7 +203,6 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.println("Token Expired. Please re-acquire token first.");
             }  else if (env.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
-                System.out.println("Try fetching a token from the file server first.")
             } else {
                 System.out.printf("Error deleting file %s (%s)\n", filename, env.getMessage());
                 return false;
@@ -229,7 +228,6 @@ public class FileClient extends Client implements FileClientInterface {
 
                 Envelope env = new Envelope("DOWNLOADF"); //Success
                 env.addObject(sourceFile);
-//                env.addObject(cs.encryptToken(token, Kab));
                 env.addObject(token);
                 env.addObject(++sequence);
                 output.writeObject(cs.encryptEnvelope(env, Kab));
@@ -264,6 +262,7 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.printf("Error couldn't create file %s\n", destFile);
                 return false;
             }
+        
 
 
         } catch (IOException e1) {
@@ -285,7 +284,6 @@ public class FileClient extends Client implements FileClientInterface {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
             message.addObject(++sequence);
             output.writeObject(cs.encryptEnvelope(message, Kab));
@@ -299,9 +297,7 @@ public class FileClient extends Client implements FileClientInterface {
                 System.out.println("Token Expired. Please re-acquire token first.");
             }  else if (e.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
-                System.out.println("Try fetching a token from the file server first.")
             }
-
             return null;
 
         } catch(Exception e) {
@@ -327,7 +323,6 @@ public class FileClient extends Client implements FileClientInterface {
             message = new Envelope("UPLOADF");
             message.addObject(destFile);
             message.addObject(group);
-//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
             message.addObject(++sequence);
             output.writeObject(cs.encryptEnvelope(message, Kab));

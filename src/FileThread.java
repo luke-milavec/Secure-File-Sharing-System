@@ -55,13 +55,18 @@ public class FileThread extends Thread {
 
                     // Handler to list files that this user is allowed to see
                     if(e.getMessage().equals("LFILES")) {
+                        // The following line accounts for when user has existed and communicated with 
+                        // other servers before this server existed.                        
+                        if(msgSequence == 1) msgSequence = (int)e.getObjContents().get(1);
+
                         if((int)e.getObjContents().get(1) != msgSequence) {
-                            System.out.println("Sequence out of order: ");
+                            System.out.println("Incorrect Message Sequence: Possible attack");
                             System.out.println("group thread seq = " + msgSequence);
                             System.out.println("Group client seq fetched = " + e.getObjContents().get(1));
                             // Shut down connection
+                            response = new Envelope("FAIL");
                         } else {
-                            System.out.println("Sequences match!");
+                            System.out.println("Correct Message Sequence");
                         }
                         if(e.getObjContents().size() < 1) {  // no token sent
                             response = new Envelope("FAIL-BADCONTENTS");
@@ -96,13 +101,17 @@ public class FileThread extends Thread {
                         output.writeObject(cs.encryptEnvelope(response, Kab));
                     }
                     if(e.getMessage().equals("UPLOADF")) {
+                        // The following line accounts for when user has existed and communicated with 
+                        // other servers before this server existed.                        
+                        if(msgSequence == 1) msgSequence = (int)e.getObjContents().get(3);
                         if((int)e.getObjContents().get(3) != msgSequence) {
-                            System.out.println("Sequence out of order: ");
+                            System.out.println("Incorrect Message Sequence: Possible attack");
                             System.out.println("group thread seq = " + msgSequence);
                             System.out.println("Group client seq fetched = " + e.getObjContents().get(3));
                             // Shut down connection
+                            response = new Envelope("FAIL");
                         } else {
-                            System.out.println("Sequences match!");
+                            System.out.println("Correct Message Sequence");
                         }
 
                         if(e.getObjContents().size() < 3) {
@@ -165,13 +174,17 @@ public class FileThread extends Thread {
 
                         output.writeObject(cs.encryptEnvelope(response, Kab));
                     } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
+                        // The following line accounts for when user has existed and communicated with 
+                        // other servers before this server existed.                        
+                        if(msgSequence == 1) msgSequence = (int)e.getObjContents().get(1);
                         if((int)e.getObjContents().get(2) != msgSequence) {
-                            System.out.println("Sequence out of order: ");
+                            System.out.println("Incorrect Message Sequence: Possible attack");
                             System.out.println("group thread seq = " + msgSequence);
                             System.out.println("Group client seq fetched = " + e.getObjContents().get(2));
                             // Shut down connection
+                            response = new Envelope("FAIL");
                         } else {
-                            System.out.println("Sequences match!");
+                            System.out.println("Correct Message Sequence");
                         }
 
                         String remotePath = (String)e.getObjContents().get(0);
@@ -263,13 +276,17 @@ public class FileThread extends Thread {
                             }
                         }
                     } else if (e.getMessage().compareTo("DELETEF")==0) {
+                        // The following line accounts for when user has existed and communicated with 
+                        // other servers before this server existed.                        
+                        if(msgSequence == 1) msgSequence = (int)e.getObjContents().get(2);
                         if((int)e.getObjContents().get(2) != msgSequence) {
-                            System.out.println("Sequence out of order: ");
+                            System.out.println("Incorrect Message Sequence: Possible attack");
                             System.out.println("group thread seq = " + msgSequence);
                             System.out.println("Group client seq fetched = " + e.getObjContents().get(2));
                             // Shut down connection
+                            response = new Envelope("FAIL");
                         } else {
-                            System.out.println("Sequences match!");
+                            System.out.println("Correct Message Sequence");
                         }
 
                         String remotePath = (String)e.getObjContents().get(0);
@@ -327,7 +344,6 @@ public class FileThread extends Thread {
 
     private boolean handshake(final ObjectInputStream input, final ObjectOutputStream output) {
         try {
-//            System.out.println(fsName);
             // Send over group server's Public Key as RSAPublicKey so that user can verify it
             RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
             Envelope resKey = new Envelope(fsName + "_pub_key");
@@ -377,7 +393,7 @@ public class FileThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
+                        //System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
                         // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
                         output.reset();
                         byte[] KabHMAC = cs.genKabHMAC(Kab, fsName);
