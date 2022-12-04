@@ -109,9 +109,19 @@
 
     <p>File servers can be created and maintained by any user thus a malicious user could, currently, freely access any files that are stored on the file server. For example, Bob creates file server alpha and Alice stores file f on alpha. Bob can now open f because it is stored unencrypted on his machine. 
 
-      <p>In order to ensure confidentiality in regards to any prying administrative eyes, files need to be encrypted with a shared key known only to the group. This group key will be generated and distributed by the group server during the acquisition of a token. The shared key will also be accompanied by an index. This index will be used to track the version of the shared secret. Anytime a new user is added to a group, they will receive all group key versions and store them. When a user is removed from a group the group server will increment the key version number and create a new 256 bit key. The encryption of files will be done by the user uploading it using the same standard symmetric algorithm in the previous phase (AES 256 in CBC with HMAC) using the most recent group key. The encrypted file will be stored on the file server along with the key version number. Upon download, group members will decrypt the file using the correct version key for the file. 
+      <p>In order to ensure confidentiality in regards to any prying administrative eyes, files need to be encrypted with a shared key known only to the group. 
+        This group key will be generated and distributed by the group server during the acquisition of a token but outside of the token since the user needs to access the keyring freely. The shared key will also be accompanied by an index. 
+        This index will be used to track the version of the shared secret. Anytime a new user is added to a group, they will receive all group key versions and store them. 
+        When a user is removed from a group the group server will increment the key version number and create a new 256 bit key. The encryption of files will be done by the 
+        user uploading it using the same standard symmetric algorithm in the previous phase (AES 256 in CBC with HMAC) using the most recent group key. 
+        The encrypted file will be stored on the file server along with the key version number. Upon download, group members will decrypt the file using the correct
+         version key for the file. 
       </p>
-      <p>This mechanism hides the contents of files from file server admin by encrypting the file with a key unknown to the file server before storage. The group server can be trusted for key generation and distribution because the group server stores the canonical list of group members. Additionally, all users must mutually authenticate with the group server before accessing a file server, allowing for the exchange of the latest group keys. Group keys need to be updated anytime someone is removed from the group so that specific user may no longer decrypt files updated after their removal from the group. A new group member will obtain all previous group keys so that they can decrypt files that were encrypted using an old key. 
+      <p>This mechanism hides the contents of files from file server admin by encrypting the file with a key unknown to the file server before storage. 
+        The group server can be trusted for key generation and distribution because the group server stores the canonical list of group members. 
+        Additionally, all users must mutually authenticate with the group server before accessing a file server, allowing for the exchange of the latest group keys. 
+        Group keys need to be updated anytime someone is removed from the group so that specific user may no longer decrypt files updated after their removal from the group. 
+        A new group member will obtain all previous group keys so that they can decrypt files that were encrypted using an old key.
       </p>
       <p>>Under this approach, a deleted user can still access files that were updated before they were deleted or removed from the group. This is acceptable because they could have downloaded, decrypted, and stored the files in plaintext locally at any point before being removed from the group. Since the tokens expire in 1 hour (5 minutes for the demo), they won’t have access after that period regardless. 
       </p>
