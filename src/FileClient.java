@@ -386,7 +386,7 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.println("Read error");
                     return false;
                 }
-                byte[] b = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded(), sequence).enc;
+                byte[] b = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded(), sequence, false).enc;
 
                 message.addObject(b);
                 message.addObject(Integer.valueOf(n));

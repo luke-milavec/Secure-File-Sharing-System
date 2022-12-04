@@ -237,7 +237,7 @@ public class CryptoSec {
      * @return Envelope
      **/
     public Envelope decryptEnvelopeMessage(Message msg, byte[] Kab, int seq) {
-        byte[] orgBytes = decryptString(msg, Kab, seq); // get decrypted envelope bytes
+        byte[] orgBytes = decryptString(msg, Kab, seq, true); // get decrypted envelope bytes
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
             try {
@@ -261,7 +261,7 @@ public class CryptoSec {
     public Message encryptEnvelope(Envelope env, byte[] Kab, int seqNum) {
         byte[] serializedEnv = serializeObject(env);
         if (serializedEnv != null) {
-            return encryptByteArr(serializedEnv, Kab, seqNum);
+            return encryptByteArr(serializedEnv, Kab, seqNum, true);
         } else {
             System.out.println("Error serializing");
         }
@@ -306,7 +306,7 @@ public class CryptoSec {
                     SignedToken tokenPackage = new SignedToken(tokenBytes, tokenSigned);
                     byte[] tokenPackageBytes = serializeObject(tokenPackage);
                     if (tokenPackageBytes != null) {
-                        return encryptByteArr(tokenPackageBytes, Kab, seq);
+                        return encryptByteArr(tokenPackageBytes, Kab, seq, false);
                     } else {
                         System.out.println("Could not serialize token while encrypting it.");
                     }
@@ -398,7 +398,8 @@ public class CryptoSec {
      * @return k shared secret Kab used to derive keys to encrypt
      *         and generate the HMAC
      * **/
-    public Message encryptByteArr(byte[] msg,  byte[] k, int seq){
+    public Message encryptByteArr(byte[] msg,  byte[] k, int seq, boolean seqHMAC){
+        System.out.println("encrypt crypto sec seq num: " + seq);
         try {
 //            System.out.println("kab encrypt");
 //            System.out.println(byteArrToHexStr(k));
@@ -416,12 +417,20 @@ public class CryptoSec {
             sha256_HMAC.init(ki);
 //            BigInteger bigInt = BigInteger.valueOf(seq);
 //            byte[] seqByteArr = bigInt.toByteArray();
-            byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
-            // Concatenate byte arrays then encrypt as one
-            byte[] seqEnv = new byte[msg.length + seqByteArr.length];
-            System.arraycopy(msg, 0, seqEnv, 0, msg.length);
-            System.arraycopy(seqByteArr, 0, seqEnv, msg.length, seqByteArr.length);
-            byte[] hmac =  sha256_HMAC.doFinal(seqEnv);
+            byte[] hmac;
+            if (seqHMAC) {
+                byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
+                // Concatenate byte arrays then encrypt as one
+                byte[] seqEnv = new byte[msg.length + seqByteArr.length];
+                System.arraycopy(msg, 0, seqEnv, 0, msg.length);
+                System.arraycopy(seqByteArr, 0, seqEnv, msg.length, seqByteArr.length);
+                hmac =  sha256_HMAC.doFinal(seqEnv);
+            } else {
+                hmac = sha256_HMAC.doFinal(msg);
+            }
+
+            System.out.println("encrypt hmac:");
+            System.out.println(byteArrToHexStr(hmac));
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
             if (ivBytes != null) {
@@ -451,7 +460,8 @@ public class CryptoSec {
         return null;
     }
 
-    public byte[] decryptString(Message m, byte[] k, int seq){
+    public byte[] decryptString(Message m, byte[] k, int seq, boolean seqHMAC){
+        System.out.println("decrypt crypto sec seq num: " + seq);
         try {
 //            System.out.println("kab decrypt");
 //            System.out.println(byteArrToHexStr(k));
@@ -469,19 +479,27 @@ public class CryptoSec {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(ki);
 
+
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k); // generate an iv based on Kab
             if (ivBytes != null) {
                 IvParameterSpec iv = new IvParameterSpec(ivBytes);
                 c.init(Cipher.DECRYPT_MODE,ke, iv);
                 byte[] s = c.doFinal(m.enc);
-                byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
-                // Concatenate byte arrays then encrypt as one
-                byte[] seqEnv = new byte[s.length + seqByteArr.length];
-                System.arraycopy(s, 0, seqEnv, 0, s.length);
-                System.arraycopy(seqByteArr, 0, seqEnv, s.length, seqByteArr.length);
-                byte[] hmac =  sha256_HMAC.doFinal(seqEnv);
 
+                byte[] hmac;
+                if (seqHMAC) {
+                    byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
+                    // Concatenate byte arrays then encrypt as one
+                    byte[] seqEnv = new byte[s.length + seqByteArr.length];
+                    System.arraycopy(s, 0, seqEnv, 0, s.length);
+                    System.arraycopy(seqByteArr, 0, seqEnv, s.length, seqByteArr.length);
+                    hmac =  sha256_HMAC.doFinal(seqEnv);
+                } else {
+                    hmac = sha256_HMAC.doFinal(s);
+                }
+                System.out.println("decrypt hmac:");
+                System.out.println(byteArrToHexStr(hmac));
 //                System.out.println("new hmac");
 //                System.out.println(byteArrToHexStr(hmac));
                 if (Arrays.equals(hmac, m.hmac)){
@@ -535,7 +553,7 @@ public class CryptoSec {
     }
 
     public SignedToken decryptMessageToSignedToken(Message msg, byte[] Kab, int seq) {
-        byte[] orgBytes = decryptString(msg, Kab, seq); // get decrypted token package bytes & verify HMAC
+        byte[] orgBytes = decryptString(msg, Kab, seq, false); // get decrypted token package bytes & verify HMAC
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
             try {
