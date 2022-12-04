@@ -11,7 +11,7 @@ Start the Group Server:
     command line argument.
 
 Start the File Server: 
-    In a terminal, type "java -c .:/afs/cs.pitt.edu/usr0/bill/public/bcprov-jdk18on-172.jar RunFileServer [(optional) port number]" 
+    In a terminal, type "java -cp .:/afs/cs.pitt.edu/usr0/bill/public/bcprov-jdk18on-172.jar RunFileServer [(optional) port number]" 
     - The file server will create a shared_files directory inside the working directory if one does not exist. 
     - The file server is now online. The file server will by default select (and print out) a random port, but a custom port can be passed as the first
     command line argument.
@@ -26,7 +26,7 @@ Reset the Group Server:
 
 
  Starting Client App:
-    1)  In a terminal, type "java ClientTerminalApp"
+    1)  In a terminal, type "java -cp .:/afs/cs.pitt.edu/usr0/bill/public/bcprov-jdk18on-172.jar ClientTerminalApp"
     2)  There will be a prompt for login, type whatever username you desire
             - Typing ADMIN makes you administrator and you will have admin privileges
     3)  All command options will be listed
@@ -37,7 +37,7 @@ Reset the Group Server:
         connect <-f or -g> <server> <port>                      Connect to a file or group server at the port specified.
         disconnect                                              Disconnect current connection to file and/or group server.
         group commands:                                         Must be connected to group server. Commands other than gettoken require valid token.
-            gettoken                                            Fetch a token for the user that is logged in.
+            gettoken <servername>                               Fetch a token for the user that is logged in for a given server.
             cgroup <groupname>                                  Create a group named <groupname>.
             cuser <username>                                    Create a user named <username>.
             dgroup <groupname>                                  Delete the group specified by <groupname>.
