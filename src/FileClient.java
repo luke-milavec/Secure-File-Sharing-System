@@ -276,7 +276,7 @@ public class FileClient extends Client implements FileClientInterface {
                         System.out.println("Token Expired. Please re-acquire token first.");
                     } else {
                         System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
-                        //file.delete();
+                        file.delete();
                         return false;
                     }
                 } else {
