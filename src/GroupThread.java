@@ -20,6 +20,7 @@ import javax.crypto.SecretKey;
 public class GroupThread extends Thread {
     private final Socket socket;
     private final GroupServer my_gs;
+    private int msgSequence = 0;
 
     private byte[] Kab;
 
@@ -150,7 +151,7 @@ public class GroupThread extends Thread {
                     do {
                         output.reset();
                         Message msg = (Message) input.readObject();
-                        Envelope message = cs.decryptEnvelopeMessage(msg, Kab);
+                        Envelope message = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                         if(message != null) {
                             System.out.println("Request received: " + message.getMessage());
                             Envelope response;
@@ -162,10 +163,10 @@ public class GroupThread extends Thread {
                                 if(username == null) {
                                     response = new Envelope("FAIL");
                                     response.addObject(null);
-                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                    output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                                 } else {
                                     UserToken yourToken = createToken(username, recipientPubKey); //Create a token
-                                    Message enTok = cs.encryptToken(yourToken, Kab);
+                                    Message enTok = cs.encryptToken(yourToken, Kab, msgSequence);
 
                                     //Respond to the client. On error, the client will receive a null token
                                     response = new Envelope("OK");
@@ -183,7 +184,7 @@ public class GroupThread extends Thread {
                                             response.addObject(keyring);
                                         }
                                     }
-                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                    output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                                 }
                             } else if(message.getMessage().equals("CUSER")) { //Client wants to create a user
                                 if(message.getObjContents().size() < 2) {
@@ -207,7 +208,7 @@ public class GroupThread extends Thread {
                                     }
                                 }
 
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("DUSER")) { // Client wants to delete a user
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -230,7 +231,7 @@ public class GroupThread extends Thread {
                                     }
                                 }
 
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("CGROUP")) { //Client wants to create a group
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -251,7 +252,7 @@ public class GroupThread extends Thread {
                                         }
                                     }
                                 }
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("DGROUP")) { // Client wants to delete a group
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -272,7 +273,7 @@ public class GroupThread extends Thread {
                                         }
                                     }
                                 }
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("LMEMBERS")) { //Client wants a list of members in a group
                                 response = new Envelope("FAIL");
                                 if(message.getObjContents().size() < 2) {
@@ -299,7 +300,7 @@ public class GroupThread extends Thread {
                                         }
                                     }
                                 }
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("AUSERTOGROUP")) { //Client wants to add user to a group
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -324,7 +325,7 @@ public class GroupThread extends Thread {
                                         }
                                     }
                                 }
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("RUSERFROMGROUP")) { //Client wants to remove user from a group
                                 if(message.getObjContents().size() < 2) {
                                     response = new Envelope("FAIL");
@@ -356,17 +357,17 @@ public class GroupThread extends Thread {
                                         }
                                     }
                                 }
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             } else if(message.getMessage().equals("DISCONNECT")) { //Client wants to disconnect
                                 socket.close(); //Close the socket
                                 proceed = false; //End this communication loop
                             } else {
                                 response = new Envelope("FAIL"); //Server does not understand client request
-                                output.writeObject(cs.encryptEnvelope(response, Kab));
+                                output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                             }
                         } else {
                             System.out.println("Failed since message from client was null after decryption");
-                            output.writeObject(cs.encryptEnvelope(new Envelope("FAIL"), Kab));
+                            output.writeObject(cs.encryptEnvelope(new Envelope("FAIL"), Kab, ++msgSequence));
                         }
 
                     } while(proceed);
