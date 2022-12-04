@@ -111,9 +111,7 @@ public class FileClient extends Client implements FileClientInterface {
             connectRequest.addObject(userPrivateECKeySig);
             output.writeObject(connectRequest);
 
-            /**
-             * Server handshake part
-             */
+            // Server handshake part
             Envelope serverHandshake = (Envelope)input.readObject();
             if(serverHandshake.getMessage().equals("FAIL")) {
                 System.err.println("ERROR: Handshake Failed on server end; \nEither content is null or signature cannot be verified.");
@@ -138,8 +136,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                 // Generate Kab, shared secret between user and server
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
-//                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
-                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+
                 output.reset();
                 byte[] KabHMAC = cs.genKabHMAC(Kab, username);
                 if (KabHMAC != null) {
@@ -246,7 +243,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                     while (env.getMessage().compareTo("CHUNK")==0) {
                         fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
-                        System.out.printf(".");
+                        System.out.print(".");
                         env = new Envelope("DOWNLOADF"); //Success
                         output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
                         env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
@@ -262,7 +259,7 @@ public class FileClient extends Client implements FileClientInterface {
                             fos.write(b, 0, (Integer)env.getObjContents().get(1));
                         }
 
-                        System.out.printf(".");
+                        System.out.print(".");
                         env = new Envelope("DOWNLOADF"); //Success
                         output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
                         env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
@@ -314,7 +311,6 @@ public class FileClient extends Client implements FileClientInterface {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
             output.writeObject(cs.encryptEnvelope(message, Kab, ++sequence));
 
@@ -407,7 +403,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                 env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
                 if(env.getMessage().compareTo("OK")==0) {
-                    System.out.printf("\nFile data upload successful\n");
+                    System.out.print("\nFile data upload successful\n");
                 } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
                     System.out.println("Token Expired. Please re-acquire token first.");
                 }

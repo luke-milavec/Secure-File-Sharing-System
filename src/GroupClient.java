@@ -1,5 +1,4 @@
 /* Implements the GroupClient Interface */
-import java.io.File;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +16,6 @@ public class GroupClient extends Client implements GroupClientInterface {
 
     public SignedToken getToken(String username, RSAPublicKey recipientPubKey) {
         try {
-            UserToken token = null;
             Envelope message = null, response = null;
 
             //Tell the server to return a token.

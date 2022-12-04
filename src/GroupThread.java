@@ -28,12 +28,12 @@ public class GroupThread extends Thread {
         socket = _socket;
         my_gs = _gs;
     }
-    private CryptoSec cs;
+
     public void run() {
         boolean proceed = true;
 
         try {
-            cs = new CryptoSec();
+            CryptoSec cs = new CryptoSec();
             //Announces connection and opens object streams
             System.out.println("*** New connection from " + socket.getInetAddress() + ":" + socket.getPort() + "***");
             final ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
@@ -464,7 +464,6 @@ public class GroupThread extends Thread {
                     }
 
                     //Delete owned groups
-                    // TODO TEST THIS
                     RSAPublicKey gsPubKey = cs.readRSAPublicKey("gs");
                     for(int index = 0; index < deleteOwnedGroup.size(); index++) {
                         //Use the delete group method. Token must be created for this action

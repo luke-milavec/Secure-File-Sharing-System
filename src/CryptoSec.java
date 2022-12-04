@@ -7,11 +7,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.security.interfaces.RSAPrivateKey;
@@ -399,24 +396,11 @@ public class CryptoSec {
      *         and generate the HMAC
      * **/
     public Message encryptByteArr(byte[] msg,  byte[] k, int seq, boolean seqHMAC){
-        System.out.println("encrypt crypto sec seq num: " + seq);
         try {
-//            System.out.println("kab encrypt");
-//            System.out.println(byteArrToHexStr(k));
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
             SecretKey ki = getKi(k);
-//            System.out.println("ki encrypt");
-//            System.out.println(byteArrToHexStr(ki.getEncoded()));
-
             SecretKey ke = getKe(k);
-//            System.out.println("ke encrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
-
             sha256_HMAC.init(ki);
-//            BigInteger bigInt = BigInteger.valueOf(seq);
-//            byte[] seqByteArr = bigInt.toByteArray();
             byte[] hmac;
             if (seqHMAC) {
                 byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
@@ -429,8 +413,6 @@ public class CryptoSec {
                 hmac = sha256_HMAC.doFinal(msg);
             }
 
-            System.out.println("encrypt hmac:");
-            System.out.println(byteArrToHexStr(hmac));
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
             if (ivBytes != null) {
@@ -461,25 +443,12 @@ public class CryptoSec {
     }
 
     public byte[] decryptString(Message m, byte[] k, int seq, boolean seqHMAC){
-        System.out.println("decrypt crypto sec seq num: " + seq);
         try {
-//            System.out.println("kab decrypt");
-//            System.out.println(byteArrToHexStr(k));
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
             SecretKey ki = getKi(k);
-//            System.out.println("ki decrypt");
-//            System.out.println(byteArrToHexStr(ki.getEncoded()));
-
             SecretKey ke = getKe(k);
-//            System.out.println("ke decrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
 
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(ki);
-
-
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k); // generate an iv based on Kab
             if (ivBytes != null) {
@@ -498,10 +467,6 @@ public class CryptoSec {
                 } else {
                     hmac = sha256_HMAC.doFinal(s);
                 }
-                System.out.println("decrypt hmac:");
-                System.out.println(byteArrToHexStr(hmac));
-//                System.out.println("new hmac");
-//                System.out.println(byteArrToHexStr(hmac));
                 if (Arrays.equals(hmac, m.hmac)){
                     return s;
                 } else {
@@ -570,8 +535,6 @@ public class CryptoSec {
         try{
             Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
             verifySig.initVerify(gsPubKey);
-            //                System.out.println("token crypto sec decryption: ");
-            //                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
             verifySig.update(signedToken.getTokenBytes());
             if(!verifySig.verify(signedToken.getTokenSignature())) {
                 System.out.println("Token could not be verified as signature did not match.");
@@ -636,16 +599,13 @@ public class CryptoSec {
     public byte[] decryptByteArr(byte[] msg,  byte[] k){
         try {
             SecretKey ke = getKe(k);
-//            System.out.println("ke encrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
 
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
             if (ivBytes != null) {
                 IvParameterSpec iv = new IvParameterSpec(ivBytes);
                 c.init(Cipher.DECRYPT_MODE, ke, iv);
-                byte[] enc = c.doFinal(msg);
-                return enc;
+                return c.doFinal(msg);
             }
         } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
                  BadPaddingException | InvalidAlgorithmParameterException e) {

@@ -196,7 +196,7 @@ public class FileThread extends Thread {
                                         e = new Envelope("CHUNK");
                                         int n = fis.read(buf); //can throw an IOException
                                         if (n > 0) {
-                                            System.out.printf(".");
+                                            System.out.print(".");
                                         } else if (n < 0) {
                                             System.out.println("Read error");
 
@@ -222,7 +222,7 @@ public class FileThread extends Thread {
                                         msg = (Message) input.readObject();
                                         e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                         if(e.getMessage().compareTo("OK")==0) {
-                                            System.out.printf("File data upload successful\n");
+                                            System.out.print("File data upload successful\n");
                                         } else {
 
                                             System.out.printf("Upload failed: %s\n", e.getMessage());
@@ -299,8 +299,6 @@ public class FileThread extends Thread {
 
     private boolean handshake(final ObjectInputStream input, final ObjectOutputStream output) {
         try {
-//            System.out.println(fsName);
-            // Send over group server's Public Key as RSAPublicKey so that user can verify it
             RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
             Envelope resKey = new Envelope(fsName + "_pub_key");
             resKey.addObject(fsPubKey);
@@ -349,8 +347,7 @@ public class FileThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
-                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+
                         output.reset();
                         byte[] KabHMAC = cs.genKabHMAC(Kab, fsName);
                         if (KabHMAC != null) {
@@ -383,7 +380,7 @@ public class FileThread extends Thread {
                             res.addObject(null);
                             output.writeObject(res);
                         }
-                        output.reset(); // TODO may cause issue
+                        output.reset();
                         return true;
                     }
                 }
