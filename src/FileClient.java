@@ -15,6 +15,7 @@ import java.util.Scanner;
 import javax.crypto.SecretKey;
 
 public class FileClient extends Client implements FileClientInterface {
+    int sequence = 0;
     
     @Override
     public boolean connect(String server, int port, String username) {
@@ -110,9 +111,7 @@ public class FileClient extends Client implements FileClientInterface {
             connectRequest.addObject(userPrivateECKeySig);
             output.writeObject(connectRequest);
 
-            /**
-             * Server handshake part
-             */
+            // Server handshake part
             Envelope serverHandshake = (Envelope)input.readObject();
             if(serverHandshake.getMessage().equals("FAIL")) {
                 System.err.println("ERROR: Handshake Failed on server end; \nEither content is null or signature cannot be verified.");
@@ -137,8 +136,7 @@ public class FileClient extends Client implements FileClientInterface {
 
                 // Generate Kab, shared secret between user and server
                 Kab = cs.generateSharedSecret(ecKeyPair.getPrivate(), serverECDHPubKey);
-//                System.out.println("client side shared secret: " + cs.byteArrToHexStr(Kab));
-                // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+
                 output.reset();
                 byte[] KabHMAC = cs.genKabHMAC(Kab, username);
                 if (KabHMAC != null) {
@@ -195,8 +193,8 @@ public class FileClient extends Client implements FileClientInterface {
         env.addObject(remotePath);
         env.addObject(token);
         try {
-            output.writeObject(cs.encryptEnvelope(env, Kab));
-            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             if (env.getMessage().compareTo("OK")==0) {
                 System.out.printf("File %s deleted successfully\n", filename);
@@ -231,50 +229,61 @@ public class FileClient extends Client implements FileClientInterface {
                 env.addObject(sourceFile);
 //                env.addObject(cs.encryptToken(token, Kab));
                 env.addObject(token);
-                output.writeObject(cs.encryptEnvelope(env, Kab));
+                output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
 
-                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                ArrayList<SecretKey> keyring =cs.readGroupKey((String) env.getObjContents().get(0));
-                int index = (int) env.getObjContents().get(1);
-                int offset = (int) env.getObjContents().get(2);
-                env = new Envelope("DOWNLOADF");
-                output.writeObject(cs.encryptEnvelope(env, Kab));
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
+                if(env.getObjContents().size() != 0) {
+                    ArrayList<SecretKey> keyring =cs.readGroupKey((String) env.getObjContents().get(0));
+                    int index = (int) env.getObjContents().get(1);
+                    int offset = (int) env.getObjContents().get(2);
+                    env = new Envelope("DOWNLOADF");
+                    output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
 
-                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
-                while (env.getMessage().compareTo("CHUNK")==0) {
-                    fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, (Integer)env.getObjContents().get(1));
-                    System.out.printf(".");
-                    env = new Envelope("DOWNLOADF"); //Success
-                    output.writeObject(cs.encryptEnvelope(env, Kab));
-                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                }
-                if(env.getMessage().compareTo("CHUNKL")==0){
-                    byte[] b = (byte[]) env.getObjContents().get(0);
-                    b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
-                    byte[] truncated = new byte[offset];
-                    System.arraycopy(b, 0, truncated, 0, offset);
-                    fos.write(truncated, 0, offset);
-                    System.out.printf(".");
-                    env = new Envelope("DOWNLOADF"); //Success
-                    output.writeObject(cs.encryptEnvelope(env, Kab));
-                    env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
-                }
-                
-                fos.close();
+                    while (env.getMessage().compareTo("CHUNK")==0) {
+                        fos.write(cs.decryptByteArr((byte[])env.getObjContents().get(0), keyring.get(index).getEncoded()), 0, 4096);
+                        System.out.printf(".");
+                        env = new Envelope("DOWNLOADF"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
+                        env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
+                    }
+                    if(env.getMessage().compareTo("CHUNKL")==0){
+                        byte[] b = (byte[]) env.getObjContents().get(0);
+                        b = cs.decryptByteArr( b , keyring.get(index).getEncoded());
+                        if(offset != 0){
+                            byte[] truncated = new byte[offset];
+                            System.arraycopy(b, 0, truncated, 0, offset);
+                            fos.write(truncated, 0, offset);
+                        } else {
+                            fos.write(b, 0, (Integer)env.getObjContents().get(1));
+                        }
 
-                if(env.getMessage().compareTo("EOF")==0) {
+                        System.out.printf(".");
+                        env = new Envelope("DOWNLOADF"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
+                        env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
+                    }
+
                     fos.close();
-                    System.out.printf("\nTransfer successful file %s\n", sourceFile);
-                    env = new Envelope("OK"); //Success
-                    output.writeObject(cs.encryptEnvelope(env, Kab));
-                } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
-                    System.out.println("Token Expired. Please re-acquire token first.");
+
+                    if(env.getMessage().compareTo("EOF")==0) {
+                        fos.close();
+                        System.out.printf("\nTransfer successful file %s\n", sourceFile);
+                        env = new Envelope("OK"); //Success
+                        output.writeObject(cs.encryptEnvelope(env, Kab, ++sequence));
+                    } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {
+                        System.out.println("Token Expired. Please re-acquire token first.");
+                    } else {
+                        System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
+                        file.delete();
+                        return false;
+                    }
                 } else {
-                    System.out.printf("Error reading file %s (%s)\n", sourceFile, env.getMessage());
-                    //file.delete();
+                    System.out.printf("Could not download file %s\n", sourceFile);
                     return false;
                 }
+
             }
 
             else {
@@ -302,11 +311,10 @@ public class FileClient extends Client implements FileClientInterface {
             Envelope message = null, e = null;
             //Tell the server to return the member list
             message = new Envelope("LFILES");
-//            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
-            output.writeObject(cs.encryptEnvelope(message, Kab));
+            output.writeObject(cs.encryptEnvelope(message, Kab, ++sequence));
 
-            e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            e = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             //If server indicates success, return the member list
             if(e.getMessage().equals("OK")) {
@@ -344,10 +352,10 @@ public class FileClient extends Client implements FileClientInterface {
             message.addObject(group);
 //            message.addObject(cs.encryptToken(token, Kab)); //Add requester's token
             message.addObject(token);
-            output.writeObject(cs.encryptEnvelope(message, Kab));
+            output.writeObject(cs.encryptEnvelope(message, Kab, ++sequence));
 
             FileInputStream fis = new FileInputStream(sourceFile);
-            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             //If server indicates success, return the member list
             if(env.getMessage().equals("READY")) {
@@ -374,13 +382,13 @@ public class FileClient extends Client implements FileClientInterface {
                     System.out.println("Read error");
                     return false;
                 }
-                byte[] b = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded()).enc;
+                byte[] b = cs.encryptByteArr(buf,keyring.get(keyring.size()-1).getEncoded(), sequence, false).enc;
 
                 message.addObject(b);
                 message.addObject(Integer.valueOf(n));
 
-                output.writeObject(cs.encryptEnvelope(message, Kab));
-                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+                output.writeObject(cs.encryptEnvelope(message, Kab, ++sequence));
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
 
             } while (fis.available()>0);
@@ -391,9 +399,9 @@ public class FileClient extends Client implements FileClientInterface {
                 message = new Envelope("EOF");
                 message.addObject(keyring.size()-1);
 
-                output.writeObject(cs.encryptEnvelope(message, Kab));
+                output.writeObject(cs.encryptEnvelope(message, Kab, ++sequence));
 
-                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+                env = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
                 if(env.getMessage().compareTo("OK")==0) {
                     System.out.printf("\nFile data upload successful\n");
                 } else if (env.getMessage().equals("FAIL-EXPIREDTOKEN")) {

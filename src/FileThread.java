@@ -22,6 +22,7 @@ public class FileThread extends Thread {
     private final Socket socket;
     String fsName;
     CryptoSec cs;
+    private int msgSequence = 0;
 
     private byte[] Kab;
 
@@ -48,7 +49,7 @@ public class FileThread extends Thread {
             } else {
                 do {
                     Message msg = (Message) input.readObject();
-                    Envelope e = cs.decryptEnvelopeMessage(msg, Kab);
+                    Envelope e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                     System.out.println("Request received: " + e.getMessage());
 
                     // Handler to list files that this user is allowed to see
@@ -81,7 +82,7 @@ public class FileThread extends Thread {
                                 response = new Envelope("FAIL-EXPIREDTOKEN");
                             }
                         }
-                        output.writeObject(cs.encryptEnvelope(response, Kab));
+                        output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                     }
                     if(e.getMessage().equals("UPLOADF")) {
 
@@ -117,18 +118,18 @@ public class FileThread extends Thread {
                                     System.out.printf("Successfully created file %s\n", remotePath.replace('/', '_'));
 
                                     response = new Envelope("READY"); //Success
-                                    output.writeObject(cs.encryptEnvelope(response, Kab));
+                                    output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
 
                                     msg = (Message) input.readObject();
-                                    e = cs.decryptEnvelopeMessage(msg, Kab);
+                                    e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                     int offset = 0;
                                     while (e.getMessage().compareTo("CHUNK")==0) {
                                         fos.write((byte[])e.getObjContents().get(0), 0, 4112);
                                         if ((Integer)e.getObjContents().get(1) != 4096) offset = (Integer)e.getObjContents().get(1);
                                         response = new Envelope("READY"); //Success
-                                        output.writeObject(cs.encryptEnvelope(response, Kab));
+                                        output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                                         msg = (Message) input.readObject();
-                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+                                        e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                     }
 
                                     if(e.getMessage().compareTo("EOF")==0) {
@@ -144,7 +145,7 @@ public class FileThread extends Thread {
                             }
                         }
 
-                        output.writeObject(cs.encryptEnvelope(response, Kab));
+                        output.writeObject(cs.encryptEnvelope(response, Kab, ++msgSequence));
                     } else if (e.getMessage().compareTo("DOWNLOADF")==0) {
 
                         String remotePath = (String)e.getObjContents().get(0);
@@ -154,20 +155,20 @@ public class FileThread extends Thread {
                         if(!tokenTimeValid(t)){
                             System.out.println("Error: Token Expired");
                             e = new Envelope("FAIL-EXPIREDTOKEN");
-                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                            output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
                         } else if (!t.getRecipientPubKey().equals(fsPubkey)){
                             System.out.println("Error: Token Recipient not " + fsName);
                             e = new Envelope("InvalidTokenRecipient");
-                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                            output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
                         } else if (sf == null) {
                             System.out.printf("Error: File %s doesn't exist\n", remotePath);
                             e = new Envelope("ERROR_FILEMISSING");
-                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                            output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
 
                         } else if (!t.getGroups().contains(sf.getGroup())) {
                             System.out.printf("Error user %s doesn't have permission\n", t.getSubject());
                             e = new Envelope("ERROR_PERMISSION");
-                            output.writeObject(cs.encryptEnvelope(e, Kab));
+                            output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
                         } else {
 
                             try {
@@ -175,7 +176,7 @@ public class FileThread extends Thread {
                                 if (!f.exists()) {
                                     System.out.printf("Error file %s missing from disk\n", "_"+remotePath.replace('/', '_'));
                                     e = new Envelope("ERROR_NOTONDISK");
-                                    output.writeObject(cs.encryptEnvelope(e, Kab));
+                                    output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
 
                                 } else {
                                     FileInputStream fis = new FileInputStream(f);
@@ -183,9 +184,9 @@ public class FileThread extends Thread {
                                     e.addObject(sf.getGroup());
                                     e.addObject(sf.getKey());
                                     e.addObject(sf.getOffset());
-                                    output.writeObject(cs.encryptEnvelope(e, Kab));
+                                    output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
                                     msg = (Message) input.readObject();
-                                    e = cs.decryptEnvelopeMessage(msg, Kab);
+                                    e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                     do {
                                         byte[] buf = new byte[4112];
                                         if (e.getMessage().compareTo("DOWNLOADF")!=0) {
@@ -204,10 +205,10 @@ public class FileThread extends Thread {
                                         e.addObject(buf);
                                         e.addObject(Integer.valueOf(n));
 
-                                        output.writeObject(cs.encryptEnvelope(e, Kab));
+                                        output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
 
                                         msg = (Message) input.readObject();
-                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+                                        e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
 
 
                                     } while (fis.available()>0);
@@ -216,10 +217,10 @@ public class FileThread extends Thread {
                                     if(e.getMessage().compareTo("DOWNLOADF")==0) {
 
                                         e = new Envelope("EOF");
-                                        output.writeObject(cs.encryptEnvelope(e, Kab));
+                                        output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
 
                                         msg = (Message) input.readObject();
-                                        e = cs.decryptEnvelopeMessage(msg, Kab);
+                                        e = cs.decryptEnvelopeMessage(msg, Kab, ++msgSequence);
                                         if(e.getMessage().compareTo("OK")==0) {
                                             System.out.printf("File data upload successful\n");
                                         } else {
@@ -282,7 +283,7 @@ public class FileThread extends Thread {
                                 e = new Envelope(e1.getMessage());
                             }
                         }
-                        output.writeObject(cs.encryptEnvelope(e, Kab));
+                        output.writeObject(cs.encryptEnvelope(e, Kab, ++msgSequence));
 
                     } else if(e.getMessage().equals("DISCONNECT")) {
                         socket.close();
@@ -298,8 +299,6 @@ public class FileThread extends Thread {
 
     private boolean handshake(final ObjectInputStream input, final ObjectOutputStream output) {
         try {
-//            System.out.println(fsName);
-            // Send over group server's Public Key as RSAPublicKey so that user can verify it
             RSAPublicKey fsPubKey = cs.readRSAPublicKey(fsName);
             Envelope resKey = new Envelope(fsName + "_pub_key");
             resKey.addObject(fsPubKey);
@@ -348,8 +347,7 @@ public class FileThread extends Thread {
                         // User signature is verified, obtain user's ECDH public key and step 5 key agreement can now occur
                         // Generate Kab, shared secret between user and server
                         Kab = cs.generateSharedSecret(ECDHprivkey, userECDHPubKey);
-//                        System.out.println("server side shared secret: " + cs.byteArrToHexStr(Kab));
-                        // DEBUG: System.err.println("Shared secret: ", printHexBinary(Kab));
+
                         output.reset();
                         byte[] KabHMAC = cs.genKabHMAC(Kab, fsName);
                         if (KabHMAC != null) {
@@ -382,7 +380,7 @@ public class FileThread extends Thread {
                             res.addObject(null);
                             output.writeObject(res);
                         }
-                        output.reset(); // TODO may cause issue
+                        output.reset();
                         return true;
                     }
                 }

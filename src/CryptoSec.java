@@ -7,9 +7,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.security.interfaces.RSAPrivateKey;
@@ -234,8 +233,8 @@ public class CryptoSec {
      * @param Kab shared secret
      * @return Envelope
      **/
-    public Envelope decryptEnvelopeMessage(Message msg, byte[] Kab) {
-        byte[] orgBytes = decryptString(msg, Kab); // get decrypted envelope bytes
+    public Envelope decryptEnvelopeMessage(Message msg, byte[] Kab, int seq) {
+        byte[] orgBytes = decryptString(msg, Kab, seq, true); // get decrypted envelope bytes
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
             try {
@@ -256,45 +255,45 @@ public class CryptoSec {
      * @param Kab shared secret used to derive ki and ke
      * @return Message (containing enc and hmac)
      **/
-    public Message encryptEnvelope(Envelope env, byte[] Kab) {
+    public Message encryptEnvelope(Envelope env, byte[] Kab, int seqNum) {
         byte[] serializedEnv = serializeObject(env);
         if (serializedEnv != null) {
-            return encryptByteArr(serializedEnv, Kab);
+            return encryptByteArr(serializedEnv, Kab, seqNum, true);
         } else {
             System.out.println("Error serializing");
         }
         return null;
     }
 
-    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey gsPubKey) {
-        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
-        if (orgBytes != null) {
-            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
-            try {
-                ObjectInput in = new ObjectInputStream(bis);
-                SignedToken signedToken = (SignedToken) in.readObject();
-                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
-                verifySig.initVerify(gsPubKey);
-//                System.out.println("token crypto sec decryption: ");
-//                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
-                verifySig.update(signedToken.getTokenBytes());
-                if(!verifySig.verify(signedToken.getTokenSignature())) {
-                    System.out.println("Token could not be verified as signature did not match.");
-                    return null;
-                }
-                bis = new ByteArrayInputStream(signedToken.getTokenBytes());
-                in = new ObjectInputStream(bis);
-                return (UserToken) in.readObject();
-            } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
-                     NoSuchProviderException | InvalidKeyException e) {
-                e.printStackTrace();
-            }
-        }
-        return null;
-    }
+//    public UserToken decryptTokenMessage(Message msg, byte[] Kab, RSAPublicKey gsPubKey) {
+//        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+//        if (orgBytes != null) {
+//            ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
+//            try {
+//                ObjectInput in = new ObjectInputStream(bis);
+//                SignedToken signedToken = (SignedToken) in.readObject();
+//                Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
+//                verifySig.initVerify(gsPubKey);
+////                System.out.println("token crypto sec decryption: ");
+////                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
+//                verifySig.update(signedToken.getTokenBytes());
+//                if(!verifySig.verify(signedToken.getTokenSignature())) {
+//                    System.out.println("Token could not be verified as signature did not match.");
+//                    return null;
+//                }
+//                bis = new ByteArrayInputStream(signedToken.getTokenBytes());
+//                in = new ObjectInputStream(bis);
+//                return (UserToken) in.readObject();
+//            } catch (IOException | ClassNotFoundException | NoSuchAlgorithmException | SignatureException |
+//                     NoSuchProviderException | InvalidKeyException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        return null;
+//    }
 
 
-    public Message encryptToken(UserToken token, byte[] Kab) {
+    public Message encryptToken(UserToken token, byte[] Kab, int seq) {
         try {
             RSAPrivateKey privateKey = readRSAPrivateKey("gs");
             if (privateKey != null) {
@@ -304,7 +303,7 @@ public class CryptoSec {
                     SignedToken tokenPackage = new SignedToken(tokenBytes, tokenSigned);
                     byte[] tokenPackageBytes = serializeObject(tokenPackage);
                     if (tokenPackageBytes != null) {
-                        return encryptByteArr(tokenPackageBytes, Kab);
+                        return encryptByteArr(tokenPackageBytes, Kab, seq, false);
                     } else {
                         System.out.println("Could not serialize token while encrypting it.");
                     }
@@ -396,24 +395,24 @@ public class CryptoSec {
      * @return k shared secret Kab used to derive keys to encrypt
      *         and generate the HMAC
      * **/
-    public Message encryptByteArr(byte[] msg,  byte[] k){
+    public Message encryptByteArr(byte[] msg,  byte[] k, int seq, boolean seqHMAC){
         try {
-//            System.out.println("kab encrypt");
-//            System.out.println(byteArrToHexStr(k));
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
             SecretKey ki = getKi(k);
-//            System.out.println("ki encrypt");
-//            System.out.println(byteArrToHexStr(ki.getEncoded()));
-
             SecretKey ke = getKe(k);
-//            System.out.println("ke encrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
-
             sha256_HMAC.init(ki);
+            byte[] hmac;
+            if (seqHMAC) {
+                byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
+                // Concatenate byte arrays then encrypt as one
+                byte[] seqEnv = new byte[msg.length + seqByteArr.length];
+                System.arraycopy(msg, 0, seqEnv, 0, msg.length);
+                System.arraycopy(seqByteArr, 0, seqEnv, msg.length, seqByteArr.length);
+                hmac =  sha256_HMAC.doFinal(seqEnv);
+            } else {
+                hmac = sha256_HMAC.doFinal(msg);
+            }
 
-            byte[] hmac =  sha256_HMAC.doFinal(msg);
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
             if (ivBytes != null) {
@@ -443,24 +442,13 @@ public class CryptoSec {
         return null;
     }
 
-    public byte[] decryptString(Message m, byte[] k){
+    public byte[] decryptString(Message m, byte[] k, int seq, boolean seqHMAC){
         try {
-//            System.out.println("kab decrypt");
-//            System.out.println(byteArrToHexStr(k));
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
             SecretKey ki = getKi(k);
-//            System.out.println("ki decrypt");
-//            System.out.println(byteArrToHexStr(ki.getEncoded()));
-
             SecretKey ke = getKe(k);
-//            System.out.println("ke decrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
 
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             sha256_HMAC.init(ki);
-
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k); // generate an iv based on Kab
             if (ivBytes != null) {
@@ -468,9 +456,17 @@ public class CryptoSec {
                 c.init(Cipher.DECRYPT_MODE,ke, iv);
                 byte[] s = c.doFinal(m.enc);
 
-                byte[] hmac =  sha256_HMAC.doFinal(s);
-//                System.out.println("new hmac");
-//                System.out.println(byteArrToHexStr(hmac));
+                byte[] hmac;
+                if (seqHMAC) {
+                    byte[] seqByteArr = ByteBuffer.allocate(4).putInt(seq).array();
+                    // Concatenate byte arrays then encrypt as one
+                    byte[] seqEnv = new byte[s.length + seqByteArr.length];
+                    System.arraycopy(s, 0, seqEnv, 0, s.length);
+                    System.arraycopy(seqByteArr, 0, seqEnv, s.length, seqByteArr.length);
+                    hmac =  sha256_HMAC.doFinal(seqEnv);
+                } else {
+                    hmac = sha256_HMAC.doFinal(s);
+                }
                 if (Arrays.equals(hmac, m.hmac)){
                     return s;
                 } else {
@@ -521,8 +517,8 @@ public class CryptoSec {
         return  Arrays.asList(s.split("|"));
     }
 
-    public SignedToken decryptMessageToSignedToken(Message msg, byte[] Kab) {
-        byte[] orgBytes = decryptString(msg, Kab); // get decrypted token package bytes & verify HMAC
+    public SignedToken decryptMessageToSignedToken(Message msg, byte[] Kab, int seq) {
+        byte[] orgBytes = decryptString(msg, Kab, seq, false); // get decrypted token package bytes & verify HMAC
         if (orgBytes != null) {
             ByteArrayInputStream bis = new ByteArrayInputStream(orgBytes);
             try {
@@ -539,8 +535,6 @@ public class CryptoSec {
         try{
             Signature verifySig = Signature.getInstance("SHA256withRSA", "BC");
             verifySig.initVerify(gsPubKey);
-            //                System.out.println("token crypto sec decryption: ");
-            //                System.out.println(byteArrToHexStr(signedToken.getTokenBytes()));
             verifySig.update(signedToken.getTokenBytes());
             if(!verifySig.verify(signedToken.getTokenSignature())) {
                 System.out.println("Token could not be verified as signature did not match.");
@@ -605,16 +599,13 @@ public class CryptoSec {
     public byte[] decryptByteArr(byte[] msg,  byte[] k){
         try {
             SecretKey ke = getKe(k);
-//            System.out.println("ke encrypt");
-//            System.out.println(byteArrToHexStr(ke.getEncoded()));
 
             Cipher c = Cipher.getInstance("AES/CBC/PKCS7Padding");
             byte[] ivBytes = genIV(k);
             if (ivBytes != null) {
                 IvParameterSpec iv = new IvParameterSpec(ivBytes);
                 c.init(Cipher.DECRYPT_MODE, ke, iv);
-                byte[] enc = c.doFinal(msg);
-                return enc;
+                return c.doFinal(msg);
             }
         } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException | IllegalBlockSizeException |
                  BadPaddingException | InvalidAlgorithmParameterException e) {

@@ -1,5 +1,4 @@
 /* Implements the GroupClient Interface */
-import java.io.File;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,27 +9,26 @@ import javax.crypto.SecretKey;
 public class GroupClient extends Client implements GroupClientInterface {
 
     CryptoSec cs;
-
+    int sequence = 0;
     public GroupClient() {
         cs = new CryptoSec();
     }
 
     public SignedToken getToken(String username, RSAPublicKey recipientPubKey) {
         try {
-            UserToken token = null;
             Envelope message = null, response = null;
 
             //Tell the server to return a token.
             message = new Envelope("GET");
             message.addObject(username); // Add user name string
             message.addObject(recipientPubKey); // Add the intended recipient's public key
-            Message encryptedMsg = cs.encryptEnvelope(message, Kab);
+            Message encryptedMsg = cs.encryptEnvelope(message, Kab, ++sequence);
 
             output.writeObject(encryptedMsg);
 
             //Get the response from the server
             encryptedMsg = (Message) input.readObject();
-            response = cs.decryptEnvelopeMessage(encryptedMsg, Kab);
+            response = cs.decryptEnvelopeMessage(encryptedMsg, Kab, ++sequence);
 
             //Successful response
             if(response.getMessage().equals("OK")) {
@@ -43,7 +41,7 @@ public class GroupClient extends Client implements GroupClientInterface {
                     for(int i = 2; i<temp.size();i++){
                         cs.writeGroupKey(groups.get(i-2), (ArrayList<SecretKey>) temp.get(i));
                     }
-                    return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab) ;
+                    return cs.decryptMessageToSignedToken((Message) temp.get(0), Kab, sequence) ;
                 }
                 
                 
@@ -65,10 +63,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CUSER");
             message.addObject(username); //Add username
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab);
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence);
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
@@ -91,10 +89,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DUSER");
             message.addObject(username); //Add username
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
@@ -117,10 +115,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("CGROUP");
             message.addObject(groupname); //Add the group name string
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
@@ -143,10 +141,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("DGROUP");
             message.addObject(groupname); //Add group name string
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
@@ -170,10 +168,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message = new Envelope("LMEMBERS");
             message.addObject(group); //Add group name string
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             //If server indicates success, return the member list
             if(response.getMessage().equals("OK")) {
@@ -202,10 +200,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
 
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
@@ -229,10 +227,10 @@ public class GroupClient extends Client implements GroupClientInterface {
             message.addObject(username); //Add user name string
             message.addObject(groupname); //Add group name string
             message.addObject(token);
-            Message encryptedMessage = cs.encryptEnvelope(message, Kab); // encrypt envelope
+            Message encryptedMessage = cs.encryptEnvelope(message, Kab, ++sequence); // encrypt envelope
             output.writeObject(encryptedMessage);
 
-            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab);
+            response = cs.decryptEnvelopeMessage((Message) input.readObject(), Kab, ++sequence);
             if (response.getMessage().equals("InvalidTokenRecipient")) {
                 System.out.println("The intended recipient in token was invalid.");
             } else if (response.getMessage().equals("FAIL-EXPIREDTOKEN")) {
