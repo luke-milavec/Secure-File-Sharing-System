@@ -76,14 +76,14 @@
     
     <p><strong>T8: Too Many User Requests</strong></p>
     <p>A user may maliciously overload the group server or file servers with requests, attempting to take up all
-        server bandwidth/computational resources to prevent legitimate users from accessing their
+        server computational power to prevent legitimate users from accessing their
         services. Countermeasures must ensure that a single user with comparable physical resources as the server
         is not able to singlehandedly flood a server with so many requests that the server is unable to respond
         to other users. This threat does not encapsulate a scenario where a large number of legitimate users
         access a server at the same time causing it to become overwhelmed, or a user with much more computational resources
         than the server (like a super computer) or multiple users conspire to send a malicious amount of requests
         – it is just stipulating that no single user should be able achieve the same thing given a similar level of
-        resources as the server.</p>
+        resources as the server. </p>
     
     <p><strong>T9: File Server File Modification</strong></p>
     <p>File servers are not trusted entities so a malicious file server could modify the file without
@@ -173,13 +173,14 @@
     </p>
         <p>More specifically, once the request from the client is recieved, the server will pick a puzzle length
             integer n, randomly select an integer r of n bits, compute H(x) = SHA-256(r), and send over 
-            n, H(x), {timestamp || r}K<sub>S</sub> where the encryption is AES-256 in CBC mode with 
-            K<sub>S</sub> being a randomly generated 256 bit key that is unknown to the user. The user will then
+            n and H(x). At the moment of sending, the server will also start a timer of 5 minutes using a timestamp.
+            If no  The user will then
             brute force search for an n-bit number r such that SHA-256(r) = H(x). Once found, the user will
-            return r and {timestamp || r}K<sub>S</sub>. The server will then decrypt {timestamp || r}K<sub>S</sub>
+            return r. he server will then decrypt {timestamp || r}K<sub>S</sub>
             using K<sub>S</sub> and verify that the timestamp is within 5 minutes. If it is, it will verify that
             the r the user returned matches the encrypted one. If so, the server will resume and complete the rest of the 
-            request as normal.If not, the server will reject the request. The time limit ensures freshness. 
+            request as normal.If not, the server will reject the request. The time limit ensures freshness and the 
+            {timestamp || r}K<sub>S</sub> saves the server having to save some state. 
         </p>
         In order for this to work, the puzzle must have the following qualities:
         <ol>
@@ -220,6 +221,55 @@
         The group keys usage in the HMAC ensures the file server cannot tamper with the HMAC without corrupting its validity. 
     </p>
     <p><strong>Threat 10:</strong></p>
+    <p>To prevent this threat, storage space limits and file size limits upon upload must be enforced. 
+        In the case for file size limits, there will be a byte limit for each upload. The file server 
+        will actively monitor the bytes being received and will stop uploading if that byte limit is 
+        reached. The code implementation of this can be included in FileThread.java, where the envelope 
+        message received equals “UPLOADF.” In the while loop where the uploading is conducted, a 
+        variable that keeps track of the bytes being received will be constantly updated. A condition 
+        for the while loop will be added to check this byte limit variable while uploading is occurring. 
+        Hence, once that byte limit variable is reached, the while loop will be stopped and a message 
+        indicating that limit has been reached will be portrayed to the user. If the entire contents of 
+        the file were not uploaded when the limit was reached, then a “FAIL” message will be sent to the 
+        client side. In the edge case where the entire contents of the file were uploaded and the limit 
+        was reached, neither a “FAIL” message nor a prompt will appear, since upload was successful and 
+        it did not exceed the limit.
+        </p>
+    <p>
+        In the case of storage space limits, there will be a limit on file server space for each group. 
+        This will ensure groups cannot upload large amounts of files, unfairly occupying the majority 
+        of the file server space. In order for the file server to enforce this limit, it must actively 
+        maintain each group’s currently occupied storage spaces and their applicable limits. The file 
+        server will maintain a text file for each group that is updated upon each upload and deletion 
+        (adding the space used up by the upload upon successful upload and subtracting from it upon 
+        successful deletion). This group storage management file will be stored locally by the file 
+        server so will only be accessible by it. The limits will be hardcoded into the file server 
+        in FileServer.java, so upon instantiation of a new file server, a group storage management 
+        file is also created and associated with that file server and the limits will be automatically 
+        written into this file once created. So the owner of the file server can decide what limit to 
+        set per group. Similarly to file size limits, the code implementation for storage space limits 
+        will be included in FileThread.java. 
+    </p>
+    <p>
+        If a user requests to upload a file, their group name will also be sent in that message, 
+        the file server will then check if that group has reached their limit yet by referring 
+        to its group storage management file.  This check will occur in the while loop statement 
+        in the “UPLOADF” message code along with the file size limit check. This ensures that 
+        while a file is being uploaded, both the file size and the group storage space is continuously 
+        being checked for each byte uploaded. If the group storage space limit has been reached and 
+        the entire file contents were not uploaded, then a “FILE-SPACE-LIMIT-REACHED” message will 
+        be sent to the client side and a prompt indicating their group storage space limit has 
+        been reached will be shown to the user. The user will then be prompted with the option 
+        to delete the incomplete file they attempted to upload or to keep it on the server. 
+        In the edge case where the entire file contents were uploaded and the group storage 
+        space limit was reached, but not exceeded, then no “FAIL” message will be sent, only 
+        a prompt indicating their group storage space limit has been reached will be shown to the user. 
+    </p>
+    <p>
+        If a user requests to delete a file, their group name will also be sent in that message, 
+        the file server will then proceed to delete that file and accordingly update that group’s 
+        current occupied storage space in the group storage management file upon successful deletion.
+    </p>
 
     <!-- END CHANGES HERE -->
 </section>
@@ -245,12 +295,6 @@
         discuss these additional contributions in this section, as well.</p>
 
     <p>Remove these instructions from your final submission.</p>
-
-    This threat can be resolved by enforcing size limits.
-    A countermeasure to apply file size limits 
-        for each upload as well as a limit on the amount of files each group can upload will be sufficient in 
-        preventing this type of threat.
-        with equal limits in place for each group. Whether the attack is intentional or not is insignificant, the same outcome is reached; all storage space is occupied by one entity’s actions and the file server is rendered useless making this a threat to our system.
 
     <!-- END CHANGES HERE -->
 </section>
