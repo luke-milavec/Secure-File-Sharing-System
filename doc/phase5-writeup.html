@@ -241,11 +241,13 @@
         the file (encrypted in the same way as described originally in T6) and k is HMAC(group key || “File Integrity”). 
         The group key will be from the keyring of the same index used to encrypt the file. 
         Like everywhere else in the project, SHA-256 will 
-        be the algorithm used to generate the HMAC. The client will store the encrypted bytes and then send the 
-        HMAC once the file transfer has completed. The file server will store the HMAC in the 
-        ShareFile alongside the other metadata, and then send it to users upon completing download.
-        Users will need to 
-        temporarily store the encrypted bytes on download as well to verify the hash. </p>
+        be the algorithm used to generate the HMAC. The client will compute this HMAC for each chunk and concatenate the results. 
+        The file server will store the HMAC in the ShareFile alongside the other metadata, and then send it to users upon completing download. Users will compute the HMAC as 
+        the file is being downloaded and then verify with the HMAC stored on the file server after the download has completed.
+        <br></br>
+        This ensures that the file server cannot modify the file because it will result in the HMAC verification turning up false. 
+        The group keys usage in the HMAC ensures the file server cannot tamper with the HMAC without corrupting its validity. 
+    </p>
     <p><strong>Threat 10:</strong></p>
 
     <!-- END CHANGES HERE -->
