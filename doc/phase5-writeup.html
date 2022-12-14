@@ -226,12 +226,15 @@
         the file (encrypted in the same way as described originally in T6) and k is HMAC(group key || “File Integrity”). 
         The group key will be from the keyring of the same index used to encrypt the file. 
         Like everywhere else in the project, SHA-256 will 
-        be the algorithm used to generate the HMAC. The client will compute this HMAC for each chunk and concatenate the results. 
-        The file server will store the HMAC in the ShareFile alongside the other metadata, and then send it to users upon completing download. Users will compute the HMAC as 
-        the file is being downloaded and then verify with the HMAC stored on the file server after the download has completed.
+        be the algorithm used to generate the HMAC. The client will compute this HMAC for the first chunk and then
+        for subsequent chunks concatenate the chunk bytes to the previous HMAC before doing the HMAC on the result. 
+        The file server will store the resulting HMAC in the ShareFile alongside the other metadata, and then send it to users upon completing download.
+         Users will compute the HMAC in the same way as 
+        the file is being downloaded and will then verify it with the HMAC stored on the file server after the download has completed.
         <br></br>
-        This ensures that the file server cannot modify the file because it will result in the HMAC verification turning up false. 
-        The group keys usage in the HMAC ensures the file server cannot tamper with the HMAC without corrupting its validity. 
+        This ensures that the file server cannot modify the file because it will result in the HMAC verification turning up false.
+        The group keys usage in the HMAC ensures the file server cannot tamper with the HMAC without corrupting its validity because
+        it doesn't have access to the group key to be able to update the HMAC. 
     </p>
     <p><strong>Threat 10:</strong></p>
     <p>To prevent this threat, storage space limits and file size limits upon upload must be enforced. 
