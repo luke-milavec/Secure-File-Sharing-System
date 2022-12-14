@@ -48,9 +48,13 @@
     <h1>CS 1653 Project P5 Writeup</h1>
     <h2>
         <!-- BEGIN CHANGES HERE -->
-
-        Add your names and Pitt email addresses here
-
+        <h3>
+            Taha Ahmad - taa95@pitt.edu
+            <br>
+            Katelyn Kunzmann - kak383@pitt.edu
+            <br>
+            Luke Milavec - lrm88@pitt.edu
+          </h3>
         <!-- END CHANGES HERE -->
     </h2>
 </header>
@@ -80,7 +84,7 @@
         services. Countermeasures must ensure that a single user with comparable physical resources as the server
         is not able to singlehandedly flood a server with so many requests that the server is unable to respond
         to other users. This threat does not encapsulate a scenario where a large number of legitimate users
-        access a server at the same time causing it to become overwhelmed, or a user with much more computational resources
+        access a server at the same time causing it to become overwhelmed, or when a user with much more computational resources
         than the server (like a super computer) or multiple users conspire to send a malicious amount of requests
         – it is just stipulating that no single user should be able achieve the same thing given a similar level of
         resources as the server. </p>
@@ -95,7 +99,10 @@
     <p> A user may maliciously attempt to upload an extremely large file and/or many files of normal size to attempt to occupy all the 
         storage space of a file server. This would lead to the inability of legitimate users to upload their files, 
         thereby conducting an attack on availability. The countermeasure must not delete files to make space, 
-        since an attacker can continuously upload file(s) after deletion. 
+        since an attacker can continuously upload file(s) after deletion. This threat does not include the scenario when
+        legitimate users of a lot of different groups upload a lot files and end up using the remaining 
+        available storage space on the file server, but if it is predominantly one group who has used the 
+        majority of the space, this is not acceptable and should be handled appropriately. 
        </p>
     <!-- END CHANGES HERE -->
 </section>
@@ -112,7 +119,7 @@
         would then send these 2 numbers to the server as a new connection request repeatedly. 
         This could be automated to be as fast as possible with an attack script which sends the 
         connection requests. The way our implementation works, the server would spin up a new thread 
-        to handle the connection, check whether a matching public key is cached (requiring slow file I/O), 
+        to handle the connection, check whether a matching public key is cached (requiring file I/O which is slow), 
         and since it would most likely not find a match, it would cache it assuming that this is a new client’s 
         first connection (which is again slow file I/O). The server would then verify the signature using the 
         given public key which will fail, so it will return an envelope with a “Fail” message. The malicious 
@@ -130,7 +137,7 @@
          The attack again works because a resource disparity exists between the user and the file server 
          meaning the user has to do very little work each request (just send the download request which is one network write) 
          while the server has to do time-consuming file I/O and multiple network I/O each time. Right now, our implementation
-         has no protection against attacks of this.
+         has no protection against attacks of this type on this command or others.
     </p> 
     <p><strong>Threat 9 Attack:</strong></p>
     <p>The attack for a file server to make modifications to a file without being detected is quite straightforward. 
@@ -139,19 +146,17 @@
         for any malicious purpose. This is possible because the files are stored locally on the system so the 
         file server can change anything as they please. Since f is encrypted with AES-256 in CBC mode, s might 
         not be able to make targeted changes to the file, but any modifications would be undetected currently 
-        by our system and the user themselves might not notice a change if the file format is unstructured to begin with.</p>
+        by our system and the user themselves might not notice a change if the file format is unstructured to 
+        begin with.</p>
     <p><strong>Threat 10 Attack:</strong></p>
     <p>The attack consisting of either a user or users uploading one or more large file(s) in order to 
         exhaust all file server storage space is currently possible. Our implementation does not prevent 
         this attack because we have no size limits on uploads. One such attack could be a user generating
         an exceedingly large file by writing random bytes to a text file and then uploading it on a file server to a 
-        group their are legitimately a part of. Another version would involve generating multiple such large files
+        group their are legitimately a part of. Another version could involve generating multiple such large files
         and uploading them in a similar fashion until the file server has no more room and uploads begin to fail. 
         Multiple malicious users from a group could also upload files that end up taking up all storage space
-        on the file server (the steps again would be similar). This threat does not include the scenario when
-        legitimate users of a lot of different groups upload a lot files and end up using the remaining 
-        available storage space on the file server, but if it is predominantly one group who has used the 
-        majority of the space, this is not acceptable and should be handled appropriately. 
+        on the file server (the steps again would be similar). 
         </p>
 
     <!-- END CHANGES HERE -->
@@ -173,29 +178,36 @@
     </p>
         <p>More specifically, once the request from the client is recieved, the server will pick a puzzle length
             integer n, randomly select an integer r of n bits, compute H(x) = SHA-256(r), and send over 
-            n and H(x). At the moment of sending, the server will also start a timer of 5 minutes using a timestamp.
-            If no  The user will then
+            n and H(x). At the moment of sending, the server will also start a timer of 3 minutes using a timestamp.
+            If 3 minutes runs out before the user responds the thread will be closed. The user will
             brute force search for an n-bit number r such that SHA-256(r) = H(x). Once found, the user will
-            return r. he server will then decrypt {timestamp || r}K<sub>S</sub>
-            using K<sub>S</sub> and verify that the timestamp is within 5 minutes. If it is, it will verify that
-            the r the user returned matches the encrypted one. If so, the server will resume and complete the rest of the 
-            request as normal.If not, the server will reject the request. The time limit ensures freshness and the 
-            {timestamp || r}K<sub>S</sub> saves the server having to save some state. 
+            send r to the server. The server will verify that
+            the r the user returned matches with the original. If so, the server will resume and complete the rest of the
+            request as normal.If not, the server will reject the request.
         </p>
-        In order for this to work, the puzzle must have the following qualities:
+        <p>
+            The user could repeatedly ask for computational puzzles forcing the group server to spin up a thread
+            at least and maintain the original request while it is waiting for the user to return the solution.
+            So while the server would not be wasting any CPU time, it would be using up memory resources.
+            The time limit of 3 minutes is there to limit the amount of threads and state the server has to maintain,
+            and this limit can be adjusted based on testing to make it so a single user cannot create enough requests
+            to overwhelm the memory resources of the server within the time limit. Why this was done this way over a
+            stateless server approach is explained in the conclusion.
+        </p>
+        In order for this computational puzzle idea to work, the puzzle must have the following qualities:
         <ol>
-        <li>It is easy for the server to generate - the server just has to pick a number of length n randomly, encrypt and decrypt once
-            using symmetric key crypto which is fast and one SHA-256 hash to generate H(x) which is all pretty fast.
+        <li>It is easy for the server to generate - the server just has to pick a number of length n randomly and do
+             one SHA-256 hash to generate H(x) which is fast.
         </li>
         <li>It is hard for the user to solve - since SHA-256 is a secure cryptographic hash it offers pre-image resistance
             meaning the user cannot easily get r from H(x). The fastest way would be to brute force it which on average would
-            take the user O((2<super>n</super>)/2) = O(2<super>n</super>) where n is the number of bits of the number, 
+            take the user O((2<sup>n</sup>)/2) = O(2<sup>n</sup>) (where n is the number of bits of r), 
             to compute which is exponential and slow. The value of n is set by the server to be time-consuming but not super
             slow as to make each request take unreasonably long. The exact value can be determined via testing, though it does
             rely on the assumption that clients all have relatively similar computational resources. It is hard to pick an initial
             value without implementation and testing which we are not doing this phase so a tentative starting number might be n = 11
-            which would mean 2<super>10</super> = 1024/2 = 512 guesses on average but this might be too high or low. The advantage
-            is that the difficulty is easily adjustable. 
+            which would mean 2<sup>10</sup>/2 = 1024/2 = 512 guesses on average but this might be too high or low. The advantage of 
+            this approach is that the difficulty is easily adjustable. 
         </li>
         <li>It is easy for the server to verify the solution - the server just has to compare two numbers to verify the puzzle.</li>
         </ol>
@@ -203,7 +215,8 @@
             any significant work. The result will be the elimination/reduction of the resource disparity (described above) that 
             existed between the user and server. Going back to the attack, each request by the user will take significantly more
             computational time so a single user with similar computational resources as the server will not be able to flood
-            a server with too many requests like before. 
+            a server with too many requests like before. The time limit will prevent a user from asking for too many computational 
+            puzzles. 
         </p>
     
     <p><strong>Threat 9:</strong></p>
@@ -277,24 +290,36 @@
     <h2>Discussion</h2>
     <!-- BEGIN CHANGES HERE -->
 
-    <p>Conclude with a paragraph or two discussing your threat model and
-        countermeasure mechanisms. How realistic is your threat model for a real-life
-        file sharing system? Comment on the design process that your group followed. Did
-        you discuss other ideas that didn’t pan out before settling on the
-        above-documented approach? Did you design attacks that you were unable to
-        mitigate, or that you think are impossible to mitigate? Use this space to show
-        off your hard work!</p>
-
-    <p>Finally, spend a paragraph discussing the interplay between the
-        countermeasures for your proposed attacks and your techniques for mitigating
-        threats T1–T7 from Phases P3 and P4 of the project. Did you have to design your
-        countermeasures in a particular way so as not to re-introduce these older
-        threats?</p>
-
-    <p>If your group implemented the countermeasures or did any extra credit, please
-        discuss these additional contributions in this section, as well.</p>
-
-    <p>Remove these instructions from your final submission.</p>
+    <p>Threat 8 and threat 10 are realistic for a real-life file sharing system. 
+        Threat 8 is essentially a DOS attack, which occurs rather frequently in reality. 
+        The threat 8 solution of the hash inversion computational puzzle was the most formidable solution 
+        we could reasonably implement. In reality, to mitigate against this threat fully, which often takes 
+        the form of a DDOS instead, requires companies to outsource the protection to a dedicated service
+         such as CloudFlare, which provides active and more secure measures to prevent this type of attack.
+         We, unfortunately, did not have the budget to afford this solution. Threat 10, which is the threat
+         of large files exceeding file server space quickly, has a simple and effective solution by utilizing
+        the upload and deletion checks. Therefore the threat is realistic, attackers could and would attempt 
+        something like this in reality, and its solution is realistic to implement too.
+         Threat 9 consists of protecting against a malicious file server modifying files. This is a realistic threat
+         since the file server is decentralized and untrusted. HMACS are often used in reality and have the benefit of 
+         being a quick way to verify no data has been corrupted, as opposed to using signatures and asymmetric cryptography.
+         </p>
+        <p>Originally for T10 we were considering if there was any way to prevent a rogue file server from modifying any files
+         but it didn't seem possible since it can always flip bits even with an HMAC. We could only think of a solution 
+         that lets the user detect any modification. For T8, we originally planned on using the stateless approach for computational
+         puzzles with the server handing off the state in encrypted form to prevent attackers from using up the server's memory
+         by asking for endless puzzles. However, that solution wouldn't work well from a usability standpoint
+         in this context if we closed the thread and had the user re-connect, so we landed on the time limit idea instead. 
+        </p>
+        <p> In terms of interplay between our solutions and previous threats, the utilization of the HMAC
+            interplays directly with our T6 implementation. We were already creating and managing group keys in a keyring
+            so it was simple to use the group key to derive a new integrity key with most of the logistics having already been handled. 
+            The sequencing of messages, implemented for Threat 5, continues to protect against any replay and reordering attacks,
+            and messages are still protected from modifications. The new messages being added such as the added transmission of the
+            group name in T10 still fulfill T4 since all messages are still encrypted in transit. The computational puzzle
+        exchange happens before requests now, but all normal request information (once puzzle is verified) is still encrypted ike
+    in the past, and the handshake is identical too.</p>
+    </p>
 
     <!-- END CHANGES HERE -->
 </section>
